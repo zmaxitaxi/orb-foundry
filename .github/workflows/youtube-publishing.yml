@@ -15,6 +15,7 @@ on:
         type: choice
         options:
           - auto
+          - batch
           - noon-longform
           - noon-short
           - afternoon-short
@@ -85,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           args=()
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$DISPATCH_SLOT" = "batch" ]; then
             args+=("--batch")
           elif [ "$DISPATCH_SLOT" != "auto" ]; then
             args+=("--slot=$DISPATCH_SLOT")

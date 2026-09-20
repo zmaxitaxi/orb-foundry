@@ -106,6 +106,10 @@ To preview the complete daily batch, use:
 npm run youtube:publish -- --batch --dry-run --date=2026-09-19
 ```
 
+If a scheduled run is missed, manually dispatch the workflow with `slot_id=batch`
+and `dry_run=false` to render and upload all three daily videos immediately. The
+same run tags protect against duplicate uploads.
+
 The publisher does not bypass [YouTube's API project restrictions](https://developers.google.com/youtube/v3/docs/videos#video-upload). Private scheduled
 uploads are intentional here; if Google applies an additional restriction, the
 video remains private rather than being released early.

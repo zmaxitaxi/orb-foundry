@@ -4299,3 +4299,7 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Added 25-second Short and 60-second long-form minimum recording durations, 500-HP minimum layer validation, ascending layer profiles, and higher shared layer HP for stronger estimated matchups.
 - Extended exports and metadata for multi-orb teams and added the contract to `docs/YOUTUBE_PUBLISHING.md`, `README.md`, and `config/youtube-publishing.json`.
 - Full `npm test` passes all 181 tests. Playwright browser smoke loaded the updated app with no console/page errors, and `npm run youtube:validate` confirms the three-slot contract is valid.
+
+## 2026-09-20 — Add manual YouTube batch recovery
+
+- Added a `batch` manual-dispatch option so a missed scheduled run can render and upload all three daily videos immediately while preserving run-tag duplicate protection.
