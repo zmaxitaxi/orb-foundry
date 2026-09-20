@@ -19,8 +19,11 @@ test("YouTube publishing contract loads with three daily slots", async () => {
         { id: "afternoon-short", contentType: "short", localTime: "15:00" },
     ]);
     assert.equal(config.delivery.requireApproval, false);
-    assert.deepEqual(config.videoReady.orbRace.orbs, []);
-    assert.deepEqual(config.videoReady.orbFoundry.groups, []);
+    assert.equal(config.rosterSource.channelName, "OrbBattlegroundsSimulator");
+    assert.equal(config.rosterSource.channelUrl, "https://www.youtube.com/@OrbBattlegroundSimulator");
+    assert.ok(config.videoReady.orbRace.orbs.includes("hydrogen-bomb"));
+    assert.ok(config.videoReady.orbRace.groups.includes("EVERYONE"));
+    assert.deepEqual(config.videoReady.orbFoundry.orbs, []);
 });
 
 test("YouTube metadata uses the approved VS title and hashtags", () => {

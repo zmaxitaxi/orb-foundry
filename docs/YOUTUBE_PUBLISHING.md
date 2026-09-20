@@ -16,9 +16,21 @@ Orb Foundry's approved YouTube publishing contract is stored in
 - Supported content sources will be Orb Race and Orb Foundry, selected through the
   explicit `videoReady` allowlist.
 
-The allowlist is intentionally empty until the video-ready roster is reviewed.
-This prevents experimental or incomplete orbs from entering an unattended public
-publishing loop.
+## Channel-derived roster
+
+The active roster is derived from the public Videos and Shorts listings for
+[`OrbBattlegroundsSimulator`](https://www.youtube.com/@OrbBattlegroundSimulator).
+Quantity markers and labels such as `(buffed)` are normalized to the matching
+stable orb ID. Compound names such as `GRAVSLAMMY` remain group entries so the
+title generator can use the channel's established naming.
+
+The channel page reported 123 videos while the public listing metadata exposed
+122 title entries during the review on 2026-09-19. The seven labels in
+`rosterSource.unmappedObservedLabels` are preserved for follow-up but are not
+active upload candidates until the codebase has matching stable IDs.
+
+Only entries in `videoReady` are eligible for unattended publishing. An orb that
+is not in that allowlist must not be selected for a YouTube batch.
 
 ## Activation requirements
 
