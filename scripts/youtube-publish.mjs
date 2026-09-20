@@ -312,6 +312,7 @@ export async function publishDueYouTubeSlots({
             }
 
             const exportResult = await exportSocialVideo({
+                outputDir: outputRoot,
                 outputDirectory: resolve(outputRoot, resolvedDateKey, plan.slotId),
                 outputDateKey: resolvedDateKey,
                 gameplayMode: "orb-race",
