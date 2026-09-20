@@ -1,0 +1,183 @@
+name: Weekly self-improvement
+
+on:
+  schedule:
+    - cron: "0 16 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-self-improvement
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: Check loop configuration
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check for Codex API secret
+        id: check
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if test -n "$OPENAI_API_KEY"; then
+            printf '%s\n' 'enabled=true' >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'Codex secret found; weekly improvement is enabled.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'enabled=false' >> "$GITHUB_OUTPUT"
+            printf '%s\n' 'Weekly improvement skipped: configure the OPENAI_API_KEY Actions secret.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  improve:
+    name: Create weekly improvement PR
+    needs: preflight
+    if: needs.preflight.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    env:
+      BRANCH_NAME: codex/weekly-improvement-${{ github.run_id }}
+      REPORT_PATH: ${{ runner.temp }}/weekly-self-improvement-report.md
+      CODEX_MODEL: ${{ vars.CODEX_MODEL }}
+      CODEX_REASONING_EFFORT: ${{ vars.CODEX_REASONING_EFFORT }}
+      PR_REVIEWER: ${{ vars.PR_REVIEWER || github.repository_owner }}
+    steps:
+      - name: Check out repository without write credentials
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Create isolated improvement branch
+        run: |
+          git config user.name "orb-foundry-weekly-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH_NAME"
+          printf 'BASE_SHA=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Run Codex improvement agent
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ":workspace"
+          model: ${{ vars.CODEX_MODEL }}
+          effort: ${{ vars.CODEX_REASONING_EFFORT }}
+          prompt-file: .github/prompts/weekly-self-improvement.md
+          output-file: ${{ runner.temp }}/weekly-self-improvement-report.md
+
+      - name: Verify improvement and prepare commit
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet "$BASE_SHA" -- && test -z "$(git status --porcelain --untracked-files=all)"; then
+            printf '%s\n' 'changed=false' >> "$GITHUB_OUTPUT"
+            printf '%s\n' '## Weekly self-improvement: no-op' >> "$GITHUB_STEP_SUMMARY"
+            printf '%s\n' 'The agent found no safe, valuable change for this run.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          npm test
+          find src scripts -type f \( -name '*.js' -o -name '*.mjs' \) -print0 | xargs -0 -n1 node --check
+
+          python3 -m http.server 4173 >"$RUNNER_TEMP/orb-foundry-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:4173/index.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npm run qa:browser-smoke
+
+          git add -A
+
+          changed_files="$(
+            {
+              git diff --name-only "$BASE_SHA"
+              git ls-files --others --exclude-standard
+            } | sort -u
+          )"
+          printf 'Changed files:\n%s\n' "$changed_files"
+
+          if printf '%s\n' "$changed_files" | rg -n '(^|/)\.env($|\.)|(^|/)(credentials|secrets?)([^/]*$|/)|(^|/)(artifacts|output|outputs|node_modules)/|^\.github/(workflows|prompts)/'; then
+            printf '%s\n' 'The weekly agent touched a protected or generated path.' >&2
+            exit 1
+          fi
+
+          line_counts="$(git diff --numstat "$BASE_SHA" | awk '$1 ~ /^[0-9]+$/ { additions += $1; deletions += $2 } END { print additions + 0, deletions + 0 }')"
+          read -r additions deletions <<< "$line_counts"
+          if test "$((additions + deletions))" -gt 1200; then
+            printf '%s\n' 'The weekly diff exceeds the 1200-line guardrail.' >&2
+            exit 1
+          fi
+
+          if git diff --cached --quiet; then
+            if test "$(git rev-list --count "$BASE_SHA"..HEAD)" -eq 0; then
+              printf '%s\n' 'No staged change remains after verification.' >&2
+              exit 1
+            fi
+          else
+            git commit -m "Apply weekly Orb Foundry improvement"
+          fi
+
+          printf '%s\n' 'changed=true' >> "$GITHUB_OUTPUT"
+          printf '%s\n' '## Weekly self-improvement: verification passed' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' '- `npm test`' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' '- JavaScript syntax checks' >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' '- Playwright browser smoke check' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push branch and open pull request
+        if: steps.verify.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh auth setup-git
+          git push --set-upstream origin "$BRANCH_NAME"
+
+          pull_request_body="$RUNNER_TEMP/weekly-self-improvement-pr.md"
+          printf '%s\n' '## Weekly self-improvement update' > "$pull_request_body"
+          printf '%s\n' '' >> "$pull_request_body"
+          if test -s "$REPORT_PATH"; then
+            sed -n '1,240p' "$REPORT_PATH" >> "$pull_request_body"
+          else
+            printf '%s\n' 'The agent did not return a report file.' >> "$pull_request_body"
+          fi
+          printf '%s\n' '' >> "$pull_request_body"
+          printf '%s\n' '## Workflow verification' >> "$pull_request_body"
+          printf '%s\n' '' >> "$pull_request_body"
+          printf '%s\n' '- `npm test`' >> "$pull_request_body"
+          printf '%s\n' '- JavaScript syntax checks' >> "$pull_request_body"
+          printf '%s\n' '- `npm run qa:browser-smoke`' >> "$pull_request_body"
+          printf '%s\n' "- Review requested from @${PR_REVIEWER}" >> "$pull_request_body"
+
+          gh pr create \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --title "Weekly Orb Foundry improvement" \
+            --reviewer "$PR_REVIEWER" \
+            --body-file "$pull_request_body"
