@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import { dirname, extname, join, resolve } from "node:path";
@@ -9,7 +9,11 @@ import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_LATEST = join(ROOT, "artifacts", "daily-battles", "latest.json");
 
-export async function transcodeBattleVideo(metadataPath = process.env.BATTLE_METADATA_PATH || DEFAULT_LATEST) {
+export async function transcodeBattleVideo(
+  metadataPath = process.env.BATTLE_METADATA_PATH || DEFAULT_LATEST,
+  options = {},
+) {
+  const latestPath = options.latestPath || DEFAULT_LATEST;
   const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
   const inputPath = metadata.videoPath;
   if (!inputPath) throw new Error(`Missing videoPath in ${metadataPath}`);
@@ -26,7 +30,7 @@ export async function transcodeBattleVideo(metadataPath = process.env.BATTLE_MET
         reason: "The browser recorder already produced MP4.",
       },
     };
-    await writeMetadata(metadataPath, nextMetadata);
+    await writeMetadata(metadataPath, nextMetadata, latestPath);
     return nextMetadata;
   }
   const outputPath = process.env.BATTLE_MP4_PATH || inputPath.replace(new RegExp(`${escapeRegExp(extname(inputPath))}$`), ".mp4");
@@ -57,7 +61,7 @@ export async function transcodeBattleVideo(metadataPath = process.env.BATTLE_MET
       format: "mp4",
     },
   };
-  await writeMetadata(metadataPath, nextMetadata);
+  await writeMetadata(metadataPath, nextMetadata, latestPath);
   return nextMetadata;
 }
 
@@ -94,10 +98,12 @@ function runFfmpeg(command, args) {
   });
 }
 
-async function writeMetadata(metadataPath, metadata) {
+async function writeMetadata(metadataPath, metadata, latestPath) {
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-  const latestPath = join(ROOT, "artifacts", "daily-battles", "latest.json");
-  if (metadataPath !== latestPath) await writeFile(latestPath, JSON.stringify({ ...metadata, metadataPath }, null, 2));
+  if (metadataPath !== latestPath) {
+    await mkdir(dirname(latestPath), { recursive: true });
+    await writeFile(latestPath, JSON.stringify({ ...metadata, metadataPath }, null, 2));
+  }
 }
 
 function escapeRegExp(value) {

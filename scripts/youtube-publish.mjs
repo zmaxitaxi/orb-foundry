@@ -327,7 +327,9 @@ export async function publishDueYouTubeSlots({
                 description: plan.description,
                 runTag: plan.runTag,
             });
-            const transcoded = await transcodeBattleVideo(exportResult.metadataPath);
+            const transcoded = await transcodeBattleVideo(exportResult.metadataPath, {
+                latestPath: join(outputRoot, "latest.json"),
+            });
             const upload = await client.uploadVideo({
                 filePath: transcoded.mp4Path,
                 title: plan.title,
