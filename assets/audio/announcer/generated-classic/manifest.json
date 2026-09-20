@@ -1,0 +1,22 @@
+{
+    "voice": "Daniel",
+    "rate": 175,
+    "format": "mono 22050 Hz PCM WAV",
+    "generated": "2026-07-27",
+    "lines": {
+        "classic-sword.wav": "Sword.",
+        "classic-bow.wav": "Bow.",
+        "classic-potion.wav": "Potion.",
+        "classic-axe.wav": "Axe.",
+        "classic-dagger.wav": "Dagger.",
+        "classic-katana.wav": "Katana."
+    },
+    "sha256": {
+        "classic-sword.wav": "304aaa4b99b28cf1bc567b7f2c81ad7ea7adc4675e36deeab5ba077feb624bfb",
+        "classic-bow.wav": "d1811a5d99f33810657d15626a37337912dbc5893d4280b79d2d22effb9443de",
+        "classic-potion.wav": "5fe8629d13d2244c8707feb70180aff616d70a0f0a873ed6190df68718218920",
+        "classic-axe.wav": "4dc9822168bf858442e5b3b446938d0fc370d91950feccc8ed2dcf47c43c4f65",
+        "classic-dagger.wav": "ffe86d63242875658621d4b06906273cbe7a552dd1bdf8c0fd46e35a3d4586ce",
+        "classic-katana.wav": "9cd4c4c4bede2cada3c334e03744bb6615d4562698dbf82e97f130faf5a32263"
+    }
+}

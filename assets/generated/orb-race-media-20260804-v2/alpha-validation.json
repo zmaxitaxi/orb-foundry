@@ -1,0 +1,8 @@
+{
+    "method": "Pillow RGBA inspection after remove_chroma_key.py",
+    "transparentCorners": true,
+    "assets": {
+        "artists-effects.png": { "width": 1774, "height": 887, "cornersAlpha": [0, 0, 0, 0] },
+        "tree-roots-piercing.png": { "width": 1536, "height": 1024, "cornersAlpha": [0, 0, 0, 0] }
+    }
+}

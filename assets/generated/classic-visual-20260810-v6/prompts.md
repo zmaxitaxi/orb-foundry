@@ -1,0 +1,7 @@
+# Classic Trapper circular lasso sheet — v6
+
+Imagegen prompt:
+
+> Original pixel-art game sprite sheet for a lasso trap accessory, transparent-looking flat MAGENTA chroma-key background (#ff00ff), exactly four equal SQUARE panels in one horizontal row with no text and no border lines. Each panel contains one large, nearly perfect circular cowboy lasso loop made of thick tan and dark-brown braided rope with a small knot and short rope tail, centered in its square cell. Frame 1: circular loop held low and ready. Frame 2: circular loop spinning with only a subtle motion accent, still round. Frame 3: circular loop thrown forward with a short rope tail, the loop remains round and front-facing. Frame 4: giant circular deployed lasso loop with a small knot and short tail, perfectly level and not tilted. Keep every loop fully inside its square cell, generous magenta padding, crisp 16-bit pixel art, nearest-neighbor hard edges, thick dark pixel outline, strong contrast. No human, no hand, no character, no orb, no scenery, no gradients outside the rope, no oval loops, no perspective tilt, no overlapping panels.
+
+The generated source was preserved at `source/trapper-lasso-animation-sheet-chroma.png`. The source arrived as four 543×724 panels; after chroma removal, each panel was placed at native size in a transparent 724×724 cell. This padding step preserves the generated rope pixels and prevents the browser from stretching rectangular source cells. The final runtime sheet is `final/trapper-lasso-animation-sheet.png`.

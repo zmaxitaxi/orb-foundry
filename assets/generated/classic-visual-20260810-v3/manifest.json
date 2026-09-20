@@ -1,0 +1,27 @@
+{
+  "pack": "classic-visual-20260810-v3",
+  "generatedAt": "2026-08-09",
+  "pipeline": {
+    "source": "GPT Image",
+    "background": "#00ff00 chroma key",
+    "cleanup": "remove_chroma_key.py --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill",
+    "rendering": "nearest-neighbor"
+  },
+  "assets": [
+    {
+      "id": "classic-shotgun-shells-sheet",
+      "source": "assets/generated/classic-visual-20260810-v3/source/shotgun-shells-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v3/final/shotgun-shells-sheet.png",
+      "frames": ["normal", "muzzle-spark", "impact-spark"],
+      "dimensions": { "width": 2172, "height": 724 },
+      "alpha": {
+        "format": "RGBA",
+        "transparent": 1413420,
+        "partial": 3982,
+        "opaque": 1555126,
+        "corners": [0, 0, 0, 0],
+        "validated": true
+      }
+    }
+  ]
+}

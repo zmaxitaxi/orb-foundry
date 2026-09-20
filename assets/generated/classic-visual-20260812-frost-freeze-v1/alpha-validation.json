@@ -1,0 +1,16 @@
+{
+  "validatedAt": "2026-08-12",
+  "files": {
+    "final/frozen-orb-overlay.png": {
+      "mode": "RGBA",
+      "dimensions": [2172, 724],
+      "frames": 4,
+      "cornersTransparent": true,
+      "alphaExtrema": [0, 255]
+    }
+  },
+  "notes": [
+    "The generated source was inspected at original resolution before wiring.",
+    "The source/final pair is retained for reproducibility; no opaque green or white background is shipped."
+  ]
+}

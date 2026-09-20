@@ -1,0 +1,11 @@
+{
+  "version": "orb-race-cage-20260812",
+  "pipeline": "GPT Image built-in generation -> chroma-key removal helper",
+  "source": "source/cage-chroma.png",
+  "final": "final/cage.png",
+  "promptFile": "prompts.md",
+  "rendering": "nearest-neighbor / imageSmoothingEnabled=false",
+  "role": "Orb Racer presentation-only hanging cage; no gameplay hitbox or damage",
+  "alphaValidation": "alpha-validation.json",
+  "dimensions": [1254, 1254]
+}

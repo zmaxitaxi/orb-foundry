@@ -1,0 +1,14 @@
+{
+  "pack": "classic-visual-20260811-v2",
+  "generatedAt": "2026-08-11",
+  "background": "#00ff00 chroma-key in sources; transparent in finals",
+  "sampling": "nearest-neighbor",
+  "assets": {
+    "batman-orb": {"source": "source/batman-orb-chroma.png", "final": "final/batman-orb.png", "frames": 1, "role": "Classic Batman orb body"},
+    "batman-ears": {"source": "source/batman-ears-chroma.png", "final": "final/batman-ears.png", "frames": 1, "role": "simple point pair composited at orb top"},
+    "batman-batarang": {"source": "source/batman-batarang-chroma.png", "final": "final/batman-batarang.png", "frames": 1, "role": "Classic Batman projectile"},
+    "fairy-accessories": {"source": "source/fairy-accessories-chroma.png", "final": "final/fairy-accessories.png", "frames": 8, "role": "left/right wing poses, tiara, wand"},
+    "fairy-projectile": {"source": "source/fairy-projectile-chroma.png", "final": "final/fairy-projectile.png", "frames": 4, "role": "Fairy homing projectile"},
+    "zeus-chain-lightning": {"source": "source/zeus-chain-lightning-chroma.png", "final": "final/zeus-chain-lightning.png", "frames": 4, "role": "Zeus chain lightning overlay"}
+  }
+}

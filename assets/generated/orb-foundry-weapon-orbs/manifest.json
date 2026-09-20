@@ -1,0 +1,136 @@
+{
+  "id": "orb-foundry-weapon-orbs",
+  "version": "20260713-weapon-roster1",
+  "workflow": [
+    "GPT image generation",
+    "bright #00ff00 chroma-key background",
+    "background removal",
+    "deterministic palette cleanup",
+    "nearest-neighbor scaling",
+    "shared 192x96 canvas normalization",
+    "contact-sheet review"
+  ],
+  "sprites": [
+    {
+      "name": "sword",
+      "source": "source/sword-orb-chroma.png",
+      "cutout": "source/sword-orb-cutout.png",
+      "composite": "final/sword-orb.png",
+      "weapon": "final/sword.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 184,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    },
+    {
+      "name": "crossbow",
+      "source": "source/crossbow-orb-chroma.png",
+      "cutout": "source/crossbow-orb-cutout.png",
+      "composite": "final/crossbow-orb.png",
+      "weapon": "final/crossbow.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 172,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    },
+    {
+      "name": "potion",
+      "source": "source/potion-orb-chroma.png",
+      "cutout": "source/potion-orb-cutout.png",
+      "composite": "final/potion-orb.png",
+      "weapon": "final/potion.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 184,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    },
+    {
+      "name": "axe",
+      "source": "source/axe-orb-chroma.png",
+      "cutout": "source/axe-orb-cutout.png",
+      "composite": "final/axe-orb.png",
+      "weapon": "final/axe.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 184,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    },
+    {
+      "name": "scythe",
+      "source": "source/scythe-orb-chroma.png",
+      "cutout": "source/scythe-orb-cutout.png",
+      "composite": "final/scythe-orb.png",
+      "weapon": "final/scythe.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 137,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    },
+    {
+      "name": "staff",
+      "source": "source/staff-orb-chroma.png",
+      "cutout": "source/staff-orb-cutout.png",
+      "composite": "final/staff-orb.png",
+      "weapon": "final/staff.png",
+      "canvas": [
+        192,
+        96
+      ],
+      "attachmentAnchor": [
+        88,
+        48
+      ],
+      "tipX": 184,
+      "colors": 5,
+      "resampling": "nearest-neighbor",
+      "backgroundRemoval": "flat chroma-key #00ff00 via remove_chroma_key.py",
+      "paletteCleanup": "deterministic MEDIANCUT, 5 colors, no dithering"
+    }
+  ],
+  "review": "review/weapon-orb-contact-sheet.png"
+}

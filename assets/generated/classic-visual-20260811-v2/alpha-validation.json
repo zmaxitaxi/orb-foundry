@@ -1,0 +1,13 @@
+{
+  "pack": "classic-visual-20260811-v2",
+  "validatedAt": "2026-08-11",
+  "method": "remove_chroma_key.py --auto-key corners --soft-matte --spill-cleanup",
+  "checks": {
+    "batman-orb.png": {"format": "RGBA", "transparentCorners": true},
+    "batman-ears.png": {"format": "RGBA", "transparentCorners": true},
+    "batman-batarang.png": {"format": "RGBA", "transparentCorners": true},
+    "fairy-accessories.png": {"format": "RGBA", "transparentCorners": true, "frames": 8},
+    "fairy-projectile.png": {"format": "RGBA", "transparentCorners": true, "frames": 4},
+    "zeus-chain-lightning.png": {"format": "RGBA", "transparentCorners": true, "frames": 4}
+  }
+}

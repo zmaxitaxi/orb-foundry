@@ -1,0 +1,28 @@
+{
+  "version": "classic-visual-20260810-v5",
+  "pipeline": {
+    "generator": "built-in image_gen",
+    "background": "flat chroma key (#ff00ff)",
+    "key_removal": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "trapper-lasso-animation-sheet": {
+      "source": "source/trapper-lasso-animation-sheet-chroma.png",
+      "final": "final/trapper-lasso-animation-sheet.png",
+      "usage": "Four-frame independent lasso accessory: wind-up, swing, throw, and deployed loop. Runtime draws one rope-connected lasso per Trapper entity.",
+      "dimensions": "2172x724",
+      "cells": [
+        { "id": "windup", "column": 0, "columns": 4 },
+        { "id": "swing", "column": 1, "columns": 4 },
+        { "id": "throw", "column": 2, "columns": 4 },
+        { "id": "deployed", "column": 3, "columns": 4 }
+      ],
+      "alpha": {
+        "transparent_corners": true,
+        "divider_lines_removed": true,
+        "content_bounds": [89, 0, 2112, 570]
+      }
+    }
+  }
+}

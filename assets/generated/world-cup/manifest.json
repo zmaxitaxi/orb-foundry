@@ -1,0 +1,140 @@
+{
+  "visualDirection": "Modern polished pixel art with emerald stripes, warm chalk, crisp dark outlines, and compact cyan/red/yellow feedback.",
+  "flags": {
+    "france": {
+      "file": "flags/france.png",
+      "source": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c3/Flag_of_France.svg/500px-Flag_of_France.svg.png"
+    },
+    "sweden": {
+      "file": "flags/sweden.png",
+      "source": "https://upload.wikimedia.org/wikipedia/en/thumb/4/4c/Flag_of_Sweden.svg/500px-Flag_of_Sweden.svg.png"
+    },
+    "usa": {
+      "file": "flags/usa.png",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Flag_of_the_United_States_%28DDD-F-416E_specifications%29.svg/500px-Flag_of_the_United_States_%28DDD-F-416E_specifications%29.svg.png"
+    },
+    "bosnia": {
+      "file": "flags/bosnia.png",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Flag_of_Bosnia_and_Herzegovina.svg/500px-Flag_of_Bosnia_and_Herzegovina.svg.png"
+    },
+    "england": {
+      "file": "flags/england.png",
+      "source": "https://upload.wikimedia.org/wikipedia/en/thumb/b/be/Flag_of_England.svg/250px-Flag_of_England.svg.png"
+    },
+    "congo-dr": {
+      "file": "flags/congo-dr.png",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Flag_of_the_Democratic_Republic_of_the_Congo.svg/500px-Flag_of_the_Democratic_Republic_of_the_Congo.svg.png"
+    },
+    "brazil": {
+      "file": "flags/brazil.png",
+      "source": "https://upload.wikimedia.org/wikipedia/en/thumb/0/05/Flag_of_Brazil.svg/500px-Flag_of_Brazil.svg.png"
+    },
+    "japan": {
+      "file": "flags/japan.png",
+      "source": "https://upload.wikimedia.org/wikipedia/en/thumb/9/9e/Flag_of_Japan.svg/500px-Flag_of_Japan.svg.png"
+    },
+    "argentina": {
+      "file": "flags/argentina.png",
+      "source": "https://flagcdn.com/w320/ar.png"
+    },
+    "cabo-verde": {
+      "file": "flags/cabo-verde.png",
+      "source": "https://flagcdn.com/w320/cv.png"
+    },
+    "netherlands": {
+      "file": "flags/netherlands.png",
+      "source": "https://flagcdn.com/w320/nl.png"
+    },
+    "morocco": {
+      "file": "flags/morocco.png",
+      "source": "https://flagcdn.com/w320/ma.png"
+    },
+    "portugal": {
+      "file": "flags/portugal.png",
+      "source": "https://flagcdn.com/w320/pt.png"
+    },
+    "croatia": {
+      "file": "flags/croatia.png",
+      "source": "https://flagcdn.com/w320/hr.png"
+    },
+    "germany": {
+      "file": "flags/germany.png",
+      "source": "https://flagcdn.com/w320/de.png"
+    },
+    "paraguay": {
+      "file": "flags/paraguay.png",
+      "source": "https://flagcdn.com/w320/py.png"
+    },
+    "norway": {
+      "file": "flags/norway.png",
+      "source": "https://flagcdn.com/w320/no.png"
+    },
+    "ivory-coast": {
+      "file": "flags/ivory-coast.png",
+      "source": "https://flagcdn.com/w320/ci.png"
+    },
+    "mexico": {
+      "file": "flags/mexico.png",
+      "source": "https://flagcdn.com/w320/mx.png"
+    },
+    "ecuador": {
+      "file": "flags/ecuador.png",
+      "source": "https://flagcdn.com/w320/ec.png"
+    },
+    "belgium": {
+      "file": "flags/belgium.png",
+      "source": "https://flagcdn.com/w320/be.png"
+    },
+    "senegal": {
+      "file": "flags/senegal.png",
+      "source": "https://flagcdn.com/w320/sn.png"
+    },
+    "spain": {
+      "file": "flags/spain.png",
+      "source": "https://flagcdn.com/w320/es.png"
+    },
+    "austria": {
+      "file": "flags/austria.png",
+      "source": "https://flagcdn.com/w320/at.png"
+    },
+    "australia": {
+      "file": "flags/australia.png",
+      "source": "https://flagcdn.com/w320/au.png"
+    },
+    "egypt": {
+      "file": "flags/egypt.png",
+      "source": "https://flagcdn.com/w320/eg.png"
+    },
+    "switzerland": {
+      "file": "flags/switzerland.png",
+      "source": "https://flagcdn.com/w320/ch.png"
+    },
+    "algeria": {
+      "file": "flags/algeria.png",
+      "source": "https://flagcdn.com/w320/dz.png"
+    },
+    "colombia": {
+      "file": "flags/colombia.png",
+      "source": "https://flagcdn.com/w320/co.png"
+    },
+    "ghana": {
+      "file": "flags/ghana.png",
+      "source": "https://flagcdn.com/w320/gh.png"
+    },
+    "canada": {
+      "file": "flags/canada.png",
+      "source": "https://flagcdn.com/w320/ca.png"
+    }
+  },
+  "sprites": {
+    "heart": "sprites/heart.png",
+    "red-energy-drink": "sprites/red-energy-drink.png",
+    "green-energy-drink": "sprites/green-energy-drink.png",
+    "shin-guards": "sprites/shin-guards.png",
+    "soccer-ball": "sprites/soccer-ball.png",
+    "yellow-card": "sprites/yellow-card.png",
+    "red-card": "sprites/red-card.png"
+  },
+  "arena": "arena/sunlit-striped-pitch.jpg",
+  "notes": "Original flag images were browser-downloaded from Wikimedia-rendered files; later World Cup country expansions use Flagcdn PNGs. Pixel sprites and arena reference were generated in the approved Creative Production moodboard and normalized with nearest-neighbor scaling."
+}

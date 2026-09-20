@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-07-31",
+  "model": "OpenAI image generation",
+  "style": "hard-edged pixel art on chroma green",
+  "assets": [
+    {
+      "id": "commander-sheet",
+      "source": "source/commander-sheet.png",
+      "final": "final/commander-sheet.png",
+      "promptSummary": "Commander orb, red bomb drone, blue missile drone, bomb, and missile"
+    },
+    {
+      "id": "shrapnel-sheet",
+      "source": "source/shrapnel-sheet.png",
+      "final": "final/shrapnel-sheet.png",
+      "promptSummary": "Armored Shrapnel orb, small fragment, debris burst, and large fragment"
+    },
+    {
+      "id": "roulette-sheet",
+      "source": "source/roulette-sheet.png",
+      "final": "final/roulette-sheet.png",
+      "promptSummary": "Roulette orb and ability absorption effects"
+    },
+    {
+      "id": "architect-sheet",
+      "source": "source/architect-sheet.png",
+      "final": "final/architect-sheet.png",
+      "promptSummary": "Architect orb, hammer animation poses, ramp, bumper, and platform"
+    },
+    {
+      "id": "roulette-orb",
+      "source": "source/roulette-orb-chroma.png",
+      "final": "final/roulette-orb.png",
+      "promptSummary": "Standalone pixel-art roulette wheel orb with magenta casing, gold trim, and red-black wheel"
+    },
+    {
+      "id": "shrapnel-orb",
+      "source": "source/shrapnel-orb-chroma.png",
+      "final": "final/shrapnel-orb.png",
+      "promptSummary": "Standalone orange armored Shrapnel orb covered in large readable silver triangular shards"
+    },
+    {
+      "id": "architect-orb",
+      "source": "source/architect-orb-chroma.png",
+      "final": "final/architect-orb.png",
+      "promptSummary": "Standalone yellow, blue, and orange mechanical Architect orb with blueprint geometry and riveted panels"
+    }
+  ]
+}

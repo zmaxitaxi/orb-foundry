@@ -1,0 +1,105 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Orb Foundry Announcer Extractor</title>
+<pre id="status">DECODING</pre>
+<textarea id="result" hidden></textarea>
+<script>
+  const params = new URLSearchParams(location.search);
+  const sourceUrl = params.get("source") || "../assets/audio/source/heygen-announcer-reel.mp4";
+  const start = Number(params.get("start"));
+  const end = Number(params.get("end"));
+  const status = document.querySelector("#status");
+  const result = document.querySelector("#result");
+
+  run().catch((error) => {
+    status.textContent = `ERROR\n${error.stack || error.message}`;
+  });
+
+  async function run() {
+    const response = await fetch(sourceUrl);
+    if (!response.ok) throw new Error(`Unable to load source: ${response.status}`);
+    const context = new AudioContext();
+    const audio = await context.decodeAudioData(await response.arrayBuffer());
+    if (Number.isFinite(start) && Number.isFinite(end) && end > start) {
+      const wav = segmentToWav(audio, start, end);
+      result.value = bytesToBase64(new Uint8Array(wav));
+      result.hidden = false;
+      status.textContent = JSON.stringify({
+        mode: "segment",
+        start,
+        end,
+        sampleRate: audio.sampleRate,
+        bytes: wav.byteLength,
+      });
+    } else {
+      status.textContent = JSON.stringify(analyze(audio));
+    }
+    await context.close();
+  }
+
+  function analyze(audio) {
+    const windowSeconds = 0.02;
+    const windowFrames = Math.round(audio.sampleRate * windowSeconds);
+    const channels = Array.from({ length: audio.numberOfChannels }, (_, index) => audio.getChannelData(index));
+    const rms = [];
+    for (let frame = 0; frame < audio.length; frame += windowFrames) {
+      let sum = 0;
+      const endFrame = Math.min(audio.length, frame + windowFrames);
+      for (let index = frame; index < endFrame; index += 1) {
+        let sample = 0;
+        for (const channel of channels) sample += channel[index];
+        sample /= channels.length;
+        sum += sample * sample;
+      }
+      rms.push(Math.sqrt(sum / Math.max(1, endFrame - frame)));
+    }
+    return {
+      mode: "analysis",
+      duration: audio.duration,
+      sampleRate: audio.sampleRate,
+      windowSeconds,
+      rms,
+    };
+  }
+
+  function segmentToWav(audio, startSeconds, endSeconds) {
+    const startFrame = Math.max(0, Math.floor(startSeconds * audio.sampleRate));
+    const endFrame = Math.min(audio.length, Math.ceil(endSeconds * audio.sampleRate));
+    const frameCount = Math.max(0, endFrame - startFrame);
+    const wav = new ArrayBuffer(44 + frameCount * 2);
+    const view = new DataView(wav);
+    writeText(view, 0, "RIFF");
+    view.setUint32(4, 36 + frameCount * 2, true);
+    writeText(view, 8, "WAVE");
+    writeText(view, 12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, audio.sampleRate, true);
+    view.setUint32(28, audio.sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeText(view, 36, "data");
+    view.setUint32(40, frameCount * 2, true);
+    const channels = Array.from({ length: audio.numberOfChannels }, (_, index) => audio.getChannelData(index));
+    for (let index = 0; index < frameCount; index += 1) {
+      let sample = 0;
+      for (const channel of channels) sample += channel[startFrame + index];
+      sample = Math.max(-1, Math.min(1, sample / channels.length));
+      view.setInt16(44 + index * 2, sample < 0 ? sample * 32768 : sample * 32767, true);
+    }
+    return wav;
+  }
+
+  function writeText(view, offset, text) {
+    for (let index = 0; index < text.length; index += 1) view.setUint8(offset + index, text.charCodeAt(index));
+  }
+
+  function bytesToBase64(bytes) {
+    let binary = "";
+    for (let index = 0; index < bytes.length; index += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+    }
+    return btoa(binary);
+  }
+</script>

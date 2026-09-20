@@ -1,0 +1,54 @@
+{
+  "version": "classic-effects-20260810-v3",
+  "generatedAt": "2026-08-10",
+  "generator": "user-supplied local downloads",
+  "notes": [
+    "The source files are preserved byte-for-byte from the user's local Downloads folder.",
+    "Runtime copies are served from assets/audio/effects/ and are routed only by src/audio.js event plans."
+  ],
+  "assets": {
+    "classic-trident-throw": {
+      "source": "assets/audio/source/classic-effects-20260810/floraphonic-swing-whoosh-5-198498.mp3",
+      "active": "assets/audio/effects/classic-trident-throw.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 7680
+    },
+    "classic-trident-recall": {
+      "source": "assets/audio/source/classic-effects-20260810/floraphonic-swing-whoosh-5-198498.mp3",
+      "active": "assets/audio/effects/classic-trident-recall.mp3",
+      "mime": "audio/mpeg",
+      "processing": "Reversed from classic-trident-throw.mp3 with FFmpeg areverse for the returning weapon",
+      "bytes": 9261
+    },
+    "classic-boxer-punch": {
+      "source": "assets/audio/source/classic-effects-20260810/soraatwod-punch-416719.mp3",
+      "active": "assets/audio/effects/classic-boxer-punch.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 50155
+    },
+    "classic-vampire-hiss": {
+      "source": "assets/audio/source/classic-effects-20260810/alesiadavina-female-vampire-attack-hiss-sound-effect-dark-sfx-552126.mp3",
+      "active": "assets/audio/effects/classic-vampire-hiss.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 74396
+    },
+    "classic-necromancer-summon": {
+      "source": "assets/audio/source/classic-effects-20260810/universfield-spell-casting-229208.mp3",
+      "active": "assets/audio/effects/classic-necromancer-summon.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 79872
+    },
+    "classic-trapper-throw": {
+      "source": "assets/audio/source/classic-effects-20260810/u_bnbrkm8sva-yeehaw-1-203838.mp3",
+      "active": "assets/audio/effects/classic-trapper-throw.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 201216
+    },
+    "classic-trapper-caught": {
+      "source": "assets/audio/source/classic-effects-20260810/freesound_community-mixed-whip-crack-1-102825.mp3",
+      "active": "assets/audio/effects/classic-trapper-caught.mp3",
+      "mime": "audio/mpeg",
+      "bytes": 39840
+    }
+  }
+}

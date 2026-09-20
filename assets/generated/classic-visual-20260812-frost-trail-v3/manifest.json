@@ -1,0 +1,20 @@
+{
+  "version": "classic-visual-20260812-frost-trail-v3",
+  "generator": "User-supplied PNG",
+  "sourceReference": "/var/folders/xy/qnnz362x33553z6k534cx26h0000gn/T/codex-clipboard-5a63f477-77b3-41d0-b520-10d8eb4ae026.png",
+  "rendering": {
+    "filter": "nearest-neighbor",
+    "background": "transparent",
+    "frameLayout": "horizontal-strip"
+  },
+  "assets": {
+    "frostTrail": {
+      "source": "source/frost-trail-reference.png",
+      "final": "final/frost-trail.png",
+      "frames": 4,
+      "dimensions": [2172, 724],
+      "frameDimensions": [543, 724],
+      "role": "continuous Snowball trail texture"
+    }
+  }
+}

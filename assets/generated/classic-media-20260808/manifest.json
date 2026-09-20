@@ -1,0 +1,37 @@
+{
+  "version": "classic-media-20260808",
+  "pipeline": {
+    "generator": "built-in image_gen",
+    "background": "#00ff00 chroma key",
+    "key_removal": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "boxer": {
+      "source": "assets/generated/classic-media-20260808/source/boxer-gloves-sheet-chroma-v2.png",
+      "final": "assets/generated/classic-media-20260808/final/boxer-gloves-sheet.png",
+      "frames": ["guarded", "extended", "impact"],
+      "dimensions": "2172x724; 3 equal 724px frames",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1443953,
+        "partial_pixels": 5046
+      }
+    },
+    "necromancer": {
+      "source": "assets/generated/classic-media-20260808/source/necromancer-skull-sheet-chroma-v2.png",
+      "final": "assets/generated/classic-media-20260808/final/necromancer-skull-sheet.png",
+      "frames": ["lowered", "raised", "glowing-summon"],
+      "dimensions": "1773x887; 3 equal 591px frames",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1392005,
+        "partial_pixels": 13320
+      }
+    }
+  },
+  "rejected_runtime_sources": [
+    "assets/generated/classic-media-20260808/source/boxer-gloves-sheet-chroma.png",
+    "assets/generated/classic-media-20260808/source/necromancer-skull-sheet-chroma.png"
+  ]
+}

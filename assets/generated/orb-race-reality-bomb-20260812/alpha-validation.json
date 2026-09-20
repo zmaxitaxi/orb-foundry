@@ -1,0 +1,16 @@
+{
+  "file": "final/reality-bomb.png",
+  "format": "PNG RGBA",
+  "width": 1254,
+  "height": 1254,
+  "hasAlpha": true,
+  "corners": {
+    "topLeft": [0, 0, 0, 0],
+    "topRight": [0, 0, 0, 0],
+    "bottomLeft": [0, 0, 0, 0],
+    "bottomRight": [0, 0, 0, 0]
+  },
+  "transparentPixels": 879325,
+  "partialAlphaPixels": 4652,
+  "inspected": true
+}

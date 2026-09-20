@@ -1,0 +1,33 @@
+{
+  "generatedWith": "OpenAI built-in image generation",
+  "date": "2026-07-29",
+  "assets": {
+    "crusherRock": {
+      "source": "source/crusher-rock-chroma.png",
+      "final": "final/crusher-rock.png",
+      "key": "#f403ed",
+      "prompt": "Original pixel-art Crusher orb asset: a heavy cracked charcoal-gray boulder sphere with chunky stone facets, bold black pixel outline, centered on a flat magenta chroma-key background, no text or shadow."
+    },
+    "draftmasterEquipment": {
+      "source": "source/draftmaster-equipment-chroma.png",
+      "final": "final/draftmaster-equipment.png",
+      "key": "#05f805",
+      "layout": "4 columns x 2 rows: sword, red sword, pistol, rifle / shotgun, cape, larger cape, grand cape",
+      "prompt": "Original 4-by-2 pixel-art Draftmaster equipment sprite sheet on a flat green chroma-key background: sword, hotter red sword, pistol, rifle, shotgun, short blue cape, larger blue cape, and grand blue-gold cape; crisp black pixel outlines, isolated cells, no text."
+    },
+    "draftmasterAmmo": {
+      "source": "source/draftmaster-ammo-chroma.png",
+      "final": "final/draftmaster-ammo.png",
+      "key": "#00ff00",
+      "layout": "3 columns: pistol round, rifle round, shotgun shell with pellets",
+      "prompt": "Original transparent-ready pixel-art Draftmaster ammunition sheet with a large pistol round, long rifle round, and chunky red shotgun shell with a tight pellet spread; hard square pixels, bold black outlines, isolated cells, no text."
+    },
+    "draftmasterCapedOrb": {
+      "source": "source/draftmaster-caped-orb-chroma.png",
+      "final": "final/draftmaster-caped-orb.png",
+      "key": "#00ff00",
+      "layout": "3 columns: base, upgraded, and grand combined caped-orb tiers",
+      "prompt": "Original three-tier pixel-art Draftmaster character sheet where the royal-blue orb and wrapping navy cape form one continuous asset; progressively larger blue and gold cape trim, hard square pixels, bold black outlines, no weapons or text."
+    }
+  }
+}

@@ -1,0 +1,24 @@
+node_modules/
+
+# Local Python and browser tooling state.
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.playwright-mcp/
+.vscode/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Generated recording and export output. Keep source media and QA evidence
+# under assets/ versioned for continued development.
+artifacts/
+output/
+outputs/
+
+# Generated review files and root-level QA captures.
+assets/generated/**/review/
+assets/generated/**/working/
+/*.png
+/*.aiff

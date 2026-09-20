@@ -1,0 +1,20 @@
+{
+  "version": "classic-visual-20260812-frost-trail-v2",
+  "generatedAt": "2026-08-12",
+  "generator": "GPT Image built-in imagegen",
+  "cleanup": {
+    "tool": "remove_chroma_key.py",
+    "mode": "auto-key border with soft matte and despill",
+    "rendering": "nearest-neighbor"
+  },
+  "assets": {
+    "frostTrail": {
+      "source": "source/frost-trail-source.png",
+      "final": "final/frost-trail.png",
+      "frames": 4,
+      "dimensions": [2172, 724],
+      "frameLayout": "horizontal",
+      "role": "dense near-solid ice/snow trail; no orb body, rails, or train"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+    "method": "Pillow RGBA inspection after remove_chroma_key.py and per-cell padding",
+    "transparentCorners": true,
+    "assets": {
+        "final/godzilla-animation-sheet.png": {
+            "width": 1254,
+            "height": 1254,
+            "cornersAlpha": [0, 0, 0, 0],
+            "cellAlphaBounds": [
+                [34, 84, 279, 295],
+                [34, 63, 278, 295],
+                [34, 55, 278, 295],
+                [42, 56, 272, 295],
+                [34, 74, 279, 294],
+                [40, 61, 272, 294],
+                [34, 60, 278, 294],
+                [45, 57, 269, 294],
+                [34, 64, 279, 294],
+                [38, 46, 274, 294],
+                [34, 72, 278, 294],
+                [46, 57, 268, 294],
+                [34, 60, 279, 295],
+                [36, 42, 276, 295],
+                [34, 32, 278, 295],
+                [42, 49, 272, 295]
+            ]
+        }
+    }
+}

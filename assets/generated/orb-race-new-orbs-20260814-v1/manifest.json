@@ -1,0 +1,40 @@
+{
+  "version": "orb-race-new-orbs-20260814-v1",
+  "generatedAt": "2026-08-14",
+  "rendererContract": {
+    "format": "RGBA PNG",
+    "sampling": "nearest-neighbor",
+    "background": "transparent",
+    "sourcePreserved": true
+  },
+  "assets": [
+    {
+      "id": "rain-cloud-sheet",
+      "source": "source/rain-cloud-sheet-source.png",
+      "final": "final/rain-cloud-sheet.png",
+      "width": 2172,
+      "height": 724,
+      "frameCount": 4,
+      "use": "Rain Orb cloud, light-rain, heavy-rain, and outlined-heavy-rain states"
+    },
+    {
+      "id": "hacker-computer-sheet",
+      "source": "source/hacker-computer-sheet-source.png",
+      "final": "final/hacker-computer-sheet.png",
+      "width": 2078,
+      "height": 757,
+      "frameCount": 4,
+      "use": "Archived Hacker computer/keyboard concept; no longer loaded by the runtime",
+      "runtime": false
+    },
+    {
+      "id": "miner-jackhammer-sheet",
+      "source": "source/miner-jackhammer-sheet-source.png",
+      "final": "final/miner-jackhammer-sheet.png",
+      "width": 2172,
+      "height": 724,
+      "frameCount": 6,
+      "use": "Miner Orb shovel upgrade and mounted jackhammer animation"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "version": "classic-visual-20260810-v6",
+  "generatedAt": "2026-08-10",
+  "purpose": "Classic Trapper square-cell circular lasso accessory",
+  "pipeline": {
+    "source": "GPT Image",
+    "chromaKey": "#f40fef",
+    "cleanup": "remove_chroma_key.py --auto-key border --soft-matte --despill, then pad each 543x724 cleaned cell into a 724x724 transparent cell without scaling",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "trapper-lasso-animation-sheet": {
+      "source": "source/trapper-lasso-animation-sheet-chroma.png",
+      "final": "final/trapper-lasso-animation-sheet.png",
+      "dimensions": "2172x724 source; 2896x724 padded final; 4 square 724px cells",
+      "cells": [
+        { "id": "windup", "index": 0 },
+        { "id": "swing", "index": 1 },
+        { "id": "throw", "index": 2 },
+        { "id": "deployed", "index": 3 }
+      ],
+      "alpha": {
+        "transparent_corners": true,
+        "square_cells": true,
+        "native_aspect_preserved": true,
+        "source_preserved": true
+      }
+    }
+  }
+}

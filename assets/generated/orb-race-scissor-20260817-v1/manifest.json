@@ -1,0 +1,11 @@
+{
+  "version": "orb-race-scissor-20260817-v1",
+  "pipeline": "GPT Image built-in generation -> remove_chroma_key.py",
+  "source": "source/scissor-sheet-chroma.png",
+  "final": "final/scissor-sheet.png",
+  "promptFile": "prompts.md",
+  "rendering": "three equal horizontal frames / nearest-neighbor / imageSmoothingEnabled=false",
+  "role": "Orb Race Scissor split animation; weapon/effect only, no orb body",
+  "alphaValidation": "alpha-validation.json",
+  "dimensions": [2172, 724]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Orb Foundry Impact Frames",
+  "created": "2026-06-26",
+  "method": "Creative Production art direction with GPT Image generation, chroma removal, deterministic palette normalization, and nearest-neighbor canvas fitting",
+  "style": {
+    "outline": "bold near-black pixel outline",
+    "edges": "hard pixels with no antialiasing",
+    "palette": "five colors maximum per sprite",
+    "background": "transparent"
+  },
+  "assets": [
+    {
+      "id": "regular",
+      "file": "final/impact-regular.png",
+      "canvas": [96, 96],
+      "use": "regular weapon contact"
+    },
+    {
+      "id": "critical",
+      "file": "final/impact-critical.png",
+      "canvas": [128, 128],
+      "use": "critical and backstab contact"
+    },
+    {
+      "id": "collision",
+      "file": "final/impact-collision.png",
+      "canvas": [128, 96],
+      "use": "direct orb collision and ram contact"
+    }
+  ],
+  "review": "review/orb-foundry-impact-frames-contact-sheet.png"
+}

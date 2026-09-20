@@ -1,0 +1,158 @@
+{
+  "generatedAt": "2026-08-11",
+  "generator": "scripts/generate-classic-overhaul-announcements.mjs",
+  "voice": "Alex",
+  "rate": 175,
+  "format": {
+    "sampleRate": 24000,
+    "channels": 1,
+    "codec": "mp3",
+    "bitrate": "96k"
+  },
+  "announcements": {
+    "tripwire": {
+      "spokenText": "Tripwire",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-tripwire.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-tripwire.mp3",
+      "bytes": 10656
+    },
+    "necromancer": {
+      "spokenText": "Necromancer",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-necromancer.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-necromancer.mp3",
+      "bytes": 13536
+    },
+    "spikey": {
+      "spokenText": "Spikey",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-spikey.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-spikey.mp3",
+      "bytes": 9792
+    },
+    "virus": {
+      "spokenText": "Virus",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-virus.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-virus.mp3",
+      "bytes": 9216
+    },
+    "cobwebs": {
+      "spokenText": "Cobwebs",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-cobwebs.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-cobwebs.mp3",
+      "bytes": 10656
+    },
+    "apple": {
+      "spokenText": "Apple",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-apple.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-apple.mp3",
+      "bytes": 7776
+    },
+    "trapper": {
+      "spokenText": "Trapper",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-trapper.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-trapper.mp3",
+      "bytes": 9504
+    },
+    "hive-ball": {
+      "spokenText": "Hive Ball",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-hive-ball.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-hive-ball.mp3",
+      "bytes": 11520
+    },
+    "zeus": {
+      "spokenText": "Zeus",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-zeus.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-zeus.mp3",
+      "bytes": 8352
+    },
+    "glass-ball": {
+      "spokenText": "Glass Ball",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-glass-ball.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-glass-ball.mp3",
+      "bytes": 12096
+    },
+    "pistol": {
+      "spokenText": "Pistol",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-pistol.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-pistol.mp3",
+      "bytes": 7776
+    },
+    "shotgun": {
+      "spokenText": "Shotgun",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-shotgun.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-shotgun.mp3",
+      "bytes": 9792
+    },
+    "rifle": {
+      "spokenText": "Rifle",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-rifle.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-rifle.mp3",
+      "bytes": 8640
+    },
+    "sawball": {
+      "spokenText": "Sawball",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-sawball.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-sawball.mp3",
+      "bytes": 9504
+    },
+    "cutter": {
+      "spokenText": "Cutter",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-cutter.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-cutter.mp3",
+      "bytes": 6624
+    },
+    "trident": {
+      "spokenText": "Trident",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-trident.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-trident.mp3",
+      "bytes": 9504
+    },
+    "parasites": {
+      "spokenText": "Parasites",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-parasites.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-parasites.mp3",
+      "bytes": 11808
+    },
+    "train": {
+      "spokenText": "Train",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-train.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-train.mp3",
+      "bytes": 7776
+    },
+    "frost-ball": {
+      "spokenText": "Frost Ball",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-frost-ball.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-frost-ball.mp3",
+      "bytes": 12384
+    },
+    "boxer": {
+      "spokenText": "Boxer",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-boxer.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-boxer.mp3",
+      "bytes": 8928
+    },
+    "artist": {
+      "spokenText": "Artist",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-artist.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-artist.mp3",
+      "bytes": 8640
+    },
+    "monster": {
+      "spokenText": "Monster",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-monster.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-monster.mp3",
+      "bytes": 10080
+    },
+    "fairy": {
+      "spokenText": "Fairy",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-fairy.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-fairy.mp3",
+      "bytes": 8352
+    },
+    "cowboy": {
+      "spokenText": "Cowboy",
+      "active": "assets/audio/announcer/generated-classic-overhaul/classic-cowboy.mp3",
+      "source": "assets/audio/source/classic-announcer-20260807/classic-cowboy.mp3",
+      "bytes": 10080
+    }
+  }
+}

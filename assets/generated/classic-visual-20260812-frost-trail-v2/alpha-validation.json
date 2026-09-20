@@ -1,0 +1,16 @@
+{
+  "validatedAt": "2026-08-12",
+  "files": {
+    "final/frost-trail.png": {
+      "mode": "RGBA",
+      "dimensions": [2172, 724],
+      "frames": 4,
+      "cornersTransparent": true,
+      "alphaExtrema": [0, 254]
+    }
+  },
+  "notes": [
+    "The generated source was inspected at original resolution before wiring.",
+    "The black chroma matte was removed with the installed helper; the final retains semi-transparent antialiased ice edges."
+  ]
+}

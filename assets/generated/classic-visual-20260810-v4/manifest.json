@@ -1,0 +1,36 @@
+{
+  "version": "classic-visual-20260810-v4",
+  "pipeline": {
+    "generator": "built-in image_gen",
+    "background": "flat chroma key (#19e21f for lasso, #ff00ff for Virus)",
+    "key_removal": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "trapper-lasso-sheet": {
+      "source": "source/trapper-lasso-sheet-chroma.png",
+      "final": "final/trapper-lasso-sheet.png",
+      "usage": "Three closed lasso-loop frames used as three overlapping rough-circle loops; the loop tightens when an opponent enters the trap",
+      "dimensions": "1774x887",
+      "cells": [
+        { "id": "closed-large", "column": 0, "columns": 3 },
+        { "id": "closed-medium", "column": 1, "columns": 3 },
+        { "id": "closed-small", "column": 2, "columns": 3 }
+      ],
+      "alpha": {
+        "transparent_corners": true,
+        "content_bounds": [69, 135, 1618, 725]
+      }
+    },
+    "virus-orb": {
+      "source": "source/virus-orb-chroma.png",
+      "final": "final/virus-orb.png",
+      "usage": "Complete Classic Virus orb body; HP remains a centered game-drawn overlay",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "content_bounds": [117, 107, 1136, 1114]
+      }
+    }
+  }
+}

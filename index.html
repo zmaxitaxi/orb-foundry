@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Orb Foundry is a deterministic Social Battle recorder."
+    />
+    <link rel="icon" href="data:," />
+    <title>Orb Foundry</title>
+  <link rel="stylesheet" href="./styles.css?v=20260812-orb-race-tournament-nodes2-classic-ui1" />
+  </head>
+  <body>
+    <section id="menuScreen" class="menu-screen" aria-labelledby="menuTitle">
+      <div class="menu-ornament menu-ornament-left" aria-hidden="true"></div>
+      <div class="menu-ornament menu-ornament-right" aria-hidden="true"></div>
+      <header class="menu-header">
+        <span>CHAMBER 07 · SOCIAL COMBAT ARCHIVE</span>
+        <h1 id="menuTitle">ORB FOUNDRY</h1>
+        <p>RECORD A DETERMINISTIC SOCIAL BATTLE</p>
+      </header>
+      <div id="orbMenu" class="orb-menu" aria-label="Fighter profiles"></div>
+      <div class="menu-actions">
+        <button id="menuPlayButton" class="menu-play-button">RECORD FIGHT</button>
+        <nav class="menu-shortcuts" aria-label="Game tools">
+          <button id="menuBalanceButton">BALANCE LAB</button>
+          <button id="menuDeveloperButton">DEVELOPER MODE</button>
+        </nav>
+        <label class="theme-picker">
+          <span>ARENA BACKGROUND</span>
+          <select id="menuThemeSelect" aria-label="Arena background"></select>
+        </label>
+        <small>Backgrounds are cosmetic and do not affect gameplay.</small>
+      </div>
+    </section>
+
+    <section id="profileScreen" class="profile-screen" hidden aria-labelledby="profileName">
+      <header class="profile-toolbar">
+        <button id="profileBackButton" class="quiet-button">← ALL FIGHTERS</button>
+        <span>FOUNDRY ARCHIVE · CLASS PROFILE</span>
+        <button id="profilePlayButton" class="quiet-button">RECORD WITH THIS ORB</button>
+      </header>
+      <div class="profile-layout">
+        <div class="profile-hero">
+          <span id="profileIndex" class="profile-index">01 / 06</span>
+          <div id="profileOrb" class="profile-orb orb-preview sword" aria-hidden="true"></div>
+          <div>
+            <p id="profileEpithet"></p>
+            <h2 id="profileName">CINDER</h2>
+            <strong id="profileWeapon"></strong>
+          </div>
+        </div>
+        <article class="profile-copy">
+          <section>
+            <span class="section-kicker">ABILITY / PASSIVE</span>
+            <p id="profileAbility" class="profile-ability"></p>
+          </section>
+          <section>
+            <span class="section-kicker">FOUNDRY RECORD</span>
+            <p id="profileBackstory"></p>
+          </section>
+          <div class="profile-columns">
+            <section><span class="section-kicker">STRENGTHS</span><ul id="profileStrengths"></ul></section>
+            <section><span class="section-kicker">WEAKNESSES</span><ul id="profileWeaknesses"></ul></section>
+          </div>
+        </article>
+        <aside class="profile-data">
+          <section>
+            <span class="section-kicker">COMBAT SPECIFICATION</span>
+            <div id="profileStats" class="profile-stats"></div>
+          </section>
+          <section>
+            <span class="section-kicker">SOCIAL BATTLE RATING</span>
+            <div id="profileModes" class="profile-modes"></div>
+          </section>
+        </aside>
+      </div>
+      <footer class="profile-pagination">
+        <button id="profilePreviousButton" aria-label="Previous fighter">← PREVIOUS</button>
+        <div id="profileDots" aria-label="Fighter position"></div>
+        <button id="profileNextButton" aria-label="Next fighter">NEXT →</button>
+      </footer>
+    </section>
+
+    <main id="gameScreen" class="app-shell" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>ORB FOUNDRY</h1>
+            <p>SOCIAL BATTLE STUDIO</p>
+          </div>
+        </div>
+
+        <div class="match-state" aria-live="polite">
+          <span class="status-light"></span>
+          <span id="matchStatus">READY</span>
+          <span class="divider"></span>
+          <span id="matchClock">00:00</span>
+        </div>
+
+        <div class="top-actions" aria-label="Social Battle controls">
+          <button id="homeButton" class="pixel-button utility-button">HOME</button>
+          <button id="copyLinkButton" class="pixel-button utility-button">LINK</button>
+          <button id="balanceButton" class="pixel-button utility-button">LAB</button>
+          <button id="developerButton" class="pixel-button utility-button">DEV</button>
+          <button id="pauseButton" class="pixel-button icon-button" aria-label="Pause simulation">II</button>
+          <button
+            id="soundButton"
+            class="pixel-button icon-button active"
+            aria-label="Toggle sound"
+            aria-pressed="true"
+          >
+            SFX
+          </button>
+        </div>
+      </header>
+
+      <section id="socialStage" class="social-stage" aria-label="Social battle recording studio">
+        <div class="social-preview-shell">
+          <canvas id="socialCanvas" width="1080" height="1920" aria-label="Social battle export canvas"></canvas>
+        </div>
+        <aside class="social-recording-panel">
+          <div>
+            <span>SOCIAL BATTLE</span>
+            <strong id="socialRecordingStatus">READY TO RECORD</strong>
+            <small id="socialRecordingDetail">Dedicated canvas · browser chrome excluded</small>
+          </div>
+          <progress id="socialRecordingProgress" max="60" value="0"></progress>
+          <div class="social-recording-actions">
+            <button id="socialCancelButton" class="pixel-button">NEW SETUP</button>
+            <button id="socialStopButton" class="pixel-button primary">STOP + PREVIEW</button>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <dialog id="setupDialog" class="setup-dialog">
+      <form method="dialog" class="setup-panel">
+        <div class="setup-heading">
+          <div>
+            <p>CHOOSE A MODE, TEAMS, ORBS, AND A SEED</p>
+            <h2>BATTLE SETUP</h2>
+          </div>
+          <button id="closeSetupButton" class="pixel-button icon-button" value="cancel" aria-label="Close">
+            X
+          </button>
+        </div>
+
+        <fieldset>
+          <legend>GAMEPLAY MODE</legend>
+          <select id="gameplayModeSelect">
+            <option value="classic" selected>CLASSIC ORB FOUNDRY</option>
+            <option value="world-cup">WORLD CUP · COLLISION MODE</option>
+            <option value="orb-race">ORB RACE · NUMBER WALLS</option>
+          </select>
+          <div id="raceLengthPicker" class="race-length-picker" hidden aria-label="Orb Race length">
+            <button id="shortFormRaceButton" class="pixel-button race-length-button" type="button" aria-pressed="true">
+              SHORT RACE · 9:16 · 3 LAYERS
+            </button>
+            <button id="longFormRaceButton" class="pixel-button race-length-button" type="button" aria-pressed="false">
+              LONG RACE · 16:9 · PRESET LAYERS
+            </button>
+            <button id="tournamentRaceButton" class="pixel-button race-length-button" type="button" aria-pressed="false">
+              TOURNAMENT · 1V1 BRACKET
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset id="countryFieldset" hidden>
+          <legend>COUNTRY ROSTER · TWO COUNTRIES ARE SELECTED BY SEED</legend>
+          <div id="countryGrid" class="country-grid"></div>
+          <p class="panel-note">Body collisions move orbs without damage. Pickups are the only damage source.</p>
+        </fieldset>
+
+        <fieldset id="raceOrbFieldset" hidden>
+          <legend>ORB RACE TEAMS · EACH TEAM OWNS ONE RACETRACK</legend>
+          <div id="raceTeamBuilder" class="race-team-builder">
+            <section class="race-team-panel">
+              <h3>TEAM 1 · TOP TRACK</h3>
+              <div id="raceTeamOneGrid" class="race-orb-grid"></div>
+            </section>
+            <section class="race-team-panel">
+              <h3>TEAM 2 · BOTTOM TRACK</h3>
+              <div id="raceTeamTwoGrid" class="race-orb-grid"></div>
+            </section>
+          </div>
+          <section id="raceTournamentPanel" class="race-tournament-panel" aria-labelledby="raceTournamentHeading" hidden>
+            <div class="race-tournament-heading">
+              <div>
+                <span class="section-kicker">ORB RACE TOURNAMENT · SETUP WIZARD</span>
+                <h3 id="raceTournamentHeading">SINGLE-ELIMINATION BRACKET</h3>
+                <p class="panel-note">Build the tournament in three steps. Matches are unique 1v1 Orb Race entrants; recording controls appear only on the bracket preview.</p>
+              </div>
+              <div id="raceTournamentPageIndicator" class="race-tournament-page-indicator" aria-live="polite">STEP 1 OF 3</div>
+            </div>
+            <div id="raceTournamentOptions">
+              <section id="raceTournamentWizardPage1" class="race-tournament-page" data-tournament-page="1" aria-labelledby="raceTournamentPage1Heading">
+                <div class="race-tournament-page-heading">
+                  <span class="section-kicker">STEP 1 · TOURNAMENT PRESET</span>
+                  <h4 id="raceTournamentPage1Heading">NAME THE EVENT AND CHOOSE THE FORMAT</h4>
+                  <p class="panel-note">Your title and bracket plan stay attached to saved tournaments and compact share links.</p>
+                </div>
+                <div class="race-tournament-toolbar">
+                  <label>TOURNAMENT TITLE
+                    <input id="raceTournamentTitle" type="text" maxlength="80" placeholder="OPTIONAL TITLE" />
+                  </label>
+                  <label>BRACKET SIZE
+                    <select id="raceTournamentSize">
+                      <option value="4">4 ENTRANTS</option>
+                      <option value="8" selected>8 ENTRANTS</option>
+                      <option value="16">16 ENTRANTS</option>
+                      <option value="32">32 ENTRANTS</option>
+                      <option value="64">64 ENTRANTS</option>
+                    </select>
+                  </label>
+                  <input id="raceTournamentSeedingMode" type="hidden" value="random" />
+                  <label>RECORDING SCOPE
+                    <select id="raceTournamentRecordingScope">
+                      <option value="each-match" selected>EACH MATCH · PORTRAIT SHORT FORM</option>
+                      <option value="whole-round">SELECTED ROUND · LANDSCAPE LONG FORM</option>
+                      <option value="whole-tournament">ENTIRE TOURNAMENT · LANDSCAPE LONG FORM</option>
+                    </select>
+                  </label>
+                </div>
+                <p id="raceTournamentPresetSummary" class="race-tournament-preset-summary" role="status" aria-live="polite"></p>
+                <p id="raceTournamentValidation" class="race-tournament-validation" role="alert" aria-live="polite"></p>
+                <div class="race-tournament-wizard-actions">
+                  <button id="raceTournamentWizardNext1" class="pixel-button primary" type="button">NEXT: CHOOSE ENTRANTS →</button>
+                </div>
+              </section>
+
+              <section id="raceTournamentWizardPage2" class="race-tournament-page" data-tournament-page="2" aria-labelledby="raceTournamentPage2Heading" hidden>
+                <div class="race-tournament-page-heading">
+                  <span class="section-kicker">STEP 2 · ROSTER</span>
+                  <h4 id="raceTournamentPage2Heading">CHOOSE THE UNIQUE ORB ENTRANTS</h4>
+                  <p class="panel-note">The roster auto-fills deterministically to the bracket size. Edit the selection freely; gameplay orders the selected entrants from MATCH SEED.</p>
+                </div>
+                <div id="raceTournamentLayout" class="race-tournament-layout race-tournament-layout-single">
+                  <section class="race-tournament-entrant-section" aria-labelledby="raceTournamentEntrantHeading">
+                    <div class="race-tournament-section-heading">
+                      <h4 id="raceTournamentEntrantHeading">UNIQUE 1V1 ENTRANTS</h4>
+                      <span id="raceTournamentEntrantCount" class="race-tournament-count">0 / 8</span>
+                    </div>
+                    <p class="panel-note">Each orb can appear once. Selected cards use their own theme color.</p>
+                    <div id="raceTournamentEntrants" class="race-orb-grid" aria-label="Orb Race tournament entrants"></div>
+                  </section>
+                </div>
+                <div class="race-tournament-wizard-actions">
+                  <button id="raceTournamentWizardBack2" class="quiet-button" type="button">← BACK TO PRESET</button>
+                  <button id="raceTournamentWizardNext2" class="pixel-button primary" type="button">NEXT: PREVIEW BRACKET →</button>
+                </div>
+              </section>
+
+              <section id="raceTournamentWizardPage3" class="race-tournament-page race-tournament-preview-page" data-tournament-page="3" aria-labelledby="raceTournamentPage3Heading" hidden>
+                <div class="race-tournament-page-heading">
+                  <span class="section-kicker">STEP 3 · BRACKET PREVIEW</span>
+                  <h4 id="raceTournamentPage3Heading">REVIEW THE COMPLETE BRACKET</h4>
+                  <p class="panel-note">Concrete matchups can be recorded as portrait Short Race clips. Select a round or the entire bracket for landscape Long Race recording.</p>
+                </div>
+                <div class="race-tournament-preview-toolbar" aria-label="Bracket preview mode">
+                  <span>PREVIEW MODE</span>
+                  <button id="raceTournamentPortraitPreviewButton" class="quiet-button active" type="button" data-tournament-preview-mode="portrait">PORTRAIT · 9:16</button>
+                  <button id="raceTournamentLandscapePreviewButton" class="quiet-button" type="button" data-tournament-preview-mode="landscape">LANDSCAPE · 16:9</button>
+                  <span class="race-tournament-preview-divider" aria-hidden="true"></span>
+                  <span>PAN / ZOOM</span>
+                  <button id="raceTournamentZoomOut" class="quiet-button" type="button" aria-label="Zoom bracket out">−</button>
+                  <button id="raceTournamentZoomReset" class="quiet-button" type="button" aria-label="Reset bracket zoom">100%</button>
+                  <button id="raceTournamentZoomIn" class="quiet-button" type="button" aria-label="Zoom bracket in">+</button>
+                </div>
+                <div id="raceTournamentBracketPreview" class="race-tournament-bracket-preview" data-preview-mode="portrait" aria-label="Interactive Orb Race tournament bracket"></div>
+                <section id="raceTournamentRoundSelection" class="race-tournament-round-selection" aria-labelledby="raceTournamentRoundHeading">
+                  <div class="race-tournament-section-heading">
+                    <h4 id="raceTournamentRoundHeading">LANDSCAPE LONG-FORM RECORDING</h4>
+                    <span class="race-tournament-format-badge">1920 × 1080</span>
+                  </div>
+                  <p class="panel-note">Choose a round for one landscape recording, or record every round as one continuous tournament plan.</p>
+                  <div id="raceTournamentRoundList" class="race-tournament-round-list"></div>
+                  <div class="race-tournament-recording-actions">
+                    <button id="raceTournamentRecordRoundButton" class="quiet-button" type="button">RECORD SELECTED ROUND</button>
+                    <button id="raceTournamentRecordTournamentButton" class="quiet-button" type="button">RECORD ENTIRE TOURNAMENT</button>
+                  </div>
+                </section>
+                <section class="race-tournament-layer-section" aria-labelledby="raceTournamentLayerHeading">
+                  <div class="race-tournament-section-heading">
+                    <h4 id="raceTournamentLayerHeading">SHARED LONG-FORM LAYERS</h4>
+                    <span class="race-tournament-format-badge">3 OR 5 LAYERS</span>
+                  </div>
+                  <div class="race-tournament-layer-toolbar">
+                    <label>LANDSCAPE LAYERS
+                      <select id="raceTournamentLayerCount">
+                        <option value="3">3 LAYERS</option>
+                        <option value="5" selected>5 LAYERS</option>
+                      </select>
+                    </label>
+                    <label>FINAL LAYER HEALTH
+                      <select id="raceTournamentFinalLayerHealth">
+                        <option value="110">110</option>
+                        <option value="10000" selected>10,000</option>
+                        <option value="100000">100,000</option>
+                        <option value="1000000">1 MILLION</option>
+                        <option value="10000000">10 MILLION</option>
+                        <option value="custom">CUSTOM · EDIT WALLS BELOW</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div id="raceTournamentLayerFields" class="race-layer-fields"></div>
+                </section>
+                <section class="race-tournament-local-section" aria-labelledby="raceTournamentLocalHeading">
+                  <div class="race-tournament-section-heading">
+                    <h4 id="raceTournamentLocalHeading">SAVE / RESUME</h4>
+                    <span id="raceTournamentSavedTitle" class="race-tournament-saved-title"></span>
+                  </div>
+                  <div class="race-tournament-local-actions">
+                    <button id="raceTournamentSaveButton" class="quiet-button" type="button">SAVE TO THIS BROWSER</button>
+                    <button id="raceTournamentResumeButton" class="quiet-button" type="button">RESUME SAVED</button>
+                    <button id="raceTournamentClearButton" class="quiet-button" type="button">CLEAR SAVE</button>
+                    <button id="raceTournamentOpenBracketButton" class="quiet-button" type="button">OPEN SAVED BRACKET</button>
+                  </div>
+                  <p id="raceTournamentStorageStatus" class="panel-note" role="status" aria-live="polite"></p>
+                  <div id="raceTournamentSavedMatch" class="race-tournament-saved-match" hidden>
+                    <span>SELECTED MATCHUP</span>
+                    <strong id="raceTournamentSavedMatchLabel">NONE</strong>
+                    <button id="raceTournamentRecordMatchButton" class="quiet-button" type="button">RECORD THIS MATCHUP · PORTRAIT SHORT FORM</button>
+                  </div>
+                </section>
+                <div class="race-tournament-wizard-actions">
+                  <button id="raceTournamentWizardBack3" class="quiet-button" type="button">← EDIT ROSTER</button>
+                  <span class="race-tournament-start-copy">Review complete · ready to record</span>
+                </div>
+              </section>
+            </div>
+          </section>
+          <div id="raceLayerToolbar" class="race-layer-toolbar">
+            <label>NUMBER OF LAYERS
+              <input id="raceLayerCount" type="number" min="1" max="50" value="3" />
+            </label>
+            <label id="raceFinalLayerHealthLabel" hidden>FINAL LAYER HEALTH
+              <select id="raceFinalLayerHealth">
+                <option value="10000" selected>10,000</option>
+                <option value="100000">100,000</option>
+                <option value="500000">500,000</option>
+                <option value="1000000">1 MILLION</option>
+                <option value="10000000">10 MILLION</option>
+                <option value="500000000">500 MILLION</option>
+                <option value="1000000000">1 BILLION</option>
+                <option value="1000000000000000000">1 QUINTILLION</option>
+                <option value="custom">CUSTOM · EDIT WALLS BELOW</option>
+              </select>
+            </label>
+            <label>DEFAULT ORB SIZE
+              <select id="raceOrbScale" name="raceOrbScale">
+                <option value="1">FULL</option>
+                <option value="0.75">COMPACT</option>
+                <option value="0.55">MINI</option>
+              </select>
+            </label>
+          </div>
+          <div id="raceOptionToolbar" class="race-option-toolbar">
+            <label><input id="raceTargetMessageToggle" type="checkbox" checked /> SHOW “WHO WILL BREAK…” MESSAGE</label>
+            <label><input id="raceTargetAudioToggle" type="checkbox" checked /> SAY TARGET-LAYER QUESTION</label>
+            <label><input id="raceMatchupAudioToggle" type="checkbox" checked /> SAY ORB MATCHUP</label>
+            <label><input id="raceTiltedLayerToggle" type="checkbox" /> USE TWO-PIECE TILTED LAYER</label>
+            <label id="raceTiltedLayerIndexLabel" hidden>TILTED LAYER
+              <input id="raceTiltedLayerIndex" type="number" min="1" max="3" value="1" />
+            </label>
+          </div>
+          <div id="raceLayerFields" class="race-layer-fields">
+            <label>NUMBER WALL 1 <input type="number" name="raceLayerStrength" min="1" max="1000000000000000000" value="18" /></label>
+            <label>NUMBER WALL 2 <input type="number" name="raceLayerStrength" min="1" max="1000000000000000000" value="48" /></label>
+            <label>NUMBER WALL 3 <input type="number" name="raceLayerStrength" min="1" max="1000000000000000000" value="110" /></label>
+          </div>
+          <p class="panel-note">Short and Long Race use the two team builders. Tournament uses a separate unique entrant roster and guided bracket preset; shared layer values are applied to every 1v1 match.</p>
+        </fieldset>
+
+        <div id="nonTournamentSetupFields">
+        <fieldset id="classFieldset">
+          <legend>CLASSIC TEAMS · MULTIPLE ORBS PER TEAM</legend>
+          <div class="classic-team-builder">
+            <section class="classic-team-panel">
+              <h3>TEAM 1 · LEFT SIDE</h3>
+              <div id="classicTeamOneGrid" class="classic-team-grid" aria-label="Classic team 1 orb roster"></div>
+            </section>
+            <section class="classic-team-panel">
+              <h3>TEAM 2 · RIGHT SIDE</h3>
+              <div id="classicTeamTwoGrid" class="classic-team-grid" aria-label="Classic team 2 orb roster"></div>
+            </section>
+          </div>
+          <div class="classic-setup-toolbar">
+            <label class="classic-black-theme-toggle">
+              <input id="classicBlackTheme" type="checkbox" />
+              <span>BLACK ARENA · BLACK BACKDROP + WHITE BORDER</span>
+            </label>
+            <label class="classic-team-color-toggle">
+              <input id="classicTeamColors" type="checkbox" checked />
+              <span>TEAM 1 / TEAM 2 COLORS + OUTLINES</span>
+            </label>
+          </div>
+          <p class="panel-note">Choose any orbs for either team; teams may be empty while you configure the matchup. Open a selected orb to set its quantity, size, speed, trail style, and collision damage.</p>
+        </fieldset>
+
+        <fieldset id="hazardFieldset">
+          <legend>ARENA HAZARDS · NON-DAMAGING</legend>
+          <select id="hazardPreset">
+            <option value="none" selected>NONE</option>
+            <option value="mixed">MIXED LAB</option>
+            <option value="bumpers">BUMPERS</option>
+            <option value="portals">PAIRED PORTALS</option>
+            <option value="ice">ICE FLOOR</option>
+            <option value="speed">SPEED PADS</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>ARENA MODIFIER · DETERMINISTIC</legend>
+          <select id="arenaModifierSelect">
+            <option value="standard" selected>STANDARD · CLASSIC RULES</option>
+            <option value="tiny">TINY CAGE · SMALLER WALLS</option>
+            <option value="suddenDeath">SUDDEN DEATH · LOW HP, BIG HITS</option>
+            <option value="overdrive">OVERDRIVE · FASTER EVERYTHING</option>
+            <option value="glassCannon">GLASS CANNON · EXPLOSIVE DAMAGE</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>ARENA SIZE · DETERMINISTIC</legend>
+          <select id="arenaSizeSelect">
+            <option value="standard" selected>STANDARD SIZE</option>
+            <option value="large">LARGE SQUARE · MORE ROOM</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>ARENA SHAPE · GEOMETRY</legend>
+          <select id="arenaShapeSelect">
+            <option value="square" selected>SQUARE · CURRENT DEFAULT</option>
+            <option value="circle">CIRCLE · CURVED WALLS</option>
+          </select>
+        </fieldset>
+
+        <fieldset>
+          <legend>ARENA BACKGROUND · COSMETIC</legend>
+          <select id="setupThemeSelect"></select>
+        </fieldset>
+
+        <fieldset id="socialOptions">
+          <legend>SOCIAL VIDEO EXPORT</legend>
+          <div class="social-option-grid">
+            <label>
+              <span>FORMAT</span>
+              <select id="socialFormatSelect">
+                <option value="portrait" selected>1080 × 1920 · FULL PORTRAIT</option>
+                <option value="square">1080 × 1020 · SQUARE CROP</option>
+                <option value="landscape">1920 × 1024 · LANDSCAPE CROP</option>
+                <option value="race-landscape">1920 × 1080 · ORB RACE LONG FORM</option>
+              </select>
+            </label>
+            <div>
+              <span>FRAME RATE</span>
+              <div class="option-row">
+                <label><input type="radio" name="socialFps" value="30" checked /> <span>30 FPS</span></label>
+                <label><input type="radio" name="socialFps" value="60" /> <span>60 FPS</span></label>
+              </div>
+            </div>
+          </div>
+          <label class="watch-toggle">
+            <input id="socialHighlightMode" type="checkbox" checked />
+            <span>HIGHLIGHT MODE · CINEMATIC EMPHASIS ONLY</span>
+          </label>
+          <label class="watch-toggle">
+            <input id="socialWinProbability" type="checkbox" checked />
+            <span>SHOW WIN % BAR</span>
+          </label>
+          <p id="recordingSupportNote">Supported browsers record the dedicated canvas and game audio to MP4 where supported, otherwise WebM.</p>
+        </fieldset>
+        </div>
+
+        <label class="seed-field">
+          <span>MATCH SEED</span>
+          <input id="seedInput" type="number" value="2406" min="1" max="999999" />
+        </label>
+
+        <div class="setup-actions">
+          <button id="randomSeedButton" class="pixel-button" type="button">RANDOMIZE SEED</button>
+          <button id="launchButton" class="pixel-button primary" value="default">RECORD FIGHT</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="developerDialog" class="setup-dialog compact-dialog">
+      <form method="dialog" class="setup-panel">
+        <div class="setup-heading">
+          <div><p>RUNTIME FEATURE GATES</p><h2>DEVELOPER MODE</h2></div>
+          <button class="pixel-button icon-button" value="cancel">X</button>
+        </div>
+        <div id="featureToggles" class="feature-toggles"></div>
+        <fieldset class="audio-mixer">
+          <legend>AUDIO MIXER</legend>
+          <label><span>MASTER</span><input id="masterVolume" type="range" min="0" max="1" step="0.05" value="0.82" /></label>
+          <label><span>EFFECTS</span><input id="effectsVolume" type="range" min="0" max="1" step="0.05" value="0.9" /></label>
+          <label><span>AMBIENCE</span><input id="ambienceVolume" type="range" min="0" max="1" step="0.05" value="0.16" /></label>
+          <label><span>MUSIC</span><input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.35" /></label>
+          <label><span>ANNOUNCER</span><input id="announcerVolume" type="range" min="0" max="1" step="0.05" value="0.92" /></label>
+        </fieldset>
+        <p class="panel-note">Presentation gates apply immediately. Balance changes apply to the next fight.</p>
+        <div class="setup-actions"><button id="applyFeaturesButton" class="pixel-button primary" value="default">APPLY</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="socialPreviewDialog" class="setup-dialog social-preview-dialog">
+      <form method="dialog" class="setup-panel">
+        <div class="setup-heading">
+          <div><p>EXPORT COMPLETE</p><h2>SOCIAL BATTLE PREVIEW</h2></div>
+          <button class="pixel-button icon-button" value="cancel">X</button>
+        </div>
+        <video id="socialVideoPreview" controls playsinline></video>
+        <div id="socialVideoMetadata" class="social-video-metadata"></div>
+        <label class="caption-field">
+          <span>SUGGESTED CAPTION</span>
+          <textarea id="socialCaption" rows="2" readonly></textarea>
+        </label>
+        <div class="setup-actions wrap-actions">
+          <button id="socialRetryButton" class="pixel-button" type="button">RETRY</button>
+          <button id="socialCopyLinkButton" class="pixel-button" type="button">COPY BATTLE LINK</button>
+          <button id="socialDownloadButton" class="pixel-button primary" type="button">DOWNLOAD MP4</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="balanceDialog" class="setup-dialog">
+      <form method="dialog" class="setup-panel balance-panel">
+        <div class="setup-heading">
+          <div><p>LIVE SIMULATION TUNING</p><h2>BALANCE LABORATORY</h2></div>
+          <button class="pixel-button icon-button" value="cancel">X</button>
+        </div>
+        <label class="seed-field"><span>TUNING SCOPE</span><select id="balanceScope"></select></label>
+        <div id="balanceControls" class="balance-controls"></div>
+        <p id="balanceValidation" class="panel-note" role="status"></p>
+        <input id="balanceImportInput" type="file" accept="application/json" hidden />
+        <div class="setup-actions wrap-actions">
+          <button id="balanceResetButton" class="pixel-button" type="button">RESET DEFAULTS</button>
+          <button id="balanceRandomButton" class="pixel-button" type="button">RANDOMIZE</button>
+          <button id="balanceExportButton" class="pixel-button" type="button">EXPORT JSON</button>
+          <button id="balanceImportButton" class="pixel-button" type="button">IMPORT JSON</button>
+          <button id="balanceApplyButton" class="pixel-button primary" value="default">APPLY TO NEW FIGHTS</button>
+        </div>
+      </form>
+    </dialog>
+
+  <script type="module" src="./src/main.js?v=20260825-tsar-all-in-one1"></script>
+  </body>
+</html>

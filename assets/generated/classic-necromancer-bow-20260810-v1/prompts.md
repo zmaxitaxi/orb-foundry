@@ -1,0 +1,9 @@
+# Classic Necromancer bow animation v1
+
+Generated with GPT Image on 2026-08-10.
+
+Prompt:
+
+> Use case: game sprite sheet. Asset type: original pixel-art animation sheet for Orb Foundry Classic Necromancer minions. Primary request: create one horizontal four-frame sprite strip for a wooden fantasy bow and arrow, with each equal frame showing the same asset at a consistent scale: frame 1 ready with arrow nocked, frame 2 bow fully drawn and aimed, frame 3 release with the arrow just leaving the bow and a small motion accent, frame 4 reload with bow lowered and a fresh arrow being nocked. Scene/backdrop: perfectly flat solid #00ff00 chroma-key background only, no shadows, no floor, no gradients. Subject: one detached recurved wooden bow and one bone-tipped arrow per frame, asset-only; no orb, no character, no hands, no hood, no body, no text. Style/medium: crisp original pixel art, thick near-black pixel outline, readable at small canvas scale, nearest-neighbor friendly, coherent four-frame animation. Composition/framing: horizontal 4-cell strip, equal square cells, generous padding, no subject touches the cell edges, no clipping, consistent bow orientation facing right. Lighting/mood: simple high-contrast game sprite shading. Color palette: warm brown wood, tan string, ivory arrowhead, dark outline. Constraints: every frame must be visually distinct but aligned for sprite animation; no transparent-looking green pixels in the subject; no logos or watermark. Avoid: photorealism, 3D render, multiple bows in one cell, extra arrows, humanoid anatomy, circular orb bodies, UI, labels, captions, plate, scenery.
+
+The source is preserved with its flat chroma background. The final is produced with the installed chroma-key removal helper and is rendered by the browser with nearest-neighbor sampling.

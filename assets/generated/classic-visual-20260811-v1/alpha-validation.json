@@ -1,0 +1,13 @@
+{
+  "validatedAt": "2026-08-11",
+  "files": {
+    "final/glass-drops.png": { "mode": "RGBA", "cornersTransparent": true, "alphaExtrema": [0, 255] },
+    "final/zeus-greek-circles.png": { "mode": "RGBA", "cornersTransparent": true, "alphaExtrema": [0, 255] },
+    "final/frost-trail.png": { "mode": "RGBA", "cornersTransparent": true, "alphaExtrema": [0, 255] },
+    "final/fairy-accessories.png": { "mode": "RGBA", "cornersTransparent": true, "alphaExtrema": [0, 255] }
+  },
+  "notes": [
+    "Frost separator columns from the generated sheet were removed locally before final validation.",
+    "All final sheets retain the chroma-key source beside the transparent runtime copy."
+  ]
+}

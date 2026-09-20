@@ -1,0 +1,25 @@
+{
+  "pack": "classic-necromancer-bow-20260810-v1",
+  "generatedAt": "2026-08-10",
+  "pipeline": {
+    "source": "GPT Image",
+    "keyColor": "#00ff00",
+    "keyRemoval": "remove_chroma_key.py --auto-key border --soft-matte --despill --edge-contract 1",
+    "rendering": "nearest-neighbor",
+    "alphaValidated": true
+  },
+  "promptFile": "assets/generated/classic-necromancer-bow-20260810-v1/prompts.md",
+  "assets": [
+    {
+      "id": "necromancer-bow-animation-sheet",
+      "source": "assets/generated/classic-necromancer-bow-20260810-v1/source/necromancer-bow-animation-sheet-chroma.png",
+      "final": "assets/generated/classic-necromancer-bow-20260810-v1/final/necromancer-bow-animation-sheet.png",
+      "frameCount": 4,
+      "layout": "horizontal",
+      "sourceDimensions": { "width": 1774, "height": 887 },
+      "frameCellWidth": 443.5,
+      "alpha": { "cornersTransparent": true, "transparent": true, "opaque": true },
+      "usage": "Classic Necromancer minion ready/draw/release/reload bow-and-arrow accessory"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "version": "20260731-snowball-roll1",
+  "assets": {
+    "sniper-weapons": {
+      "source": "source/sniper-weapons-chroma.png",
+      "final": "final/sniper-weapons.png",
+      "layout": "two horizontal cells: rifle, bullet",
+      "backgroundRemoved": "#00ff00"
+    },
+    "snowball-orb": {
+      "source": "source/snowball-orb-chroma.png",
+      "final": "final/snowball-orb.png",
+      "layout": "single centered rolling snowball orb",
+      "backgroundRemoved": "#04f90c"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "validatedAt": "2026-08-11",
+  "method": "Pillow RGBA inspection after remove_chroma_key.py",
+  "assets": {
+    "final/hive-bee-projectile.png": {
+      "format": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": [0, 0, 0, 0]
+    },
+    "final/apple-orb-projectile.png": {
+      "format": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": [0, 0, 0, 0]
+    },
+    "final/hive-orb.png": {
+      "format": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "cornerAlpha": [0, 0, 0, 0],
+      "runtime": "unwired provenance only"
+    }
+  }
+}

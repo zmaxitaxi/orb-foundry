@@ -1,0 +1,9 @@
+{
+  "version": "orb-race-reality-bomb-20260812",
+  "source": "source/reality-bomb-chroma.png",
+  "final": "final/reality-bomb.png",
+  "prompt": "prompt.txt",
+  "cleanup": "remove_chroma_key.py --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill",
+  "rendering": "nearest-neighbor, transparent final background",
+  "usage": "Orb Racer Reality Bomb full orb body; the runtime overlays centered HP and spawn effects."
+}

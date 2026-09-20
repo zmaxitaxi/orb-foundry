@@ -1,0 +1,20 @@
+{
+  "version": "classic-visual-20260812-frost-freeze-v1",
+  "generatedAt": "2026-08-12",
+  "generator": "GPT Image built-in imagegen",
+  "cleanup": {
+    "tool": "remove_chroma_key.py",
+    "mode": "generator-alpha-validated",
+    "rendering": "nearest-neighbor"
+  },
+  "assets": {
+    "frozenOrbOverlay": {
+      "source": "source/frozen-orb-overlay-source.png",
+      "final": "final/frozen-orb-overlay.png",
+      "frames": 4,
+      "dimensions": [2172, 724],
+      "frameLayout": "horizontal",
+      "notes": "Generated RGBA source arrived without a matte; preserved byte-for-byte as the runtime final. The transparent center leaves game-drawn HP readable."
+    }
+  }
+}

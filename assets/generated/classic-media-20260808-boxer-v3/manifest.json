@@ -1,0 +1,24 @@
+{
+  "version": "classic-media-20260808-boxer-v3",
+  "pipeline": {
+    "generator": "built-in image_gen",
+    "reference_role": "visual composition reference only; original pixel art",
+    "background": "#00ff00 chroma key",
+    "key_removal": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "boxer": {
+      "source": "assets/generated/classic-media-20260808-boxer-v3/source/boxer-gloves-sheet-chroma.png",
+      "final": "assets/generated/classic-media-20260808-boxer-v3/final/boxer-gloves-sheet.png",
+      "frames": ["guarded", "extended", "impact"],
+      "dimensions": "1536x1024; 3 equal 512x1024 frames",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1253903,
+        "partial_pixels": 6279
+      },
+      "usage": "Two large red gloves above/below the renderer-owned red orb; centered HP remains unobscured"
+    }
+  }
+}

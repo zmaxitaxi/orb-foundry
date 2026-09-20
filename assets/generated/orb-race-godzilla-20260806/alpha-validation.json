@@ -1,0 +1,11 @@
+{
+    "method": "Pillow RGBA inspection after remove_chroma_key.py",
+    "transparentCorners": true,
+    "assets": {
+        "final/godzilla-animation-sheet.png": {
+            "width": 1254,
+            "height": 1254,
+            "cornersAlpha": [0, 0, 0, 0]
+        }
+    }
+}

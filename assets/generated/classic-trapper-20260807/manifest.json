@@ -1,0 +1,23 @@
+{
+  "id": "classic-trapper-20260807",
+  "mode": "built-in-imagegen-chroma-key",
+  "prompt": "Use case: stylized-concept; transparent pixel-art game sprite accessory sheet for Orb Foundry Classic mode; exactly two isolated accessories: a rugged brown cowboy hat and a short lit cigar; flat solid #00ff00 chroma-key background; crisp original 16-bit arcade pixel art; thick nearly-black outline; no orb body, text, logo, watermark, shadow, or extra props.",
+  "assets": [
+    {
+      "id": "trapper-accessories",
+      "source": "source/trapper-accessories-chroma.png",
+      "final": "final/trapper-accessories.png",
+      "cells": [
+        { "id": "cowboy-hat", "column": 0, "columns": 2 },
+        { "id": "cigar", "column": 1, "columns": 2 }
+      ]
+    }
+  ],
+  "alphaValidation": {
+    "mode": "RGBA",
+    "size": [1536, 1024],
+    "cornerAlpha": [0, 0, 0, 0],
+    "alphaExtrema": [0, 255],
+    "contentBounds": [137, 295, 1390, 683]
+  }
+}

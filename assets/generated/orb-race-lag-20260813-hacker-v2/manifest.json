@@ -1,0 +1,14 @@
+{
+  "id": "orb-race-lag-20260813-hacker-v2",
+  "kind": "orb-body",
+  "generator": "GPT Image",
+  "generatedAt": "2026-08-13",
+  "prompt": "PROMPT.md",
+  "source": "source/lag-orb.png",
+  "final": "final/lag-orb.png",
+  "background": "generator-supplied transparent RGBA",
+  "rendering": "nearest-neighbor",
+  "alphaValidated": true,
+  "runtimeId": "lag",
+  "palette": ["#050805", "#092b12", "#39ff14", "#b6ff00"]
+}

@@ -1,0 +1,55 @@
+{
+  "pack": "classic-visual-20260810-v2",
+  "generatedAt": "2026-08-09",
+  "pipeline": {
+    "generator": "GPT Image",
+    "background": "flat #00ff00 chroma key for generated sheets",
+    "cleanup": "remove_chroma_key.py --soft-matte --despill",
+    "rendering": "nearest-neighbor",
+    "alphaValidation": "RGBA finals, transparent corners, partial alpha retained for antialiased pixels"
+  },
+  "assets": [
+    {
+      "id": "classic-shotgun-sheet",
+      "source": "assets/generated/classic-visual-20260810-v2/source/shotgun-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/shotgun-sheet.png",
+      "frames": ["ready", "firing", "reload"],
+      "alpha": {"transparent": 1457450, "partial": 6485, "opaque": 108581}
+    },
+    {
+      "id": "classic-rifle-sheet",
+      "source": "assets/generated/classic-visual-20260810-v2/source/rifle-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/rifle-sheet.png",
+      "frames": ["ready", "firing", "reload"],
+      "alpha": {"transparent": 1514940, "partial": 6564, "opaque": 51012}
+    },
+    {
+      "id": "classic-monster-fists-sheet",
+      "source": "assets/generated/classic-visual-20260810-v2/source/monster-fists-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/monster-fists-sheet.png",
+      "frames": ["guard", "punch", "impact"],
+      "alpha": {"transparent": 1419366, "partial": 6880, "opaque": 146270}
+    },
+    {
+      "id": "classic-necromancer-arrows-sheet",
+      "source": "assets/generated/classic-visual-20260810-v2/source/necromancer-arrows-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/necromancer-arrows-sheet.png",
+      "frames": ["normal", "magic", "impact"],
+      "alpha": {"transparent": 1256363, "partial": 13002, "opaque": 303151}
+    },
+    {
+      "id": "classic-sniper-ammo-sheet",
+      "source": "assets/generated/classic-visual-20260810-v2/source/sniper-ammo-sheet-chroma.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/sniper-ammo-sheet.png",
+      "frames": ["pistol-straight", "rifle-straight"],
+      "alpha": {"transparent": 1386103, "partial": 10094, "opaque": 177341}
+    },
+    {
+      "id": "classic-sniper-weapons-alpha-cleanup",
+      "source": "assets/generated/classic-visual-20260810-v2/source/sniper-weapons-original.png",
+      "rejectedEdit": "assets/generated/classic-visual-20260810-v2/source/sniper-weapons-alpha-edit.png",
+      "final": "assets/generated/classic-visual-20260810-v2/final/sniper-weapons.png",
+      "notes": "The GPT edit baked a checkerboard; the preserved same-fighter source was keyed locally instead."
+    }
+  ]
+}

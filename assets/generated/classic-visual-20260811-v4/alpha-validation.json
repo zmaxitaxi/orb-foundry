@@ -1,0 +1,14 @@
+{
+  "pack": "classic-visual-20260811-v4",
+  "validatedAt": "2026-08-11",
+  "method": "remove_chroma_key.py --auto-key corners --soft-matte --spill-cleanup",
+  "checks": {
+    "batman-orb-with-ears.png": {
+      "format": "RGBA",
+      "transparentCorners": true,
+      "singleConnectedSilhouette": true,
+      "pointSilhouetteIncluded": true,
+      "pointBodyOverlap": true
+    }
+  }
+}

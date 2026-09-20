@@ -1,0 +1,8 @@
+{
+    "voice": "Alex",
+    "generator": "macOS say",
+    "phrase": "Buffed",
+    "source": "buffed.aiff",
+    "encoded": "../../announcer/generated-race/race-buffed.wav",
+    "notes": "Short generated race announcer cue for buffed orb variants; the WAV is the browser runtime copy and the AIFF is preserved as the source."
+}

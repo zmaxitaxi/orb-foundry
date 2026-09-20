@@ -1,0 +1,20 @@
+{
+  "pack": "classic-visual-20260811-v4",
+  "generatedAt": "2026-08-11",
+  "purpose": "Single-body Batman orb with authored GPT-generated pointy top silhouette",
+  "sourceMethod": "GPT Image body and point-pair assets composited as pixel layers, then chroma-key cleaned",
+  "background": "#00ff00 chroma-key in source; transparent in final",
+  "sampling": "nearest-neighbor",
+  "assets": {
+    "batman-orb-with-ears": {
+      "source": "source/batman-orb-with-ears-derived.png",
+      "final": "final/batman-orb-with-ears.png",
+      "frames": 1,
+      "role": "complete Classic Batman orb body; pointy triangles are connected to the orb silhouette"
+    }
+  },
+  "provenance": {
+    "body": "assets/generated/classic-visual-20260811-v2/source/batman-orb-chroma.png",
+    "points": "assets/generated/classic-visual-20260811-v2/source/batman-ears-chroma.png"
+  }
+}

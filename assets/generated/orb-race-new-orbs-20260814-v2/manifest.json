@@ -1,0 +1,26 @@
+{
+  "version": "orb-race-new-orbs-20260814-v2",
+  "generatedAt": "2026-08-14",
+  "rendererContract": {
+    "format": "RGBA PNG",
+    "sampling": "nearest-neighbor",
+    "background": "transparent",
+    "sourcePreserved": true,
+    "frameLayout": "horizontal-strip"
+  },
+  "assets": [
+    {
+      "id": "hacker-orb-animation-sheet",
+      "source": "source/hacker-orb-animation-grid-source.png",
+      "working": "working/hacker-orb-animation-grid.png",
+      "final": "final/hacker-orb-animation-sheet.png",
+      "width": 2508,
+      "height": 627,
+      "frameWidth": 627,
+      "frameHeight": 627,
+      "frameCount": 4,
+      "frames": ["front hoodie", "turn left", "turn right", "typing at computer"],
+      "use": "Hacker's complete hoodie orb body and deterministic turn/typing animation; HP remains game-drawn when a host HUD supplies it"
+    }
+  ]
+}

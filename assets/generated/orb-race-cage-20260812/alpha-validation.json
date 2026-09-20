@@ -1,0 +1,11 @@
+{
+  "asset": "final/cage.png",
+  "dimensions": [1254, 1254],
+  "format": "RGBA PNG",
+  "transparentCorners": true,
+  "transparentCenter": true,
+  "sourceChromaKey": "#04f509",
+  "transparentPixels": 1142947,
+  "partialPixels": 11704,
+  "opaquePixels": 417865
+}

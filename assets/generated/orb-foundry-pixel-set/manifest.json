@@ -1,0 +1,128 @@
+{
+  "name": "Orb Foundry Generated Pixel Weapon Set",
+  "created": "2026-06-25",
+  "referenceImage": "/var/folders/xy/qnnz362x33553z6k534cx26h0000gn/T/codex-clipboard-1d303785-ad01-4e42-8418-695297d7a402.png",
+  "direction": {
+    "style": "chunky pixel art, bold near-black outline, transparent PNG sprites, compact readable silhouettes",
+    "colors": "minimal 3-5 color sprite language where practical",
+    "weapons": "right-facing shared 192x96 canvas with consistent left attachment anchor",
+    "effects": "96x96 transparent canvases",
+    "helmet": "128x96 transparent canvas designed to sit over Aegon's orb"
+  },
+  "review": {
+    "contactSheet": "review/orb-foundry-generated-sprite-contact-sheet.png"
+  },
+  "assets": [
+    {
+      "id": "cinder",
+      "role": "weapon",
+      "description": "orange-red fire sword with bright yellow core",
+      "source": "source/cinder-fire-sword-chroma.png",
+      "final": "final/cinder-fire-sword.png",
+      "canvas": [192, 96],
+      "bbox": [8, 27, 184, 69],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.9583333
+    },
+    {
+      "id": "frost",
+      "role": "weapon",
+      "description": "compact crystalline blue frost axe",
+      "source": "source/frost-axe-chroma.png",
+      "final": "final/frost-axe.png",
+      "canvas": [192, 96],
+      "bbox": [8, 8, 130, 88],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.6770833
+    },
+    {
+      "id": "hex",
+      "role": "weapon",
+      "description": "short purple rune wand with crystal tip",
+      "source": "source/hex-rune-wand-chroma.png",
+      "final": "final/hex-rune-wand.png",
+      "canvas": [192, 96],
+      "bbox": [8, 25, 184, 70],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.9583333
+    },
+    {
+      "id": "chrono",
+      "role": "weapon",
+      "description": "blue-and-gold hour glaive",
+      "source": "source/chrono-hour-glaive-chroma.png",
+      "final": "final/chrono-hour-glaive.png",
+      "canvas": [192, 96],
+      "bbox": [8, 23, 184, 73],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.9583333
+    },
+    {
+      "id": "volta",
+      "role": "weapon",
+      "description": "yellow lightning fork with cyan charge detail",
+      "source": "source/volta-lightning-fork-chroma.png",
+      "final": "final/volta-lightning-fork.png",
+      "canvas": [192, 96],
+      "bbox": [8, 21, 184, 74],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.9583333
+    },
+    {
+      "id": "venom",
+      "role": "weapon",
+      "description": "green poison sword replacing the old whip",
+      "source": "source/venom-poison-sword-chroma.png",
+      "final": "final/venom-poison-sword.png",
+      "canvas": [192, 96],
+      "bbox": [8, 25, 184, 70],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.9583333
+    },
+    {
+      "id": "gravis",
+      "role": "weapon",
+      "description": "compact purple gravity mace",
+      "source": "source/gravis-gravity-mace-chroma.png",
+      "final": "final/gravis-gravity-mace.png",
+      "canvas": [192, 96],
+      "bbox": [8, 8, 148, 88],
+      "anchorX": 0.0416667,
+      "anchorY": 0.5,
+      "tipX": 0.7708333
+    },
+    {
+      "id": "aegon",
+      "role": "gear",
+      "description": "metallic viking helmet with readable horns for the unarmed orb",
+      "source": "source/aegon-viking-helmet-chroma.png",
+      "final": "final/aegon-viking-helmet.png",
+      "canvas": [128, 96],
+      "bbox": [11, 4, 117, 92]
+    },
+    {
+      "id": "weapon-hit-spark",
+      "role": "effect",
+      "description": "shared simplified weapon hit spark",
+      "source": "source/weapon-hit-spark-chroma.png",
+      "final": "final/weapon-hit-spark.png",
+      "canvas": [96, 96],
+      "bbox": [4, 4, 91, 92]
+    },
+    {
+      "id": "aegon-collision-impact",
+      "role": "effect",
+      "description": "Aegon collision impact burst",
+      "source": "source/aegon-collision-impact-chroma.png",
+      "final": "final/aegon-collision-impact.png",
+      "canvas": [96, 96],
+      "bbox": [4, 19, 92, 76]
+    }
+  ]
+}

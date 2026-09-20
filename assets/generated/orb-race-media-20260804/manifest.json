@@ -1,0 +1,68 @@
+{
+    "version": "orb-race-media-20260804",
+    "generatedAt": "2026-08-04",
+    "generator": "GPT image generation via Codex imagegen",
+    "sourcePolicy": "Original pixel art generated for Orb Foundry; chroma sources are preserved and final files are RGBA.",
+    "chromaKey": "#00ff00",
+    "alphaPipeline": "remove_chroma_key.py with soft matte, spill cleanup, and nearest-neighbor runtime rendering",
+    "prompts": "prompts.md",
+    "alphaValidation": "alpha-validation.json",
+    "assets": [
+        {
+            "id": "grappler-sheet",
+            "source": "source/grappler-sheet-chroma.png",
+            "final": "final/grappler-sheet.png",
+            "grid": { "columns": 4, "rows": 1 },
+            "cells": ["grapple-gun", "fired-hook", "anchor-endpoint", "swivel-cap"],
+            "runtime": "Grappler muzzle, projectile hook, pull anchor, and rope endpoint"
+        },
+        {
+            "id": "artists-paintings",
+            "source": "source/artists-paintings-chroma.png",
+            "final": "final/artists-paintings.png",
+            "grid": { "columns": 5, "rows": 1 },
+            "cells": ["sunrise", "bloom", "storm", "fairy", "monster"],
+            "runtime": "Finished 5-second Artist paintings; cosmos cell is replaced by Fairy at render time"
+        },
+        {
+            "id": "artists-characters",
+            "source": "source/artists-characters-chroma.png",
+            "final": "final/artists-characters.png",
+            "grid": { "columns": 4, "rows": 4 },
+            "rows": ["fairy-walk", "fairy-attack", "monster-walk", "monster-attack"],
+            "runtime": "Frame-based Fairy and Monster animation"
+        },
+        {
+            "id": "artists-growth-storm",
+            "source": "source/artists-growth-storm-chroma.png",
+            "final": "final/artists-growth-storm.png",
+            "grid": { "columns": 4, "rows": 2 },
+            "rows": ["bloom-growth-0..3", "storm-lightning-0..3"],
+            "runtime": "Bloom growth/heal and Storm lightning frame animation"
+        },
+        {
+            "id": "pancake-sheet",
+            "source": "source/pancake-sheet-chroma.png",
+            "final": "final/pancake-sheet.png",
+            "grid": { "columns": 6, "rows": 1 },
+            "cells": ["top-side", "underside", "stack-1", "stack-2", "stack-3", "sticky-syrup"],
+            "runtime": "Dormant Pancake media contract pending Gameplay fields"
+        },
+        {
+            "id": "pancake-butter",
+            "source": "source/pancake-butter-chroma.png",
+            "final": "final/pancake-butter.png",
+            "grid": { "columns": 2, "rows": 1 },
+            "cells": ["butter-meteor", "butter-impact"],
+            "runtime": "Dormant giant butter traversal and impact media contract"
+        },
+        {
+            "id": "tree-roots-transform",
+            "source": "source/tree-roots-transform-chroma.png",
+            "final": "final/tree-roots-transform.png",
+            "grid": { "columns": 4, "rows": 2 },
+            "rows": ["orb-to-rooted-tree-0..3", "roots-spread-0..3"],
+            "runtime": "Dormant Tree ROOTS transformation, leech motes, and 2-second fade contract"
+        }
+    ]
+}

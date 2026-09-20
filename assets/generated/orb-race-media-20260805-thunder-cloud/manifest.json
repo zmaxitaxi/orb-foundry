@@ -1,0 +1,20 @@
+{
+    "version": "orb-race-media-20260805-thunder-cloud",
+    "generatedAt": "2026-08-05",
+    "generator": "GPT image generation via Codex imagegen",
+    "sourcePolicy": "Original pixel art generated for Orb Foundry; the chroma source is preserved and the final file is RGBA.",
+    "chromaKey": "#00ff00",
+    "alphaPipeline": "remove_chroma_key.py with soft matte, spill cleanup, edge contract, and nearest-neighbor runtime rendering",
+    "prompts": "prompts.md",
+    "alphaValidation": "alpha-validation.json",
+    "assets": [
+        {
+            "id": "thunder-cloud",
+            "source": "source/thunder-cloud-source.png",
+            "final": "final/thunder-cloud.png",
+            "grid": { "columns": 4, "rows": 1 },
+            "cells": ["thunder-cloud-0", "thunder-cloud-1", "thunder-cloud-2", "thunder-cloud-3"],
+            "runtime": "Neutral gray Storm/Thunder cloud shown during the Artist reveal result; blue lightning is rendered as a separate ground-strike effect."
+        }
+    ]
+}

@@ -1,0 +1,41 @@
+{
+  "version": "classic-hive-apple-20260811-v1",
+  "generatedAt": "2026-08-11",
+  "pipeline": "gpt-image -> remove_chroma_key.py --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill",
+  "nearestNeighbor": true,
+  "assets": [
+    {
+      "id": "hive-bee-projectile",
+      "source": "source/hive-bee-projectile-chroma.png",
+      "final": "final/hive-bee-projectile.png",
+      "runtime": "src/renderer.js:CLASSIC_PRESENTATION_SPRITES.hiveBee",
+      "role": "tracked Hive attack",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "transparentFinal": true
+    },
+    {
+      "id": "apple-projectile",
+      "source": "source/apple-orb-projectile-chroma.png",
+      "final": "final/apple-orb-projectile.png",
+      "runtime": "src/renderer.js:CLASSIC_PRESENTATION_SPRITES.appleProjectile",
+      "role": "Apple's thrown projectile",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "transparentFinal": true
+    },
+    {
+      "id": "hive-orb-rejected-body",
+      "source": "source/hive-orb-chroma.png",
+      "final": "final/hive-orb.png",
+      "runtime": null,
+      "role": "preserved but unwired honeycomb body concept",
+      "width": 1254,
+      "height": 1254,
+      "format": "RGBA PNG",
+      "transparentFinal": true
+    }
+  ]
+}

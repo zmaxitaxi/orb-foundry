@@ -1,0 +1,70 @@
+{
+  "version": "classic-weapons-20260808",
+  "pipeline": {
+    "generator": "built-in image_gen",
+    "background": "#00ff00 chroma key",
+    "key_removal": "remove_chroma_key.py --auto-key border --soft-matte --despill",
+    "rendering": "nearest-neighbor / imageSmoothingEnabled=false"
+  },
+  "assets": {
+    "sawball-blade": {
+      "source": "assets/generated/classic-weapons-20260808/source/sawball-blade-chroma.png",
+      "final": "assets/generated/classic-weapons-20260808/final/sawball-blade.png",
+      "usage": "Two mirrored/independently rotated instances mounted opposite the full green Sawball orb",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 762517,
+        "partial_pixels": 8049
+      }
+    },
+    "trident-weapon": {
+      "source": "assets/generated/classic-weapons-20260808/source/trident-weapon-chroma.png",
+      "final": "assets/generated/classic-weapons-20260808/final/trident-weapon.png",
+      "usage": "Attached/aimed Trident weapon and its recalled projectile",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1428038,
+        "partial_pixels": 11332
+      }
+    },
+    "grappler-gun": {
+      "source": "assets/generated/classic-weapons-20260808/source/grappler-gun-chroma.png",
+      "final": "assets/generated/classic-weapons-20260808/final/grappler-gun.png",
+      "usage": "Dedicated Classic Grappler held gun; Gameplay rope/hook remains a separate deterministic effect",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1273916,
+        "partial_pixels": 20908
+      }
+    },
+    "grappler-hook": {
+      "source": "assets/generated/classic-weapons-20260808/source/grappler-hook-chroma.png",
+      "final": "assets/generated/classic-weapons-20260808/final/grappler-hook.png",
+      "usage": "Dedicated fired Grappler hook projectile; the deterministic rope remains renderer-drawn between orb and hook",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1440250,
+        "partial_pixels": 5824
+      }
+    },
+    "turret-cannon": {
+      "source": "assets/generated/classic-weapons-20260808/source/turret-cannon-chroma.png",
+      "final": "assets/generated/classic-weapons-20260808/final/turret-cannon.png",
+      "usage": "Dedicated Classic Turret attached/aimed cannon",
+      "dimensions": "1254x1254",
+      "alpha": {
+        "transparent_corners": true,
+        "transparent_pixels": 1227915,
+        "partial_pixels": 28865
+      }
+    }
+  },
+  "authorized_reuse": {
+    "draftmaster-equipment": "Pistol, Shotgun, and Rifle only, per the user request",
+    "draftmaster-ammo": "Pistol, Shotgun, and Rifle only, per the user request"
+  }
+}

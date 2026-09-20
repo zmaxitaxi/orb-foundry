@@ -1,0 +1,15 @@
+{
+  "title": "Classic Snowball freeze effect",
+  "version": "classic-snowball-freeze-20260813",
+  "generatedAt": "2026-08-13",
+  "generator": "User-supplied audio",
+  "format": "MPEG Layer III, 24 kHz, 160 kbps joint stereo",
+  "source": "tanweraman-ice-freezing-445024.mp3",
+  "activeMappings": {
+    "classic-freeze": "../../effects/classic-snowball-freeze.mp3"
+  },
+  "notes": [
+    "The clip plays once when Snowball's frost trail freezes a new opposing target.",
+    "Snowball's trail, wall, and bounce events remain silent so the freeze cue is not repeated every fixed step."
+  ]
+}

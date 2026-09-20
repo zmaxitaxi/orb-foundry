@@ -1,0 +1,25 @@
+{
+    "version": "orb-race-godzilla-20260806",
+    "generatedAt": "2026-08-06",
+    "generator": "GPT image generation via Codex imagegen",
+    "sourcePolicy": "Original pixel art generated for Orb Foundry; the chroma source is preserved and the final file is RGBA.",
+    "chromaKey": "#05f309",
+    "alphaPipeline": "remove_chroma_key.py with soft matte, spill cleanup, and nearest-neighbor runtime rendering",
+    "prompts": "prompts.md",
+    "alphaValidation": "alpha-validation.json",
+    "assets": [
+        {
+            "id": "godzilla-animation-sheet",
+            "source": "source/godzilla-animation-sheet-source.png",
+            "final": "final/godzilla-animation-sheet.png",
+            "grid": { "columns": 4, "rows": 4 },
+            "rows": [
+                "walk-0..3",
+                "tail-smack-0..3",
+                "claw-swipe-0..3",
+                "atomic-breath-0..3"
+            ],
+            "runtime": "Full-body Godzilla walk, tail, claw, and atomic-breath animation; all frames share one skeleton and facing direction."
+        }
+    ]
+}

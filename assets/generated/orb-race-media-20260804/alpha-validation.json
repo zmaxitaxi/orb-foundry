@@ -1,0 +1,13 @@
+{
+    "method": "Pillow RGBA inspection after remove_chroma_key.py",
+    "transparentCorners": true,
+    "assets": {
+        "artists-characters.png": { "width": 1254, "height": 1254, "cornersAlpha": [0, 0, 0, 0] },
+        "artists-growth-storm.png": { "width": 1774, "height": 887, "cornersAlpha": [0, 0, 0, 0] },
+        "artists-paintings.png": { "width": 1774, "height": 887, "cornersAlpha": [0, 0, 0, 0] },
+        "grappler-sheet.png": { "width": 1774, "height": 887, "cornersAlpha": [0, 0, 0, 0] },
+        "pancake-butter.png": { "width": 1774, "height": 887, "cornersAlpha": [0, 0, 0, 0] },
+        "pancake-sheet.png": { "width": 2103, "height": 748, "cornersAlpha": [0, 0, 0, 0] },
+        "tree-roots-transform.png": { "width": 1536, "height": 1024, "cornersAlpha": [0, 0, 0, 0] }
+    }
+}

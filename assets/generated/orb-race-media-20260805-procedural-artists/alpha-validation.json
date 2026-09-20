@@ -1,0 +1,8 @@
+{
+    "method": "Pillow RGBA inspection after remove_chroma_key.py",
+    "transparentCorners": true,
+    "assets": {
+        "monster-sprite.png": { "width": 1536, "height": 1024, "cornersAlpha": [0, 0, 0, 0] },
+        "fairy-sprite.png": { "width": 1402, "height": 1122, "cornersAlpha": [0, 0, 0, 0] }
+    }
+}

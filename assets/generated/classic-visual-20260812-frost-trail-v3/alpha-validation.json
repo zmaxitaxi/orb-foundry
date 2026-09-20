@@ -1,0 +1,19 @@
+{
+  "version": "classic-visual-20260812-frost-trail-v3",
+  "files": {
+    "source/frost-trail-reference.png": {
+      "mode": "RGBA",
+      "width": 2172,
+      "height": 724,
+      "cornersTransparent": true,
+      "alphaExtrema": [0, 255]
+    },
+    "final/frost-trail.png": {
+      "mode": "RGBA",
+      "width": 2172,
+      "height": 724,
+      "cornersTransparent": true,
+      "alphaExtrema": [0, 255]
+    }
+  }
+}

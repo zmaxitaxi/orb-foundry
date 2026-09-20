@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-08-02",
+  "model": "OpenAI image generation",
+  "style": "hard-edged pixel art on chroma green",
+  "assets": [
+    {
+      "id": "commander-orb",
+      "source": "source/commander-orb-chroma.png",
+      "final": "final/commander-orb.png",
+      "promptSummary": "Standalone navy-blue and gold Commander orb with command chevrons, star insignia, and antenna details"
+    }
+  ]
+}

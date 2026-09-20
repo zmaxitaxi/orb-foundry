@@ -1,0 +1,33 @@
+{
+  "name": "Orb Foundry expansion pixel set",
+  "created": "2026-06-25",
+  "pipeline": "Creative Production direction with GPT image generation, chroma-key cleanup, deterministic sprite normalization",
+  "style": {
+    "outline": "bold near-black pixel outline",
+    "shading": "minimal 3-5 color sprite shading",
+    "background": "transparent",
+    "edgeTreatment": "hard pixel edges, no antialiasing target"
+  },
+  "outputs": {
+    "weapons": [
+      "final/echo-resonance-blade.png",
+      "final/forge-temper-hammer.png",
+      "final/static-charge-spike.png"
+    ],
+    "gear": [
+      "final/shade-shadow-hood.png"
+    ],
+    "effects": [
+      "final/mirage-decoy-orb.png",
+      "final/echo-replay-impact.png",
+      "final/forge-heat-drop.png",
+      "final/static-chain-zap.png"
+    ],
+    "review": "review/orb-foundry-expansion-sprite-contact-sheet.png"
+  },
+  "normalizedCanvases": {
+    "weapons": "192x96",
+    "effects": "96x96",
+    "gear": "128x96"
+  }
+}

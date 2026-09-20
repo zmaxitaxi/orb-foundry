@@ -1,0 +1,10 @@
+{
+    "asset": "final/butter-patch.png",
+    "mode": "RGBA",
+    "size": [1774, 887],
+    "grid": { "columns": 4, "rows": 1 },
+    "transparentCorners": true,
+    "corners": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    "alphaRange": [0, 255],
+    "validatedWith": "Pillow"
+}

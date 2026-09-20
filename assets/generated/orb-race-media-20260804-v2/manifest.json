@@ -1,0 +1,29 @@
+{
+    "version": "orb-race-media-20260804-v2",
+    "generatedAt": "2026-08-05",
+    "generator": "GPT image generation via Codex imagegen",
+    "parentMedia": "../orb-race-media-20260804",
+    "sourcePolicy": "Original pixel art generated for Orb Foundry; chroma sources are preserved and final files are RGBA.",
+    "chromaKey": "#00ff00",
+    "alphaPipeline": "remove_chroma_key.py with spill cleanup and nearest-neighbor runtime rendering",
+    "prompts": "prompts.md",
+    "alphaValidation": "alpha-validation.json",
+    "assets": [
+        {
+            "id": "artists-effects",
+            "source": "source/artists-effects-chroma.png",
+            "final": "final/artists-effects.png",
+            "grid": { "columns": 4, "rows": 1 },
+            "cells": ["monster-wall-intact", "monster-wall-cracked", "monster-wall-falling", "fairy-downward-bolt"],
+            "runtime": "Monster wall impact and Fairy downward ground projectile"
+        },
+        {
+            "id": "tree-roots-piercing",
+            "source": "source/tree-roots-piercing-chroma.png",
+            "final": "final/tree-roots-piercing.png",
+            "grid": { "columns": 4, "rows": 2 },
+            "rows": ["tree-face-orb-0..3", "piercing-roots-0..3"],
+            "runtime": "Tree face transformation and roots that bridge every number-line layer"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+Validated 2026-08-13 with Pillow after chroma-key removal.
+file=final/lag-orb.png
+format=RGBA
+size=1536x1024
+alpha_bbox=(0,71,1220,1024)
+corner_alpha=(0,0,0,0)
+transparent_pixels=1113532
+partially_transparent_pixels=163268
+opaque_pixels=296064
+nearest_neighbor_runtime=true

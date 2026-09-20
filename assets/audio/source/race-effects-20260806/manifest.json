@@ -1,0 +1,16 @@
+{
+  "title": "Godzilla event audio",
+  "generatedAt": "2026-08-06",
+  "generator": "scripts/generate_godzilla_audio.py",
+  "format": "44.1 kHz mono PCM WAV",
+  "notes": [
+    "Tail smack and beam charge are original deterministic synthesis, generated without external samples.",
+    "Godzilla walking and stomp footsteps reuse the supplied monster footsteps source.",
+    "Godzilla roar uses the supplied monster growl source with a lower playback rate.",
+    "Atomic breath release uses the supplied thunder source."
+  ],
+  "activeMappings": {
+    "race-godzilla-tail-smack": "race-godzilla-tail-smack.wav",
+    "race-godzilla-beam-charge": "race-godzilla-beam-charge.wav"
+  }
+}

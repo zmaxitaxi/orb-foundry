@@ -1,0 +1,29 @@
+{
+  "name": "ball-battle-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "audio:generate-combos": "node scripts/generate-race-combo-announcements.mjs",
+    "audio:generate-drill-combos": "node scripts/generate-race-combo-announcements.mjs --drill-only",
+    "audio:generate-orbital-combos": "node scripts/generate-race-combo-announcements.mjs --orbital-only",
+    "audio:generate-race-counts": "node scripts/generate-race-announcements.mjs --counts-only",
+    "audio:generate-count-milestones": "node scripts/generate-race-announcements.mjs --count-milestones-only",
+    "audio:generate-classic-race-voice": "node scripts/generate-race-announcements.mjs --classic-only",
+    "audio:generate-new-orbs": "node scripts/generate-race-new-orb-announcements.mjs",
+    "audio:generate-classic-overhaul": "node scripts/generate-classic-overhaul-announcements.mjs",
+    "audio:generate-race-announcements": "node scripts/generate-race-announcements.mjs",
+    "battle:export": "node scripts/export-random-battle.mjs",
+    "battle:transcode": "node scripts/transcode-battle-video.mjs",
+    "battle:upload": "node scripts/upload-battle-video.mjs",
+    "instagram:post": "node scripts/post-instagram.mjs",
+    "battle:post": "node scripts/post-daily-battle.mjs"
+  },
+  "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}

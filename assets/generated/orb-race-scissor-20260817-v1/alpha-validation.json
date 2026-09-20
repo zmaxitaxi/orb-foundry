@@ -1,0 +1,15 @@
+{
+  "version": "orb-race-scissor-20260817-v1",
+  "method": "Pillow RGBA alpha-channel inspection after chroma-key cleanup",
+  "assets": {
+    "final/scissor-sheet.png": {
+      "size": [2172, 724],
+      "cornerRGBA": [0, 0, 0, 0],
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentPixels": 1247178,
+      "frameCount": 3,
+      "frameWidth": 724
+    }
+  }
+}

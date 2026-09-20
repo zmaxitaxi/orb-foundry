@@ -1,0 +1,27 @@
+{
+    "version": "orb-race-godzilla-20260806-v2",
+    "generatedAt": "2026-08-06",
+    "generator": "GPT image generation via Codex imagegen",
+    "sourcePolicy": "Original pixel art generated for Orb Foundry; the chroma source and raw alpha-converted render are preserved.",
+    "chromaKey": "#05f809",
+    "alphaPipeline": "remove_chroma_key.py with soft matte, spill cleanup, followed by per-cell connected-component cleanup and nearest-neighbor padding",
+    "prompts": "prompts.md",
+    "alphaValidation": "alpha-validation.json",
+    "assets": [
+        {
+            "id": "godzilla-animation-sheet",
+            "source": "source/godzilla-animation-sheet-source.png",
+            "rawFinal": "final/godzilla-animation-sheet-raw.png",
+            "final": "final/godzilla-animation-sheet.png",
+            "grid": { "columns": 4, "rows": 4 },
+            "rows": [
+                "walk-0..3",
+                "tail-smack-0..3",
+                "stomp-0..3",
+                "atomic-breath-down-0..3"
+            ],
+            "runtime": "Full-body Godzilla walk with lifted alternating legs, tail smack, stomp, and a downward atomic-breath beam. Each cell is padded so no neighboring frame can bleed into the render.",
+            "nearestNeighbor": true
+        }
+    ]
+}

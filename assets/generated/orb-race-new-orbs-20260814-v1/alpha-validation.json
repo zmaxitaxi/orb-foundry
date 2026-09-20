@@ -1,0 +1,27 @@
+{
+  "version": "orb-race-new-orbs-20260814-v1",
+  "method": "Pillow RGBA alpha-channel inspection after chroma-key cleanup",
+  "assets": {
+    "final/rain-cloud-sheet.png": {
+      "size": [2172, 724],
+      "cornerRGBA": [0, 0, 0, 0],
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentPixels": 1039000
+    },
+    "final/hacker-computer-sheet.png": {
+      "size": [2078, 757],
+      "cornerRGBA": [0, 0, 0, 0],
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentPixels": 1088748
+    },
+    "final/miner-jackhammer-sheet.png": {
+      "size": [2172, 724],
+      "cornerRGBA": [0, 0, 0, 0],
+      "alphaMin": 0,
+      "alphaMax": 255,
+      "transparentPixels": 1044566
+    }
+  }
+}
