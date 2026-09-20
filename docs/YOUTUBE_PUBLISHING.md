@@ -34,17 +34,51 @@ is not in that allowlist must not be selected for a YouTube batch.
 
 ## Activation requirements
 
-The live publisher should run on a hosted GitHub Actions runner so it can operate
-when the development computer is asleep or offline. Before enabling public
-uploads, configure the approved roster and add these GitHub Actions secrets:
+The live publisher runs on the hosted GitHub Actions workflow
+`.github/workflows/youtube-publishing.yml`, so it can operate when the
+development computer is asleep or offline. It considers both UTC candidates for
+each Pacific slot and then filters in `America/Los_Angeles`; this keeps the
+schedule at noon and 3:00 PM across daylight-saving changes.
+
+Before enabling public uploads, create a Google Cloud OAuth client, enable the
+YouTube Data API v3, and add these GitHub Actions secrets:
 
 - `YOUTUBE_CLIENT_ID`
 - `YOUTUBE_CLIENT_SECRET`
 - `YOUTUBE_REFRESH_TOKEN`
 
-OAuth credentials and refresh tokens must never be committed to the repository.
-The publisher will use the YouTube Data API's resumable upload flow and will keep
-its generated media under ignored `artifacts/` output.
+The one-time local refresh-token helper requests the upload and read-only
+scopes needed to publish and detect duplicate scheduled runs:
+
+```bash
+YOUTUBE_CLIENT_ID='...' \\
+YOUTUBE_CLIENT_SECRET='...' \\
+npm run youtube:oauth
+```
+
+The OAuth client redirect URI must include
+`http://127.0.0.1:8787/oauth2callback`. Copy the printed refresh token into the
+private repository's `YOUTUBE_REFRESH_TOKEN` Actions secret. OAuth credentials
+and refresh tokens must never be committed to the repository.
+
+The publisher uses the YouTube Data API's resumable upload flow. It renders a
+deterministic Orb Race matchup from the active allowlist, transcodes it to MP4,
+checks for the run tag before uploading, and stores generated media only under
+ignored `artifacts/` output. Scheduled runs publish both noon entries together;
+the 3:00 PM run publishes the second Short.
+
+The workflow can be tested from GitHub's **Run workflow** menu. Manual runs
+default to `dry_run=true`; set it to false only after the OAuth secrets and
+Google Cloud project are ready. The local equivalent is:
+
+```bash
+npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
+```
+
+The publisher does not bypass [YouTube's API project restrictions](https://developers.google.com/youtube/v3/docs/videos#video-upload). Google notes
+that uploads from unverified API projects created after July 28, 2020 may be
+forced to private until the project completes the required audit, even when the
+request asks for public visibility.
 
 ## Validation
 

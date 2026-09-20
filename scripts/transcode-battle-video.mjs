@@ -13,6 +13,22 @@ export async function transcodeBattleVideo(metadataPath = process.env.BATTLE_MET
   const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
   const inputPath = metadata.videoPath;
   if (!inputPath) throw new Error(`Missing videoPath in ${metadataPath}`);
+  if (extname(inputPath).toLowerCase() === ".mp4") {
+    const nextMetadata = {
+      ...metadata,
+      mp4Path: inputPath,
+      videoPath: inputPath,
+      sourceWebmPath: metadata.sourceWebmPath || null,
+      transcode: {
+        createdAt: new Date().toISOString(),
+        format: "mp4",
+        skipped: true,
+        reason: "The browser recorder already produced MP4.",
+      },
+    };
+    await writeMetadata(metadataPath, nextMetadata);
+    return nextMetadata;
+  }
   const outputPath = process.env.BATTLE_MP4_PATH || inputPath.replace(new RegExp(`${escapeRegExp(extname(inputPath))}$`), ".mp4");
   const ffmpegPath = process.env.FFMPEG_PATH || ffmpegInstaller.path || "ffmpeg";
 

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
     YOUTUBE_CONFIG_PATH,
+    dueYouTubeSlotsAt,
     loadYouTubePublishingConfig,
     localDateKey,
     localScheduleSlotsAt,
@@ -9,6 +10,11 @@ import {
     youtubeMetadata,
     youtubeTitle,
 } from "../scripts/youtube-publishing.mjs";
+import {
+    buildYouTubePublishPlan,
+    publishDueYouTubeSlots,
+    selectYouTubeMatchup,
+} from "../scripts/youtube-publish.mjs";
 
 test("YouTube publishing contract loads with three daily slots", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
@@ -44,4 +50,44 @@ test("schedule matching follows Pacific time across standard and daylight time",
     assert.deepEqual(localScheduleSlotsAt(noonPst, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
     assert.deepEqual(localScheduleSlotsAt(noonPdt, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
     assert.deepEqual(localScheduleSlotsAt(afternoonPdt, config).map(({ id }) => id), ["afternoon-short"]);
+});
+
+test("due slots keep both Pacific noon entries across daylight-saving time", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const noonPst = new Date("2026-01-15T20:12:00.000Z");
+    const noonPdt = new Date("2026-07-15T19:12:00.000Z");
+    const afternoonPdt = new Date("2026-07-15T22:12:00.000Z");
+    assert.deepEqual(dueYouTubeSlotsAt(noonPst, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
+    assert.deepEqual(dueYouTubeSlotsAt(noonPdt, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
+    assert.deepEqual(dueYouTubeSlotsAt(afternoonPdt, config).map(({ id }) => id), ["afternoon-short"]);
+    assert.deepEqual(dueYouTubeSlotsAt(new Date("2026-07-15T20:12:00.000Z"), config).map(({ id }) => id), []);
+});
+
+test("YouTube plans use a deterministic allowlisted matchup and exact metadata contract", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const slot = config.schedule.find(({ id }) => id === "noon-short");
+    const first = selectYouTubeMatchup({ dateKey: "2026-09-19", slotId: slot.id, config });
+    const second = selectYouTubeMatchup({ dateKey: "2026-09-19", slotId: slot.id, config });
+    const plan = buildYouTubePublishPlan({ dateKey: "2026-09-19", slot, config });
+    assert.deepEqual(first, second);
+    assert.ok(config.videoReady.orbRace.orbs.includes(first.leftId));
+    assert.ok(config.videoReady.orbRace.orbs.includes(first.rightId));
+    assert.equal(plan.title, `${first.left} VS ${first.right}`);
+    assert.equal(plan.description, "#physics #shorts #simulation #satisfying");
+    assert.equal(plan.runTag, "of-20260919-noon-short");
+});
+
+test("dry-run publishing plans both noon uploads without credentials or media side effects", async () => {
+    const logs = [];
+    const result = await publishDueYouTubeSlots({
+        now: new Date("2026-07-15T19:12:00.000Z"),
+        dryRun: true,
+        logger: { log: (value) => logs.push(value), error: () => {} },
+    });
+    assert.equal(result.status, "completed");
+    assert.deepEqual(result.items.map(({ slotId, status }) => ({ slotId, status })), [
+        { slotId: "noon-longform", status: "planned" },
+        { slotId: "noon-short", status: "planned" },
+    ]);
+    assert.equal(logs.length, 2);
 });

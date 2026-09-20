@@ -1,0 +1,100 @@
+name: YouTube publishing
+
+on:
+  # GitHub cron is UTC. The publisher resolves the current local time in
+  # America/Los_Angeles, so these four candidates cover PST and PDT without
+  # ever publishing the same slot twice.
+  schedule:
+    - cron: "0 19,20,22,23 * * *"
+  workflow_dispatch:
+    inputs:
+      slot_id:
+        description: "Slot to run, or auto to use the current Pacific slot"
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - noon-longform
+          - noon-short
+          - afternoon-short
+      run_date:
+        description: "Optional local date override (YYYY-MM-DD)"
+        required: false
+        type: string
+      dry_run:
+        description: "Plan and validate without rendering or uploading"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: youtube-publishing
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Render and publish due videos
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and FFmpeg dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Select Chromium executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          for candidate in chromium google-chrome chromium-browser; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              printf 'CHROME_PATH=%s\n' "$(command -v "$candidate")" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo 'No Chromium executable was found after installation.' >&2
+          exit 1
+
+      - name: Validate publishing contract
+        run: npm run youtube:validate
+
+      - name: Render and publish due slots
+        shell: bash
+        env:
+          DISPATCH_SLOT: ${{ inputs.slot_id || 'auto' }}
+          DISPATCH_DATE: ${{ inputs.run_date || '' }}
+          DISPATCH_DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "$DISPATCH_SLOT" != "auto" ]; then args+=("--slot=$DISPATCH_SLOT"); fi
+          if [ -n "$DISPATCH_DATE" ]; then args+=("--date=$DISPATCH_DATE"); fi
+          if [ "$DISPATCH_DRY_RUN" = "true" ]; then args+=("--dry-run"); fi
+          npm run youtube:publish -- "${args[@]}"
+
+      - name: Upload failed-run metadata
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-publishing-metadata-${{ github.run_id }}
+          path: artifacts/youtube/**/metadata.json
+          if-no-files-found: ignore
+          retention-days: 3
