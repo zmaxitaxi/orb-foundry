@@ -19,7 +19,8 @@
     "battle:upload": "node scripts/upload-battle-video.mjs",
     "instagram:post": "node scripts/post-instagram.mjs",
     "battle:post": "node scripts/post-daily-battle.mjs",
-    "youtube:validate": "node scripts/youtube-publishing.mjs"
+    "youtube:validate": "node scripts/youtube-publishing.mjs",
+    "qa:browser-smoke": "node scripts/ci-browser-smoke.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0"
