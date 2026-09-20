@@ -444,7 +444,11 @@ export class YouTubeApiClient {
             }),
         });
         const uploadUrl = initResponse.headers.get("location");
-        if (!uploadUrl) throw new Error("YouTube did not return a resumable upload URL.");
+        if (!uploadUrl) {
+            const payload = await readResponseJson(initResponse);
+            const message = payload.error?.message || payload.error_description || payload.raw || "unknown error";
+            throw new Error(`YouTube upload initialization failed (${initResponse.status}): ${message}`);
+        }
 
         let offset = 0;
         while (offset < file.length) {
