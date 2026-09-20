@@ -1,0 +1,43 @@
+{
+    "version": 1,
+    "timeZone": "America/Los_Angeles",
+    "delivery": {
+        "mode": "daily-batch",
+        "visibility": "public",
+        "requireApproval": false
+    },
+    "schedule": [
+        {
+            "id": "noon-longform",
+            "contentType": "longform",
+            "localTime": "12:00"
+        },
+        {
+            "id": "noon-short",
+            "contentType": "short",
+            "localTime": "12:00"
+        },
+        {
+            "id": "afternoon-short",
+            "contentType": "short",
+            "localTime": "15:00"
+        }
+    ],
+    "titleTemplate": "{left} VS {right}",
+    "descriptionHashtags": [
+        "#physics",
+        "#shorts",
+        "#simulation",
+        "#satisfying"
+    ],
+    "videoReady": {
+        "orbRace": {
+            "orbs": [],
+            "groups": []
+        },
+        "orbFoundry": {
+            "orbs": [],
+            "groups": []
+        }
+    }
+}

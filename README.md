@@ -124,6 +124,22 @@ Instagram posting uses the Meta Graph API and needs environment variables:
 
 Captions use `ORB 1 vs ORB 2` plus `#weaponballs #orb #simulation`.
 
+## Daily YouTube Publishing
+
+The approved daily YouTube schedule and metadata contract lives in
+[`config/youtube-publishing.json`](config/youtube-publishing.json), with the
+activation requirements documented in
+[`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md). The publisher is
+designed for a hosted runner so it can operate while the development computer
+is offline. Its video-ready allowlist must be populated before public uploads
+can be enabled.
+
+Validate the current contract with:
+
+```bash
+npm run youtube:validate
+```
+
 ## Test
 
 ```bash
