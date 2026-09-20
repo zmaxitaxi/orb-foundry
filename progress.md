@@ -4291,3 +4291,11 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Changed Piercer's per-contact damage gain from `+0.2` to `+0.75` while retaining its full live-layer sweep.
 - Added/generated valid Alex announcements for Tsar Bomb and All In One through `scripts/generate-race-announcements.mjs --new-orbs-only`; live clips are under `assets/audio/announcer/generated-race/` and preserved generated sources are under `assets/audio/source/race-announcer-generated/`. Bomb lifecycle routes use the existing Hydrogen siren/explosion/flash samples; Tsar reactor uses the black-hole impact cue and All In One activation uses the math-power cue.
 - Focused suites pass: `node --test tests/simulation.test.mjs tests/features.test.mjs tests/social.test.mjs`. Full `npm test` and Playwright browser smoke remain the final verification step for this entry.
+
+## 2026-09-20 — Reliable scheduled YouTube quality pipeline
+
+- Changed the YouTube workflow to render a morning batch, upload videos privately, and set YouTube `publishAt` timestamps for noon and 3:00 PM Pacific. This avoids missing a slot when GitHub Actions starts late.
+- Added deterministic daily roster windows and a two-day orb cooldown, with optional 1v1 and 2v2 team formats. Plans are quality-gated by a deterministic Orb Race preflight that requires a finished close battle.
+- Added 25-second Short and 60-second long-form minimum recording durations, 500-HP minimum layer validation, ascending layer profiles, and higher shared layer HP for stronger estimated matchups.
+- Extended exports and metadata for multi-orb teams and added the contract to `docs/YOUTUBE_PUBLISHING.md`, `README.md`, and `config/youtube-publishing.json`.
+- Full `npm test` passes all 181 tests. Playwright browser smoke loaded the updated app with no console/page errors, and `npm run youtube:validate` confirms the three-slot contract is valid.

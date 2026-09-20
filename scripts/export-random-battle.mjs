@@ -60,9 +60,10 @@ export async function exportSocialVideo(options = {}) {
   let settings;
 
   if (gameplayMode === "orb-race") {
-    const raceOrbs = Array.isArray(options.raceOrbs) ? [...new Set(options.raceOrbs)] : [];
-    if (raceOrbs.length !== 2 || raceOrbs.some((id) => !ORB_RACERS[id])) {
-      throw new Error("Orb Race export requires exactly two known raceOrbs.");
+    const raceTeams = normalizeExportRaceTeams(options);
+    const raceOrbs = [...new Set(raceTeams.flat())];
+    if (raceOrbs.length < 2 || raceOrbs.some((id) => !ORB_RACERS[id])) {
+      throw new Error("Orb Race export requires at least two known raceOrbs.");
     }
     const longform = format === "race-landscape" || format === "longform" || options.contentType === "longform";
     const raceLayerStrengths = Array.isArray(options.raceLayerStrengths) && options.raceLayerStrengths.length
@@ -70,12 +71,12 @@ export async function exportSocialVideo(options = {}) {
       : longform
         ? [...ORB_RACE_LONGFORM_DEFAULT_LAYERS]
         : [...ORB_RACE_DEFAULT_LAYERS];
-    orbNames = raceOrbs.map((id) => ORB_RACERS[id].name);
+    orbNames = raceTeams.map((team) => team.map((id) => ORB_RACERS[id].name).join(" + "));
     settings = {
-      count: 2,
+      count: raceOrbs.length,
       gameplayMode,
       raceOrbs,
-      raceTeams: raceOrbs.map((id) => [id]),
+      raceTeams,
       raceLayerCount: raceLayerStrengths.length,
       raceLayerStrengths,
       raceShowTargetMessage: true,
@@ -91,6 +92,7 @@ export async function exportSocialVideo(options = {}) {
         format: longform ? "race-landscape" : "portrait",
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
+        minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
       },
     };
   } else {
@@ -109,6 +111,7 @@ export async function exportSocialVideo(options = {}) {
         format,
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
+        minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
       },
     };
   }
@@ -134,6 +137,11 @@ export async function exportSocialVideo(options = {}) {
     const timeoutMs = Number(process.env.BATTLE_EXPORT_TIMEOUT_MS) || 420_000;
     await page.waitForExpression("window.__ORB_FOUNDRY__.getState().recorder === 'preview'", timeoutMs);
     const state = await page.evaluate("window.__ORB_FOUNDRY__.getState()", { returnByValue: true });
+    const minimumDurationSeconds = Number(settings.social.minimumDurationSeconds) || 0;
+    const recordedDuration = Number(state.recordingResult?.duration) || 0;
+    if (minimumDurationSeconds > 0 && recordedDuration + 0.05 < minimumDurationSeconds) {
+      throw new Error(`Recorded video was ${recordedDuration.toFixed(2)}s; minimum is ${minimumDurationSeconds}s.`);
+    }
     const beforeDownload = Date.now();
     await page.evaluate("document.querySelector('#socialDownloadButton').click()", { userGesture: true });
     const videoPath = await waitForDownloadedVideo(outputDir, beforeDownload, 60_000);
@@ -145,6 +153,9 @@ export async function exportSocialVideo(options = {}) {
       seed,
       classes: selectedClasses,
       raceOrbs: gameplayMode === "orb-race" ? settings.raceOrbs : [],
+      raceTeams: gameplayMode === "orb-race" ? settings.raceTeams : [],
+      raceLayerStrengths: gameplayMode === "orb-race" ? settings.raceLayerStrengths : [],
+      minimumDurationSeconds: Number(settings.social.minimumDurationSeconds) || 0,
       orbNames,
       title: options.title || `${orbNames[0]} VS ${orbNames[1]}`,
       description: caption,
@@ -162,6 +173,19 @@ export async function exportSocialVideo(options = {}) {
     await server.close();
     await rm(tempProfile, { recursive: true, force: true });
   }
+}
+
+function normalizeExportRaceTeams(options) {
+  const source = Array.isArray(options.raceTeams) && options.raceTeams.length
+    ? options.raceTeams
+    : Array.isArray(options.raceOrbs) ? options.raceOrbs.map((id) => [id]) : [];
+  const teams = source.slice(0, 2).map((team) => (
+    [...new Set((Array.isArray(team) ? team : [team]).map((id) => String(id)).filter((id) => id && ORB_RACERS[id]))]
+  ));
+  if (teams.length !== 2 || teams.some((team) => team.length === 0)) {
+    throw new Error("Orb Race export requires two non-empty race teams.");
+  }
+  return teams;
 }
 
 function startStaticServer(root) {

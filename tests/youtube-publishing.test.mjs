@@ -6,12 +6,14 @@ import {
     loadYouTubePublishingConfig,
     localDateKey,
     localScheduleSlotsAt,
+    scheduledPublishAt,
     youtubeDescription,
     youtubeMetadata,
     youtubeTitle,
 } from "../scripts/youtube-publishing.mjs";
 import {
     buildYouTubePublishPlan,
+    buildDailyYouTubePlans,
     publishDueYouTubeSlots,
     selectYouTubeMatchup,
 } from "../scripts/youtube-publish.mjs";
@@ -50,6 +52,8 @@ test("schedule matching follows Pacific time across standard and daylight time",
     assert.deepEqual(localScheduleSlotsAt(noonPst, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
     assert.deepEqual(localScheduleSlotsAt(noonPdt, config).map(({ id }) => id), ["noon-longform", "noon-short"]);
     assert.deepEqual(localScheduleSlotsAt(afternoonPdt, config).map(({ id }) => id), ["afternoon-short"]);
+    assert.equal(scheduledPublishAt("2026-01-15", "12:00"), "2026-01-15T20:00:00.000Z");
+    assert.equal(scheduledPublishAt("2026-07-15", "15:00"), "2026-07-15T22:00:00.000Z");
 });
 
 test("due slots keep both Pacific noon entries across daylight-saving time", async () => {
@@ -72,9 +76,28 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.deepEqual(first, second);
     assert.ok(config.videoReady.orbRace.orbs.includes(first.leftId));
     assert.ok(config.videoReady.orbRace.orbs.includes(first.rightId));
-    assert.equal(plan.title, `${first.left} VS ${first.right}`);
+    assert.equal(plan.title, `${plan.left} VS ${plan.right}`);
     assert.equal(plan.description, "#physics #shorts #simulation #satisfying");
     assert.equal(plan.runTag, "of-20260919-noon-short");
+    assert.ok(plan.battleQuality.accepted);
+    assert.equal(plan.minimumDurationSeconds, 25);
+    assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
+    assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
+});
+
+test("daily plans keep orbs out for two days and support multi-orb battles", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const current = buildDailyYouTubePlans({ dateKey: "2026-09-20", config });
+    const previous = buildDailyYouTubePlans({ dateKey: "2026-09-19", config });
+    const twoDaysAgo = buildDailyYouTubePlans({ dateKey: "2026-09-18", config });
+    const currentIds = current.flatMap(({ matchup }) => matchup.raceOrbs);
+    const previousIds = new Set(previous.flatMap(({ matchup }) => matchup.raceOrbs));
+    const twoDaysAgoIds = new Set(twoDaysAgo.flatMap(({ matchup }) => matchup.raceOrbs));
+    assert.equal(new Set(currentIds).size, currentIds.length);
+    assert.ok(currentIds.every((id) => !previousIds.has(id) && !twoDaysAgoIds.has(id)));
+    assert.ok(current.some(({ matchup }) => matchup.raceTeams.some((team) => team.length > 1)));
+    assert.equal(config.delivery.visibility, "private");
+    assert.equal(config.delivery.scheduleOnYouTube, true);
 });
 
 test("dry-run publishing plans both noon uploads without credentials or media side effects", async () => {

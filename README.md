@@ -131,7 +131,7 @@ The approved daily YouTube schedule and metadata contract lives in
 activation requirements documented in
 [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md). The publisher is
 designed for a hosted runner so it can operate while the development computer
-is offline. Its video-ready allowlist must be populated before public uploads
+is offline. Its video-ready allowlist must be populated before scheduled uploads
 can be enabled.
 
 Validate the current contract with:
@@ -146,10 +146,15 @@ Run a safe local publishing plan without rendering or uploading:
 npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
 ```
 
-The hosted workflow in `.github/workflows/youtube-publishing.yml` renders and
-uploads the scheduled Orb Race videos once the three YouTube OAuth Actions
-secrets documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md)
-are configured.
+The hosted workflow in `.github/workflows/youtube-publishing.yml` renders a
+morning batch, uploads the videos privately with YouTube publish times, and
+lets YouTube release them at noon and 3 PM Pacific once the three YouTube OAuth
+Actions secrets documented in
+[`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md) are configured.
+
+Each batch enforces the quality contract: two-day orb cooldowns, optional
+multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
+matchups, 500-HP minimum layers, and ascending layer health for short-form.
 
 ## Test
 

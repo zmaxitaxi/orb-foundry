@@ -48,7 +48,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20260811-classic-health-reactor-batman-fairy-zeus-frost2-orb-race-tournament-ui1-format-save1";
+} from "./config.js?v=20260920-youtube-quality1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -174,6 +174,7 @@ let setupOrigin = "game";
 let socialLastEventId = 0;
 let socialPresentation = createSocialPresentationState();
 let socialRecordingResult = null;
+let socialMinimumRecordingUntil = 0;
 let raceLayerRenderTimer = 0;
 
 function applyTheme(themeId) {
@@ -2244,6 +2245,7 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
     elements.socialRecordingDetail.textContent =
       "Canvas recording is unavailable in this browser. The Social Battle remains fully playable.";
     elements.socialStopButton.disabled = true;
+    socialMinimumRecordingUntil = 0;
     socialPresentation.started = true;
     return;
   }
@@ -2309,6 +2311,8 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
     } else {
       await socialRecorder.start({ fps: settings.social.fps });
     }
+    socialMinimumRecordingUntil = performance.now()
+      + Math.max(0, Number(settings.social.minimumDurationSeconds) || 0) * 1000;
     socialPresentation.started = true;
   } catch (error) {
     elements.socialRecordingStatus.textContent = "RECORDING UNAVAILABLE";
@@ -2572,6 +2576,7 @@ function startSimulation({ tournamentTransition: transition = tournamentTransiti
   paused = false;
   accumulator = 0;
   socialLastEventId = 0;
+  socialMinimumRecordingUntil = 0;
   if (!continuousTransition) socialRecordingResult = null;
   socialPresentation = createSocialPresentationState(
     continuousTransition ? false : settings.features.introCards,
@@ -2692,7 +2697,13 @@ function finishBattle() {
     const tailMs = sim.raceTournament
       ? Math.max(MATCH_FINALE_RECORDING_TAIL_MS, tournamentConclusionRecordingTailMs())
       : MATCH_FINALE_RECORDING_TAIL_MS;
-    socialPresentation.winnerUntil = performance.now() + tailMs;
+    socialPresentation.winnerUntil = Math.max(
+      performance.now() + tailMs,
+      socialMinimumRecordingUntil,
+    );
+  }
+  if (socialMinimumRecordingUntil > socialPresentation.winnerUntil) {
+    socialPresentation.winnerUntil = socialMinimumRecordingUntil;
   }
   if (performance.now() >= socialPresentation.winnerUntil) {
     const tournament = sim.raceTournament;

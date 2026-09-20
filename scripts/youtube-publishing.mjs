@@ -15,6 +15,7 @@ export const YOUTUBE_DESCRIPTION_HASHTAGS = Object.freeze([
     "#satisfying",
 ]);
 export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
+export const YOUTUBE_MINIMUM_LAYER_HEALTH = 500;
 
 export async function loadYouTubePublishingConfig(configPath = YOUTUBE_CONFIG_PATH) {
     const config = JSON.parse(await readFile(configPath, "utf8"));
@@ -30,8 +31,11 @@ export function validateYouTubePublishingConfig(config) {
     if (!config.delivery || !["daily-batch", "weekly-scheduled-dump"].includes(config.delivery.mode)) {
         throw new Error("YouTube publishing delivery.mode must be daily-batch or weekly-scheduled-dump.");
     }
-    if (config.delivery.visibility !== "public") {
-        throw new Error("YouTube publishing visibility must remain public for the approved no-review video loop.");
+    if (config.delivery.visibility !== "private") {
+        throw new Error("YouTube publishing visibility must be private so YouTube can schedule each upload safely.");
+    }
+    if (config.delivery.scheduleOnYouTube !== true) {
+        throw new Error("YouTube publishing must use YouTube scheduled publishing.");
     }
     if (config.delivery.requireApproval !== false) {
         throw new Error("YouTube publishing requireApproval must be false for the approved no-review video loop.");
@@ -61,9 +65,67 @@ export function validateYouTubePublishingConfig(config) {
             throw new Error(`Invalid localTime for YouTube slot ${slot.id}.`);
         }
     }
+    validateYouTubeQuality(config.quality);
     validateVideoReadySection(config.videoReady?.orbRace, "orbRace", ORB_RACER_IDS);
     validateVideoReadySection(config.videoReady?.orbFoundry, "orbFoundry", CLASSIC_ORB_IDS);
     return config;
+}
+
+function validateYouTubeQuality(quality) {
+    if (!quality || typeof quality !== "object") {
+        throw new Error("YouTube quality requirements must be configured.");
+    }
+    if (Math.floor(Number(quality.orbCooldownDays)) < 2) {
+        throw new Error("YouTube orbCooldownDays must be at least two days.");
+    }
+    const minimumLayerHealth = Number(quality.minimumLayerHealth);
+    if (!Number.isInteger(minimumLayerHealth) || minimumLayerHealth < YOUTUBE_MINIMUM_LAYER_HEALTH) {
+        throw new Error(`YouTube minimumLayerHealth must be at least ${YOUTUBE_MINIMUM_LAYER_HEALTH}.`);
+    }
+    const durationSeconds = quality.minimumDurationSeconds;
+    if (Math.floor(Number(durationSeconds?.short)) < 25 || Math.floor(Number(durationSeconds?.longform)) < 60) {
+        throw new Error("YouTube minimum durations must be at least 25 seconds for Shorts and 60 seconds for long-form.");
+    }
+    for (const contentType of ["short", "longform"]) {
+        const layers = quality.layerStrengths?.[contentType];
+        if (!Array.isArray(layers) || layers.length < 2) {
+            throw new Error(`YouTube ${contentType} layerStrengths must contain at least two layers.`);
+        }
+        let previous = 0;
+        for (const value of layers) {
+            const health = Number(value);
+            if (!Number.isInteger(health) || health < minimumLayerHealth) {
+                throw new Error(`YouTube ${contentType} layer health must be an integer of at least ${minimumLayerHealth}.`);
+            }
+            if (health < previous) {
+                throw new Error(`YouTube ${contentType} layer health must be ascending.`);
+            }
+            previous = health;
+        }
+    }
+    const closeBattle = quality.closeBattle;
+    if (!closeBattle || closeBattle.enabled !== true) {
+        throw new Error("YouTube closeBattle quality gating must be enabled.");
+    }
+    if (!(Number(closeBattle.maxProgressMargin) > 0) || !(Number(closeBattle.maxLayerLead) >= 0)) {
+        throw new Error("YouTube closeBattle thresholds must be positive.");
+    }
+    if (!(Number(quality.strongerTeamLayerScaleMax) >= 1)) {
+        throw new Error("YouTube strongerTeamLayerScaleMax must be at least 1.");
+    }
+    if (!Array.isArray(quality.battleFormats) || quality.battleFormats.length === 0) {
+        throw new Error("YouTube battleFormats must contain at least one format.");
+    }
+    for (const format of quality.battleFormats) {
+        if (!format || typeof format.id !== "string" || !format.id.trim()) {
+            throw new Error("YouTube battle format IDs must be non-empty strings.");
+        }
+        if (!Array.isArray(format.teamSizes) || format.teamSizes.length !== 2
+            || format.teamSizes.some((size) => !Number.isInteger(Number(size)) || Number(size) < 1)) {
+            throw new Error(`YouTube battle format ${format.id} must define two positive team sizes.`);
+        }
+        if (!(Number(format.weight) > 0)) throw new Error(`YouTube battle format ${format.id} must have a positive weight.`);
+    }
 }
 
 function validateVideoReadySection(section, label, allowedIds) {
@@ -130,6 +192,19 @@ export function dueYouTubeSlotsAt(
     });
 }
 
+export function scheduledPublishAt(dateKey, localTime, timeZone = YOUTUBE_TIME_ZONE) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey)) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(localTime))) {
+        throw new Error("YouTube scheduled publishing requires a valid local date and HH:MM time.");
+    }
+    const [year, month, day] = String(dateKey).split("-").map(Number);
+    const [hour, minute] = String(localTime).split(":").map(Number);
+    const utcGuess = Date.UTC(year, month - 1, day, hour, minute);
+    const firstOffset = timeZoneOffsetMinutes(new Date(utcGuess), timeZone);
+    const firstInstant = new Date(utcGuess - firstOffset * 60_000);
+    const correctedOffset = timeZoneOffsetMinutes(firstInstant, timeZone);
+    return new Date(utcGuess - correctedOffset * 60_000).toISOString();
+}
+
 export function youtubeRunTag(dateKey, slotId) {
     const safeDate = String(dateKey || "").replace(/[^0-9-]/g, "");
     const safeSlot = String(slotId || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
@@ -144,7 +219,7 @@ export function localDateKey(date, timeZone = YOUTUBE_TIME_ZONE) {
     return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function localDateTimeParts(date, timeZone) {
+export function localDateTimeParts(date, timeZone) {
     const values = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
         timeZone,
         hour12: false,
@@ -161,6 +236,19 @@ function localDateTimeParts(date, timeZone) {
         hour: values.hour === "24" ? "00" : values.hour,
         minute: values.minute,
     };
+}
+
+function timeZoneOffsetMinutes(date, timeZone) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        timeZoneName: "shortOffset",
+    }).formatToParts(date).filter(({ type }) => type !== "literal").map(({ type, value }) => [type, value]));
+    const offset = parts.timeZoneName || "GMT";
+    if (offset === "GMT" || offset === "UTC") return 0;
+    const match = offset.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+    if (!match) throw new Error(`Unable to determine offset for ${timeZone}.`);
+    const minutes = Number(match[2]) * 60 + Number(match[3] || 0);
+    return match[1] === "-" ? -minutes : minutes;
 }
 
 function titlePart(value, label) {
