@@ -47,6 +47,7 @@ jobs:
       REPORT_PATH: ${{ runner.temp }}/weekly-self-improvement-report.md
       CODEX_MODEL: ${{ vars.CODEX_MODEL }}
       CODEX_REASONING_EFFORT: ${{ vars.CODEX_REASONING_EFFORT }}
+      PR_REVIEWER: ${{ vars.PR_REVIEWER || github.repository_owner }}
     steps:
       - name: Check out repository without write credentials
         uses: actions/checkout@v5
@@ -172,9 +173,11 @@ jobs:
           printf '%s\n' '- `npm test`' >> "$pull_request_body"
           printf '%s\n' '- JavaScript syntax checks' >> "$pull_request_body"
           printf '%s\n' '- `npm run qa:browser-smoke`' >> "$pull_request_body"
+          printf '%s\n' "- Review requested from @${PR_REVIEWER}" >> "$pull_request_body"
 
           gh pr create \
             --base main \
             --head "$BRANCH_NAME" \
             --title "Weekly Orb Foundry improvement" \
+            --reviewer "$PR_REVIEWER" \
             --body-file "$pull_request_body"

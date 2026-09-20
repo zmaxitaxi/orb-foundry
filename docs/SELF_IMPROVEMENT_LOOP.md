@@ -46,6 +46,13 @@ agent. Optional repository variables are supported:
 - `CODEX_MODEL` — model override; leave unset to use the action default.
 - `CODEX_REASONING_EFFORT` — reasoning-effort override; leave unset to use the
   action default.
+- `PR_REVIEWER` — GitHub username to request for review; defaults to the
+  repository owner (`zmaxitaxi` in this repository).
+
+The workflow uses GitHub's native review-request notification rather than
+storing a separate email-service credential. Enable email notifications for
+review requests in your GitHub notification settings so the requested-reviewer
+message reaches your inbox.
 
 Before relying on unattended PRs, protect `main` in GitHub so changes require
 pull-request review and the `Orb Foundry CI / Tests and browser smoke` check.
