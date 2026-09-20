@@ -6,6 +6,11 @@ import { dirname, extname, join, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
+import {
+  ORB_RACERS,
+  ORB_RACE_DEFAULT_LAYERS,
+  ORB_RACE_LONGFORM_DEFAULT_LAYERS,
+} from "../src/orb-race.js";
 import { CLASS_DEFS, selectFighterClasses } from "../src/simulation.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,30 +31,89 @@ const MIME_TYPES = {
 };
 
 export async function exportRandomBattle(options = {}) {
+  const classes = options.classes || Object.keys(CLASS_DEFS);
+  const seed = Number(options.seed || process.env.BATTLE_SEED) || Math.floor(Math.random() * 999_998) + 1;
+  const selectedClasses = options.selectedClasses || selectFighterClasses(classes, 2, seed);
+  return exportSocialVideo({
+    ...options,
+    gameplayMode: "classic",
+    classes,
+    selectedClasses,
+    seed,
+  });
+}
+
+export async function exportSocialVideo(options = {}) {
   const outRoot = resolve(options.outputDir || process.env.BATTLE_OUTPUT_DIR || DEFAULT_OUTPUT_DIR);
-  const day = new Date().toISOString().slice(0, 10);
-  const outputDir = join(outRoot, day);
+  const day = options.outputDateKey || new Date().toISOString().slice(0, 10);
+  const outputDir = resolve(
+    options.outputDirectory || join(outRoot, day, options.outputSubdirectory || ""),
+  );
   await mkdir(outputDir, { recursive: true });
 
-  const classes = Object.keys(CLASS_DEFS);
   const seed = Number(options.seed || process.env.BATTLE_SEED) || Math.floor(Math.random() * 999_998) + 1;
-  const selectedClasses = selectFighterClasses(classes, 2, seed);
-  const orbNames = selectedClasses.map((type) => CLASS_DEFS[type].name);
-  const caption = `${orbNames[0]} vs ${orbNames[1]}\n\n${HASHTAGS}`;
-  const settings = {
-    count: 2,
-    classes,
-    seed,
-    theme: process.env.BATTLE_THEME || "cream-foundry",
-    hazardPreset: process.env.BATTLE_HAZARDS || "none",
-    arenaModifier: process.env.BATTLE_ARENA_MODIFIER || "standard",
-    social: {
-      enabled: true,
-      format: process.env.BATTLE_FORMAT || "portrait",
-      fps: Number(process.env.BATTLE_FPS) === 60 ? 60 : 30,
-      highlightMode: process.env.BATTLE_HIGHLIGHTS !== "false",
-    },
-  };
+  const gameplayMode = options.gameplayMode === "orb-race" ? "orb-race" : "classic";
+  const format = options.format || process.env.BATTLE_FORMAT || "portrait";
+  const fps = Number(options.fps || process.env.BATTLE_FPS) === 60 ? 60 : 30;
+  let orbNames;
+  let selectedClasses = options.selectedClasses || [];
+  let settings;
+
+  if (gameplayMode === "orb-race") {
+    const raceOrbs = Array.isArray(options.raceOrbs) ? [...new Set(options.raceOrbs)] : [];
+    if (raceOrbs.length !== 2 || raceOrbs.some((id) => !ORB_RACERS[id])) {
+      throw new Error("Orb Race export requires exactly two known raceOrbs.");
+    }
+    const longform = format === "race-landscape" || format === "longform" || options.contentType === "longform";
+    const raceLayerStrengths = Array.isArray(options.raceLayerStrengths) && options.raceLayerStrengths.length
+      ? [...options.raceLayerStrengths]
+      : longform
+        ? [...ORB_RACE_LONGFORM_DEFAULT_LAYERS]
+        : [...ORB_RACE_DEFAULT_LAYERS];
+    orbNames = raceOrbs.map((id) => ORB_RACERS[id].name);
+    settings = {
+      count: 2,
+      gameplayMode,
+      raceOrbs,
+      raceTeams: raceOrbs.map((id) => [id]),
+      raceLayerCount: raceLayerStrengths.length,
+      raceLayerStrengths,
+      raceShowTargetMessage: true,
+      raceTargetAnnouncement: true,
+      raceMatchupAnnouncement: true,
+      raceScalingDamage: true,
+      seed,
+      theme: options.theme || process.env.BATTLE_THEME || "cream-foundry",
+      hazardPreset: "none",
+      arenaModifier: options.arenaModifier || process.env.BATTLE_ARENA_MODIFIER || "standard",
+      social: {
+        enabled: true,
+        format: longform ? "race-landscape" : "portrait",
+        fps,
+        highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
+      },
+    };
+  } else {
+    const classes = options.classes || Object.keys(CLASS_DEFS);
+    selectedClasses = options.selectedClasses || selectFighterClasses(classes, 2, seed);
+    orbNames = selectedClasses.map((type) => CLASS_DEFS[type].name);
+    settings = {
+      count: 2,
+      classes,
+      seed,
+      theme: options.theme || process.env.BATTLE_THEME || "cream-foundry",
+      hazardPreset: options.hazardPreset || process.env.BATTLE_HAZARDS || "none",
+      arenaModifier: options.arenaModifier || process.env.BATTLE_ARENA_MODIFIER || "standard",
+      social: {
+        enabled: true,
+        format,
+        fps,
+        highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
+      },
+    };
+  }
+
+  const caption = options.description || `${orbNames[0]} VS ${orbNames[1]}\n\n${HASHTAGS}`;
 
   const server = await startStaticServer(ROOT);
   const tempProfile = await mkdtemp(join(tmpdir(), "orb-foundry-chrome-"));
@@ -72,13 +136,19 @@ export async function exportRandomBattle(options = {}) {
     const state = await page.evaluate("window.__ORB_FOUNDRY__.getState()", { returnByValue: true });
     const beforeDownload = Date.now();
     await page.evaluate("document.querySelector('#socialDownloadButton').click()", { userGesture: true });
-    const videoPath = await waitForDownloadedWebm(outputDir, beforeDownload, 60_000);
+    const videoPath = await waitForDownloadedVideo(outputDir, beforeDownload, 60_000);
 
     const metadata = {
       createdAt: new Date().toISOString(),
+      contentType: options.contentType || (format === "race-landscape" ? "longform" : "short"),
+      gameplayMode,
       seed,
       classes: selectedClasses,
+      raceOrbs: gameplayMode === "orb-race" ? settings.raceOrbs : [],
       orbNames,
+      title: options.title || `${orbNames[0]} VS ${orbNames[1]}`,
+      description: caption,
+      runTag: options.runTag || null,
       caption,
       videoPath,
       state,
@@ -128,9 +198,14 @@ function startStaticServer(root) {
 }
 
 function launchChrome({ port, userDataDir, url }) {
-  const executablePath = process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-  if (!existsSync(executablePath)) {
-    throw new Error(`Chrome was not found at ${executablePath}. Set CHROME_PATH to a Chromium-compatible browser.`);
+  const executablePath = process.env.CHROME_PATH || [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+  ].find((candidate) => existsSync(candidate));
+  if (!executablePath || !existsSync(executablePath)) {
+    throw new Error("Chrome was not found. Set CHROME_PATH to a Chromium-compatible browser.");
   }
   const child = spawn(executablePath, [
     "--headless=new",
@@ -213,13 +288,13 @@ class CdpPage {
   }
 }
 
-async function waitForDownloadedWebm(outputDir, afterMs, timeoutMs) {
+async function waitForDownloadedVideo(outputDir, afterMs, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const files = await readdir(outputDir);
     const candidates = [];
     for (const file of files) {
-      if (!file.endsWith(".webm")) continue;
+      if (!/\.(webm|mp4)$/i.test(file)) continue;
       const filePath = join(outputDir, file);
       const fileStat = await stat(filePath);
       if (fileStat.mtimeMs >= afterMs - 1000 && fileStat.size > 0) candidates.push({ filePath, mtimeMs: fileStat.mtimeMs });
@@ -230,15 +305,24 @@ async function waitForDownloadedWebm(outputDir, afterMs, timeoutMs) {
     }
     await delay(500);
   }
-  throw new Error(`Timed out waiting for WebM download in ${outputDir}`);
+  throw new Error(`Timed out waiting for a video download in ${outputDir}`);
 }
 
 async function pageSafeClose(chrome) {
-  try {
-    chrome.child.kill("SIGTERM");
-  } catch {
-    // The browser may already have exited.
-  }
+  if (!chrome?.child || chrome.child.exitCode !== null) return;
+  await new Promise((resolvePromise) => {
+    const timeout = setTimeout(resolvePromise, 5_000);
+    chrome.child.once("close", () => {
+      clearTimeout(timeout);
+      resolvePromise();
+    });
+    try {
+      chrome.child.kill("SIGTERM");
+    } catch {
+      clearTimeout(timeout);
+      resolvePromise();
+    }
+  });
 }
 
 async function fetchJson(url) {

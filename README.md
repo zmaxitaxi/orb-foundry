@@ -140,6 +140,17 @@ Validate the current contract with:
 npm run youtube:validate
 ```
 
+Run a safe local publishing plan without rendering or uploading:
+
+```bash
+npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
+```
+
+The hosted workflow in `.github/workflows/youtube-publishing.yml` renders and
+uploads the scheduled Orb Race videos once the three YouTube OAuth Actions
+secrets documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md)
+are configured.
+
 ## Test
 
 ```bash

@@ -2,6 +2,8 @@
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CLASSIC_ORB_IDS } from "../src/classic-orbs.js";
+import { ORB_RACER_IDS } from "../src/orb-race.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const YOUTUBE_CONFIG_PATH = resolve(ROOT, "config", "youtube-publishing.json");
@@ -12,6 +14,7 @@ export const YOUTUBE_DESCRIPTION_HASHTAGS = Object.freeze([
     "#simulation",
     "#satisfying",
 ]);
+export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
 
 export async function loadYouTubePublishingConfig(configPath = YOUTUBE_CONFIG_PATH) {
     const config = JSON.parse(await readFile(configPath, "utf8"));
@@ -58,17 +61,21 @@ export function validateYouTubePublishingConfig(config) {
             throw new Error(`Invalid localTime for YouTube slot ${slot.id}.`);
         }
     }
-    validateVideoReadySection(config.videoReady?.orbRace, "orbRace");
-    validateVideoReadySection(config.videoReady?.orbFoundry, "orbFoundry");
+    validateVideoReadySection(config.videoReady?.orbRace, "orbRace", ORB_RACER_IDS);
+    validateVideoReadySection(config.videoReady?.orbFoundry, "orbFoundry", CLASSIC_ORB_IDS);
     return config;
 }
 
-function validateVideoReadySection(section, label) {
+function validateVideoReadySection(section, label, allowedIds) {
     if (!section || typeof section !== "object") throw new Error(`YouTube videoReady.${label} must be an object.`);
     for (const key of ["orbs", "groups"]) {
         if (!Array.isArray(section[key]) || section[key].some((value) => typeof value !== "string" || !value.trim())) {
             throw new Error(`YouTube videoReady.${label}.${key} must contain non-empty strings.`);
         }
+    }
+    if (section.orbs.some((value) => !allowedIds.includes(value))) {
+        const invalid = section.orbs.find((value) => !allowedIds.includes(value));
+        throw new Error(`YouTube videoReady.${label}.orbs contains unknown stable ID: ${invalid}.`);
     }
 }
 
@@ -95,6 +102,41 @@ export function localScheduleSlotsAt(date, config) {
     const localParts = localDateTimeParts(date, config.timeZone);
     const localTime = `${localParts.hour}:${localParts.minute}`;
     return config.schedule.filter((slot) => slot.localTime === localTime);
+}
+
+/**
+ * Return the daily slots that are currently due in Pacific time. GitHub
+ * Actions schedules are UTC and can be delayed, so the publisher accepts a
+ * bounded late window instead of requiring an exact minute match. An explicit
+ * slotId is used by workflow_dispatch and bypasses the time window.
+ */
+export function dueYouTubeSlotsAt(
+    date,
+    config,
+    { toleranceMinutes = YOUTUBE_DUE_WINDOW_MINUTES, slotId = null } = {},
+) {
+    validateYouTubePublishingConfig(config);
+    if (slotId) {
+        const slot = config.schedule.find((candidate) => candidate.id === slotId);
+        return slot ? [slot] : [];
+    }
+    const localParts = localDateTimeParts(date, config.timeZone);
+    const currentMinutes = Number(localParts.hour) * 60 + Number(localParts.minute);
+    const safeTolerance = Math.max(0, Math.floor(Number(toleranceMinutes) || 0));
+    return config.schedule.filter((slot) => {
+        const [hour, minute] = slot.localTime.split(":").map(Number);
+        const elapsed = currentMinutes - (hour * 60 + minute);
+        return elapsed >= 0 && elapsed <= safeTolerance;
+    });
+}
+
+export function youtubeRunTag(dateKey, slotId) {
+    const safeDate = String(dateKey || "").replace(/[^0-9-]/g, "");
+    const safeSlot = String(slotId || "").replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate) || !safeSlot) {
+        throw new Error("YouTube run tags require a valid local date and slot ID.");
+    }
+    return `of-${safeDate.replaceAll("-", "")}-${safeSlot}`;
 }
 
 export function localDateKey(date, timeZone = YOUTUBE_TIME_ZONE) {
