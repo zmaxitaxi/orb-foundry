@@ -127,7 +127,7 @@ export async function exportSocialVideo(options = {}) {
   });
 
   try {
-    const page = await connectToPage(chrome.port);
+    const page = await connectToPage(chrome);
     await page.send("Page.enable");
     await page.send("Runtime.enable");
     await page.send("Page.setDownloadBehavior", { behavior: "allow", downloadPath: outputDir });
@@ -231,23 +231,36 @@ function launchChrome({ port, userDataDir, url }) {
   if (!executablePath || !existsSync(executablePath)) {
     throw new Error("Chrome was not found. Set CHROME_PATH to a Chromium-compatible browser.");
   }
-  const child = spawn(executablePath, [
+  const args = [
     "--headless=new",
     "--disable-gpu",
+    "--disable-dev-shm-usage",
     "--no-first-run",
     "--no-default-browser-check",
+    "--remote-debugging-address=127.0.0.1",
     "--autoplay-policy=no-user-gesture-required",
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${userDataDir}`,
     url,
-  ], { stdio: ["ignore", "ignore", "pipe"] });
+  ];
+  if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
+    args.push("--no-sandbox", "--disable-setuid-sandbox");
+  }
+  const child = spawn(executablePath, args, { stdio: ["ignore", "ignore", "pipe"] });
+  const stderr = [];
+  child.stderr.on("data", (chunk) => stderr.push(String(chunk)));
   child.stderr.setEncoding("utf8");
-  return { child, port };
+  return { child, port, stderr };
 }
 
-async function connectToPage(port) {
+async function connectToPage(chrome) {
+  const { child, port, stderr } = chrome;
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      const details = stderr.join("").trim();
+      throw new Error(`Chrome exited before remote debugging was ready (code ${child.exitCode}).${details ? ` ${details}` : ""}`);
+    }
     try {
       const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
       const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
