@@ -425,7 +425,7 @@ export class YouTubeApiClient {
             method: "POST",
             headers: {
                 ...this.authHeaders(),
-                "content-type": "application/json; charset=UTF-8",
+                "content-type": "application/json",
                 "x-upload-content-type": "video/mp4",
                 "x-upload-content-length": String(fileInfo.size),
             },

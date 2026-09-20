@@ -171,7 +171,7 @@ export async function exportSocialVideo(options = {}) {
   } finally {
     await pageSafeClose(chrome);
     await server.close();
-    await rm(tempProfile, { recursive: true, force: true });
+    await rm(tempProfile, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
   }
 }
 
