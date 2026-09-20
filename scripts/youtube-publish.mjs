@@ -421,7 +421,7 @@ export class YouTubeApiClient {
     async uploadVideo({ filePath, title, description, tags, privacyStatus = "private", publishAt = null }) {
         const file = await readFile(filePath);
         const fileInfo = await stat(filePath);
-        const initResponse = await this.fetchWithRetry(YOUTUBE_UPLOAD_URL + "?part=snippet,status", {
+        const initResponse = await this.fetchWithRetry(YOUTUBE_UPLOAD_URL + "?uploadType=resumable&part=snippet,status", {
             method: "POST",
             headers: {
                 ...this.authHeaders(),
