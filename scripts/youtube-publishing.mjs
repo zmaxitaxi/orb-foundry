@@ -145,6 +145,64 @@ function validateYouTubeQuality(quality) {
     }
 }
 
+export function validateYouTubeGenerationSpec({ plan, config }) {
+    if (!plan || typeof plan !== "object") {
+        throw new Error("YouTube generation blocked: the approved plan is missing.");
+    }
+    if (!config || typeof config !== "object") {
+        throw new Error("YouTube generation blocked: the publishing config is missing.");
+    }
+    if (plan.battleQuality?.accepted !== true) {
+        throw new Error("YouTube generation blocked: the deterministic close-battle preflight did not pass.");
+    }
+    const slot = config.schedule?.find(({ id }) => id === plan.slotId);
+    if (!slot || slot.contentType !== plan.contentType) {
+        throw new Error("YouTube generation blocked: the plan content type does not match its schedule slot.");
+    }
+    const expectedDuration = Number(config.quality.minimumDurationSeconds[plan.contentType]);
+    if (Number(plan.minimumDurationSeconds) !== expectedDuration) {
+        throw new Error("YouTube generation blocked: the plan duration does not match the configured minimum.");
+    }
+
+    const allowedOrbs = new Set(config.videoReady.orbRace.orbs);
+    const raceOrbs = Array.isArray(plan.raceOrbs) ? plan.raceOrbs : [];
+    const raceTeams = Array.isArray(plan.raceTeams) ? plan.raceTeams : [];
+    if (raceTeams.length !== 2 || raceTeams.some((team) => !Array.isArray(team) || team.length < 1)) {
+        throw new Error("YouTube generation blocked: the plan must contain two non-empty orb teams.");
+    }
+    const flattenedOrbs = raceTeams.flat();
+    if (new Set(flattenedOrbs).size !== flattenedOrbs.length
+        || JSON.stringify(flattenedOrbs) !== JSON.stringify(raceOrbs)
+        || raceOrbs.some((id) => !allowedOrbs.has(id))) {
+        throw new Error("YouTube generation blocked: the plan contains repeated or non-video-ready orb IDs.");
+    }
+
+    const layers = plan.raceLayerStrengths;
+    if (!Array.isArray(layers) || layers.length < 2
+        || JSON.stringify(layers) !== JSON.stringify(plan.battleQuality.layerStrengths)) {
+        throw new Error("YouTube generation blocked: the plan layer profile is missing or inconsistent.");
+    }
+    if (plan.contentType === "short" && layers.length > Number(config.quality.maximumShortLayers)) {
+        throw new Error(`YouTube generation blocked: Shorts cannot exceed ${config.quality.maximumShortLayers} layers.`);
+    }
+    let previous = 0;
+    for (const value of layers) {
+        const health = Number(value);
+        if (!Number.isInteger(health) || health < Number(config.quality.minimumLayerHealth)) {
+            throw new Error("YouTube generation blocked: every generated layer must meet the minimum HP requirement.");
+        }
+        if (health < previous) {
+            throw new Error("YouTube generation blocked: generated layer HP must be ascending.");
+        }
+        previous = health;
+    }
+
+    if (JSON.stringify(plan.announcerRequirements) !== JSON.stringify(config.quality.announcer)) {
+        throw new Error("YouTube generation blocked: announcer requirements are not enabled on the approved plan.");
+    }
+    return true;
+}
+
 export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
     if (!exportResult || typeof exportResult !== "object") {
         throw new Error("YouTube upload blocked: the exporter returned no artifact metadata.");

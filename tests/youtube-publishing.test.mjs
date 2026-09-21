@@ -10,6 +10,7 @@ import {
     youtubeDescription,
     youtubeMetadata,
     youtubeTitle,
+    validateYouTubeGenerationSpec,
     validateYouTubeExportArtifact,
 } from "../scripts/youtube-publishing.mjs";
 import {
@@ -92,6 +93,14 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
     assert.ok(plan.raceLayerStrengths.length <= config.quality.maximumShortLayers);
+    assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
+    assert.throws(
+        () => validateYouTubeGenerationSpec({
+            plan: { ...plan, raceLayerStrengths: [750, 1000, 1500, 2000] },
+            config,
+        }),
+        /layer profile is missing or inconsistent/,
+    );
 });
 
 test("YouTube upload gate requires spoken announcer proof and the complete artifact contract", async () => {

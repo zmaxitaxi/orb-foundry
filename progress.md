@@ -4322,6 +4322,15 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
   mismatched duration, layer profile, metadata contract, run tag, or announcer
   proof stops the run.
 
+## 2026-09-20 — Preflight compliant YouTube generation
+
+- Added a generation-side contract check before the browser recorder starts:
+  the selected roster, two non-empty teams, close-battle result, duration,
+  ascending layer profile, HP floor, and announcer requirements must already
+  match the approved plan.
+- Kept the runtime artifact gate as a second safety check, so an unexpected
+  recording mismatch still stops the slot before transcode or upload.
+
 ## 2026-09-20 — Reliable scheduled YouTube quality pipeline
 
 - Changed the YouTube workflow to render a morning batch, upload videos privately, and set YouTube `publishAt` timestamps for noon and 3:00 PM Pacific. This avoids missing a slot when GitHub Actions starts late.

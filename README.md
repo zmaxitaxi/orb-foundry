@@ -164,7 +164,9 @@ for genuinely split/team presentations, and specialized cues fall back to a
 generic announcer when their context or asset is unavailable. Selection is
 deterministic rather than random. The publisher now blocks an upload unless
 announcer assets were loaded and the recording proves an announcer sequence with
-at least one spoken cue.
+at least one spoken cue. Generation is preflighted from those same requirements
+before the browser recorder starts, and the final artifact is checked again;
+anything that does not fit is never uploaded.
 
 ## Test
 

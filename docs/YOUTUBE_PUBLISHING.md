@@ -76,12 +76,16 @@ before YouTube receives the video:
    only when the presentation is actually split. If a specialized cue is
    unavailable, use a valid generic spoken fallback. Procedural-only or silent
    announcer output is a hard failure.
-8. Transcode the recording to MP4, preserve the metadata and run tag, and reject
-   any artifact whose title, description, duration, layers, or announcer proof
-   no longer matches the plan.
-9. Check YouTube for the run tag before upload. Upload only as private with the
-   planned Pacific `publishAt` timestamp. Never upload after any checklist item
-   fails.
+8. Validate the complete generation spec before starting the browser recorder:
+   the selected roster, teams, close-battle result, duration, layer profile, and
+   announcer requirements must already match the contract. If preflight fails,
+   do not render or upload that slot.
+9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
+   and validate the final artifact again. Reject any artifact whose title,
+   description, duration, layers, or announcer proof no longer matches the plan.
+10. Check YouTube for the run tag before upload. Upload only as private with the
+    planned Pacific `publishAt` timestamp. Never upload after any checklist item
+    fails.
 
 ## Channel-derived roster
 

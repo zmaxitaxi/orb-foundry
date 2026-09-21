@@ -15,6 +15,7 @@ import {
     youtubeDescription,
     youtubeMetadata,
     youtubeRunTag,
+    validateYouTubeGenerationSpec,
     validateYouTubeExportArtifact,
 } from "./youtube-publishing.mjs";
 
@@ -117,7 +118,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
     const metadata = youtubeMetadata({ left: matchup.left, right: matchup.right, config });
     const runTag = youtubeRunTag(dateKey, slot.id);
     const minimumDurationSeconds = Number(config.quality.minimumDurationSeconds[slot.contentType]);
-    return {
+    const plan = {
         dateKey,
         slotId: slot.id,
         contentType: slot.contentType,
@@ -142,6 +143,8 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
         description: metadata.description,
         tags: ["physics", "shorts", "simulation", "satisfying", "orb", "orb-foundry", runTag],
     };
+    validateYouTubeGenerationSpec({ plan, config });
+    return plan;
 }
 
 function layerStrengthsFor(config, slotId) {
@@ -313,6 +316,7 @@ export async function publishDueYouTubeSlots({
                 continue;
             }
 
+            validateYouTubeGenerationSpec({ plan, config });
             const exportResult = await exportSocialVideo({
                 outputDir: outputRoot,
                 outputDirectory: resolve(outputRoot, resolvedDateKey, plan.slotId),
