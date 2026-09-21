@@ -4303,3 +4303,5 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 ## 2026-09-20 — Add manual YouTube batch recovery
 
 - Added a `batch` manual-dispatch option so a missed scheduled run can render and upload all three daily videos immediately while preserving run-tag duplicate protection.
+- Hardened hosted video export with CI-safe Chromium flags, retryable profile cleanup, consistent YouTube artifact roots, informative upload errors, and the required YouTube resumable-upload protocol.
+- Verified recovery run `35542850153` uploaded three videos successfully and scheduled them for September 21 at 12:00 PM/3:00 PM Pacific.
