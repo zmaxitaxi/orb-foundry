@@ -17,6 +17,15 @@ Orb Foundry's approved YouTube publishing contract is stored in
 - Group matchups use the group label in the title instead of expanding every orb name.
 - Supported content sources will be Orb Race and Orb Foundry, selected through the
   explicit `videoReady` allowlist.
+- Announcer coverage is required for every battle recording. A battle is not
+  video-ready if its intended announcer sequence is silent.
+- Announcer routing is deterministic and context-aware: ordinary 1v1 and other
+  non-split battles use the standard announcer sequence; split-wise announcer
+  clips are reserved for a genuinely split presentation, such as an intentional
+  left/right or team split. Mode-, matchup-, and phase-specific cues are used
+  only when their context matches, with a generic announcer fallback when a
+  specific clip is unavailable. Do not select announcers randomly or add split
+  cues to a normal battle as decoration.
 
 ## Video quality contract
 
@@ -38,6 +47,10 @@ Every unattended video must satisfy the quality contract in
 - When the estimated damage strength is very uneven, the shared layer profile is
   scaled upward (within the configured cap) so stronger matchups work through
   more HP. This is a balancing aid, not a replacement for the close-battle gate.
+- The exported recording must include the selected announcer coverage for the
+  matchup, battle phase, and outcome. If a specialized cue is missing, use its
+  valid generic fallback; never silently omit the announcer layer. Split-wise
+  audio is valid only when the presentation itself is split.
 
 ## Channel-derived roster
 

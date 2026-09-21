@@ -4292,6 +4292,15 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Added/generated valid Alex announcements for Tsar Bomb and All In One through `scripts/generate-race-announcements.mjs --new-orbs-only`; live clips are under `assets/audio/announcer/generated-race/` and preserved generated sources are under `assets/audio/source/race-announcer-generated/`. Bomb lifecycle routes use the existing Hydrogen siren/explosion/flash samples; Tsar reactor uses the black-hole impact cue and All In One activation uses the math-power cue.
 - Focused suites pass: `node --test tests/simulation.test.mjs tests/features.test.mjs tests/social.test.mjs`. Full `npm test` and Playwright browser smoke remain the final verification step for this entry.
 
+## 2026-09-20 — Document deterministic announcer routing
+
+- Documented announcer coverage as a requirement for every YouTube battle recording.
+- Defined context-aware routing: standard announcer cues for ordinary battles,
+  split-wise cues only for genuinely split/team presentations, and specialized
+  mode/matchup/phase cues only when their context matches.
+- Documented deterministic generic fallback behavior so a missing specialized
+  clip does not silently remove announcer coverage.
+
 ## 2026-09-20 — Reliable scheduled YouTube quality pipeline
 
 - Changed the YouTube workflow to render a morning batch, upload videos privately, and set YouTube `publishAt` timestamps for noon and 3:00 PM Pacific. This avoids missing a slot when GitHub Actions starts late.

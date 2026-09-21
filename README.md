@@ -156,6 +156,13 @@ Each batch enforces the quality contract: two-day orb cooldowns, optional
 multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
 matchups, 500-HP minimum layers, and ascending layer health for short-form.
 
+Every battle recording also requires announcer coverage. Cue selection uses the
+battle's semantic context—mode, matchup shape, phase, and actual split state—so
+normal battles use the standard announcer, split announcer clips are used only
+for genuinely split/team presentations, and specialized cues fall back to a
+generic announcer when their context or asset is unavailable. Selection is
+deterministic rather than random.
+
 ## Test
 
 ```bash
