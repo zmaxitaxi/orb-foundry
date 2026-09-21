@@ -93,6 +93,12 @@ export async function exportSocialVideo(options = {}) {
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
         minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
+        requireAnnouncer: options.requireAnnouncer === true,
+      },
+      features: {
+        introCards: true,
+        soundAnnouncer: true,
+        videoRecording: true,
       },
     };
   } else {
@@ -112,6 +118,12 @@ export async function exportSocialVideo(options = {}) {
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
         minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
+        requireAnnouncer: options.requireAnnouncer === true,
+      },
+      features: {
+        introCards: true,
+        soundAnnouncer: true,
+        videoRecording: true,
       },
     };
   }
@@ -142,6 +154,18 @@ export async function exportSocialVideo(options = {}) {
     if (minimumDurationSeconds > 0 && recordedDuration + 0.05 < minimumDurationSeconds) {
       throw new Error(`Recorded video was ${recordedDuration.toFixed(2)}s; minimum is ${minimumDurationSeconds}s.`);
     }
+    const announcer = state.announcer || null;
+    if (options.requireAnnouncer === true) {
+      if (announcer?.assetsReady !== true || Number(announcer.loadedCueCount) < 1) {
+        throw new Error("Required announcer assets were not ready for the exported recording.");
+      }
+      if (Number(announcer.sequences) < 1) {
+        throw new Error("The exported recording contains no announcer sequence for the battle.");
+      }
+      if (Number(announcer.spokenCueCount) < 1) {
+        throw new Error("The exported recording contains no spoken announcer cue.");
+      }
+    }
     const beforeDownload = Date.now();
     await page.evaluate("document.querySelector('#socialDownloadButton').click()", { userGesture: true });
     const videoPath = await waitForDownloadedVideo(outputDir, beforeDownload, 60_000);
@@ -161,6 +185,7 @@ export async function exportSocialVideo(options = {}) {
       description: caption,
       runTag: options.runTag || null,
       caption,
+      announcer,
       videoPath,
       state,
     };

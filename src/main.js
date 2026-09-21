@@ -9,7 +9,7 @@ import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
   raceTargetAnnouncerCueFor,
-} from "./audio.js?v=20260825-tsar-all-in-one1";
+} from "./audio.js?v=20260920-youtube-announcer-gate1";
 import { SocialBattleRenderer } from "./social-renderer.js?v=20260825-tsar-all-in-one1";
 import {
   RECORDER_STATES,
@@ -48,7 +48,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20260920-youtube-quality1";
+} from "./config.js?v=20260920-youtube-upload-gate1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -2234,10 +2234,19 @@ function socialSimulationRate(now) {
 }
 
 async function startSocialRecording({ transitionOverride = null } = {}) {
-  await Promise.race([
-    audio.unlock().catch(() => false),
-    new Promise((resolve) => setTimeout(resolve, 700)),
-  ]);
+  const requireAnnouncer = settings.social.requireAnnouncer === true;
+  const audioReady = requireAnnouncer
+    ? await audio.unlock()
+    : await Promise.race([
+      audio.unlock().catch(() => false),
+      new Promise((resolve) => setTimeout(resolve, 700)),
+    ]);
+  if (requireAnnouncer) {
+    const announcer = audio.announcerRecordingSnapshot();
+    if (!audioReady || announcer.assetsReady !== true || announcer.loadedCueCount < 1) {
+      throw new Error("Required announcer assets could not be loaded before recording.");
+    }
+  }
   socialRenderer.setFormat(settings.social.format);
   drawSocialBattle(performance.now(), false);
   if (!settings.features.videoRecording || !socialRecorder.supported()) {
@@ -3496,6 +3505,7 @@ window.__ORB_FOUNDRY__ = {
     overtime: sim.overtimeStarted,
     recorder: socialRecorder.machine.state,
     recordingResult: recordingResultSnapshot(),
+    announcer: audio.announcerRecordingSnapshot(),
     tournament: settings.gameplayMode === ORB_RACE_MODE ? {
       settings: settings.raceTournament,
       snapshot: currentTournamentSnapshot(),

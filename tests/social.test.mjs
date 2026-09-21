@@ -1690,7 +1690,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   const indexMarkup = readFileSync(new URL("../index.html", import.meta.url), "utf8");
   assert.match(
     indexMarkup,
-    /main\.js\?v=20260920-youtube-quality1/,
+    /main\.js\?v=20260920-youtube-upload-gate1/,
     "the page entry point must invalidate cached browser code",
   );
   assert.match(indexMarkup, /styles\.css\?v=20260812-orb-race-tournament-nodes2-classic-ui1/, "the setup-dialog CSS should invalidate cached styles");

@@ -1254,6 +1254,15 @@ function artistAnnouncerCueDisabled(cue) {
   return DISABLED_ANNOUNCER_CUES.has(cue);
 }
 
+function emptyAnnouncerPlayback() {
+  return {
+    sequences: 0,
+    requestedCues: [],
+    spokenCues: [],
+    fallbackCues: [],
+  };
+}
+
 function customRaceSampleRouteFor(event = {}) {
   if (["race-hacker-copy-spawn", "race-hacker-child-bounce"].includes(event.type)) {
     const childOrbId = event.copiedOrbId || event.childOrbId || event.raceOrbId;
@@ -1757,6 +1766,8 @@ export class CombatAudio {
     this.announcerBuffers = new Map();
     this.announcerFailures = [];
     this.announcerLoadPromise = null;
+    this.announcerAssetsReady = false;
+    this.announcerPlayback = emptyAnnouncerPlayback();
     this.sampleBuffers = new Map();
     this.sampleFailures = [];
     this.sampleLoadPromise = null;
@@ -1831,6 +1842,7 @@ export class CombatAudio {
     }).then(({ buffers, failures }) => {
       this.announcerBuffers = buffers;
       this.announcerFailures = failures;
+      this.announcerAssetsReady = true;
       return buffers.size;
     });
     return this.announcerLoadPromise;
@@ -1850,11 +1862,29 @@ export class CombatAudio {
     return this.sampleLoadPromise;
   }
 
+  announcerRecordingSnapshot() {
+    return {
+      assetsReady: this.announcerAssetsReady,
+      loadedCueCount: this.announcerBuffers.size,
+      failedCueCount: this.announcerFailures.length,
+      sequences: this.announcerPlayback.sequences,
+      requestedCueCount: this.announcerPlayback.requestedCues.length,
+      spokenCueCount: this.announcerPlayback.spokenCues.length,
+      fallbackCueCount: this.announcerPlayback.fallbackCues.length,
+      requestedCues: [...this.announcerPlayback.requestedCues],
+      spokenCues: this.announcerPlayback.spokenCues.map((cue) => ({ ...cue })),
+      fallbackCues: [...this.announcerPlayback.fallbackCues],
+      splitAnnouncerUsed: false,
+      presentationWasSplit: false,
+    };
+  }
+
   reset() {
     this.hydrogenSirenRequested = false;
     this.stopHydrogenSiren();
     this.lastEventId = 0;
     this.lastPlayed.clear();
+    this.announcerPlayback = emptyAnnouncerPlayback();
     this.mathPowerDuckUntil = 0;
     this.mathPowerDuckReleaseUntil = 0;
     if (this.nonAnnouncerGain && this.context) {
@@ -2115,6 +2145,7 @@ export class CombatAudio {
     if (!sequence) return false;
     const playableSequence = sequence.filter((cue) => !artistAnnouncerCueDisabled(cue));
     if (!playableSequence.length) return false;
+    this.announcerPlayback.sequences += 1;
     let delay = 0;
     let played = false;
     for (const [index, cue] of playableSequence.entries()) {
@@ -2129,12 +2160,20 @@ export class CombatAudio {
 
   playAnnouncer(cue, delay = 0) {
     if (artistAnnouncerCueDisabled(cue)) return false;
+    this.announcerPlayback.requestedCues.push(cue);
     if (!this.enabled || !this.context || this.context.state !== "running" || !this.categoriesEnabled.announcer) return false;
-    const buffer = this.announcerBuffers.get(cue) || this.announcerBuffers.get(ANNOUNCER_FALLBACKS[cue]);
+    const fallbackCue = ANNOUNCER_FALLBACKS[cue];
+    const primaryBuffer = this.announcerBuffers.get(cue);
+    const buffer = primaryBuffer || this.announcerBuffers.get(fallbackCue);
     if (!buffer) {
+      this.announcerPlayback.fallbackCues.push(cue);
       this.playAnnouncerFallback(cue, delay);
       return false;
     }
+    this.announcerPlayback.spokenCues.push({
+      requestedCue: cue,
+      resolvedCue: primaryBuffer ? cue : fallbackCue,
+    });
     const startAt = this.context.currentTime + Math.max(0, Number(delay) || 0);
     const source = this.context.createBufferSource();
     const voiceGain = this.context.createGain();

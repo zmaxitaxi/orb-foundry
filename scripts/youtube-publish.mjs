@@ -15,6 +15,7 @@ import {
     youtubeDescription,
     youtubeMetadata,
     youtubeRunTag,
+    validateYouTubeExportArtifact,
 } from "./youtube-publishing.mjs";
 
 const ROOT = resolve(new URL("..", import.meta.url).pathname);
@@ -124,6 +125,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
         scheduledPublishAt: scheduledPublishAt(dateKey, slot.localTime, config.timeZone),
         minimumDurationSeconds,
         raceLayerStrengths: [...matchup.battleQuality.layerStrengths],
+        announcerRequirements: { ...config.quality.announcer },
         runTag,
         seed: matchup.seed,
         formatId: matchup.formatId,
@@ -326,7 +328,9 @@ export async function publishDueYouTubeSlots({
                 title: plan.title,
                 description: plan.description,
                 runTag: plan.runTag,
+                requireAnnouncer: plan.announcerRequirements.required,
             });
+            validateYouTubeExportArtifact({ exportResult, plan, config });
             const transcoded = await transcodeBattleVideo(exportResult.metadataPath, {
                 latestPath: join(outputRoot, "latest.json"),
             });

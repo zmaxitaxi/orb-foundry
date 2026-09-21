@@ -40,7 +40,8 @@ Every unattended video must satisfy the quality contract in
   The browser recorder holds the winner reveal until the minimum is reached,
   and the exporter rejects a shorter recording.
 - Every layer starts at or above 500 HP. The profiles are ascending for Shorts
-  and long-form. 500 is a floor, not a required first value.
+  and long-form. Shorts use no more than three layers. 500 is a floor, not a
+  required first value.
 - Before rendering, the planner runs the deterministic matchup through the same
   Orb Race simulation and only accepts a finished battle whose progress margin
   and layer lead fit the configured close-battle thresholds.
@@ -51,6 +52,36 @@ Every unattended video must satisfy the quality contract in
   matchup, battle phase, and outcome. If a specialized cue is missing, use its
   valid generic fallback; never silently omit the announcer layer. Split-wise
   audio is valid only when the presentation itself is split.
+
+## Mandatory per-upload checklist
+
+Every upload must pass this checklist in order. A failed item stops the run
+before YouTube receives the video:
+
+1. Select only stable IDs in the `videoReady` allowlist derived from the
+   `OrbBattlegroundsSimulator` channel roster.
+2. Enforce the two-full-day orb cooldown and keep the three same-day videos
+   distinct when the roster allows it.
+3. Use either a 1v1 battle or an allowed multi-orb team battle; record every
+   stable orb ID and team label in the export metadata.
+4. Use at least 25 seconds for a Short and at least 60 seconds for long-form.
+5. Use no more than three layers for a Short. Every layer must be at least
+   500 HP, and Short layer HP must be ascending. Long-form uses its separate
+   ascending profile.
+6. Run the deterministic preflight simulation and reject the matchup unless it
+   finishes within the configured close-battle progress and layer-lead limits.
+7. Load announcer assets before recording and verify that the exported recording
+   contains an announcer sequence and at least one spoken announcer cue. Use
+   context-aware standard cues for normal battles; use split-wise announcer audio
+   only when the presentation is actually split. If a specialized cue is
+   unavailable, use a valid generic spoken fallback. Procedural-only or silent
+   announcer output is a hard failure.
+8. Transcode the recording to MP4, preserve the metadata and run tag, and reject
+   any artifact whose title, description, duration, layers, or announcer proof
+   no longer matches the plan.
+9. Check YouTube for the run tag before upload. Upload only as private with the
+   planned Pacific `publishAt` timestamp. Never upload after any checklist item
+   fails.
 
 ## Channel-derived roster
 

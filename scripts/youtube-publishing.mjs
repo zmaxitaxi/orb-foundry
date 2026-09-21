@@ -16,6 +16,7 @@ export const YOUTUBE_DESCRIPTION_HASHTAGS = Object.freeze([
 ]);
 export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
 export const YOUTUBE_MINIMUM_LAYER_HEALTH = 500;
+export const YOUTUBE_MAXIMUM_SHORT_LAYERS = 3;
 
 export async function loadYouTubePublishingConfig(configPath = YOUTUBE_CONFIG_PATH) {
     const config = JSON.parse(await readFile(configPath, "utf8"));
@@ -86,10 +87,17 @@ function validateYouTubeQuality(quality) {
     if (Math.floor(Number(durationSeconds?.short)) < 25 || Math.floor(Number(durationSeconds?.longform)) < 60) {
         throw new Error("YouTube minimum durations must be at least 25 seconds for Shorts and 60 seconds for long-form.");
     }
+    const maximumShortLayers = Number(quality.maximumShortLayers);
+    if (maximumShortLayers !== YOUTUBE_MAXIMUM_SHORT_LAYERS) {
+        throw new Error(`YouTube maximumShortLayers must be exactly ${YOUTUBE_MAXIMUM_SHORT_LAYERS}.`);
+    }
     for (const contentType of ["short", "longform"]) {
         const layers = quality.layerStrengths?.[contentType];
         if (!Array.isArray(layers) || layers.length < 2) {
             throw new Error(`YouTube ${contentType} layerStrengths must contain at least two layers.`);
+        }
+        if (contentType === "short" && layers.length > maximumShortLayers) {
+            throw new Error(`YouTube Shorts cannot use more than ${maximumShortLayers} layers.`);
         }
         let previous = 0;
         for (const value of layers) {
@@ -102,6 +110,15 @@ function validateYouTubeQuality(quality) {
             }
             previous = health;
         }
+    }
+    const announcer = quality.announcer;
+    if (
+        !announcer
+        || announcer.required !== true
+        || announcer.spokenCueRequired !== true
+        || announcer.splitOnlyWhenSplit !== true
+    ) {
+        throw new Error("YouTube announcer requirements must require spoken coverage and split-only routing.");
     }
     const closeBattle = quality.closeBattle;
     if (!closeBattle || closeBattle.enabled !== true) {
@@ -126,6 +143,79 @@ function validateYouTubeQuality(quality) {
         }
         if (!(Number(format.weight) > 0)) throw new Error(`YouTube battle format ${format.id} must have a positive weight.`);
     }
+}
+
+export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
+    if (!exportResult || typeof exportResult !== "object") {
+        throw new Error("YouTube upload blocked: the exporter returned no artifact metadata.");
+    }
+    if (!plan || typeof plan !== "object") {
+        throw new Error("YouTube upload blocked: the upload plan is missing.");
+    }
+    if (plan.battleQuality?.accepted !== true) {
+        throw new Error("YouTube upload blocked: the deterministic close-battle gate did not pass.");
+    }
+    if (exportResult.runTag !== plan.runTag) {
+        throw new Error("YouTube upload blocked: the exported artifact has the wrong run tag.");
+    }
+    if (exportResult.title !== plan.title || exportResult.description !== plan.description) {
+        throw new Error("YouTube upload blocked: exported metadata does not match the approved title or description.");
+    }
+    if (exportResult.contentType !== plan.contentType || exportResult.gameplayMode !== "orb-race") {
+        throw new Error("YouTube upload blocked: exported content type or gameplay mode does not match the plan.");
+    }
+    if (JSON.stringify(exportResult.raceTeams) !== JSON.stringify(plan.raceTeams)
+        || JSON.stringify(exportResult.raceOrbs) !== JSON.stringify(plan.raceOrbs)
+        || JSON.stringify(exportResult.raceLayerStrengths) !== JSON.stringify(plan.raceLayerStrengths)) {
+        throw new Error("YouTube upload blocked: exported teams, orbs, or layer profile does not match the approved plan.");
+    }
+    if (!exportResult.videoPath) {
+        throw new Error("YouTube upload blocked: the exported video path is missing.");
+    }
+
+    const quality = config.quality;
+    const layers = exportResult.raceLayerStrengths;
+    if (!Array.isArray(layers) || layers.length < 2) {
+        throw new Error("YouTube upload blocked: the export has no valid layer profile.");
+    }
+    if (plan.contentType === "short" && layers.length > Number(quality.maximumShortLayers)) {
+        throw new Error(`YouTube upload blocked: Shorts cannot exceed ${quality.maximumShortLayers} layers.`);
+    }
+    let previous = 0;
+    for (const value of layers) {
+        const health = Number(value);
+        if (!Number.isInteger(health) || health < Number(quality.minimumLayerHealth)) {
+            throw new Error("YouTube upload blocked: every layer must meet the minimum HP requirement.");
+        }
+        if (health < previous) {
+            throw new Error("YouTube upload blocked: layer HP must be ascending.");
+        }
+        previous = health;
+    }
+
+    const recordedDuration = Number(exportResult.state?.recordingResult?.duration);
+    const minimumDuration = Number(plan.minimumDurationSeconds);
+    if (!Number.isFinite(recordedDuration) || recordedDuration + 0.05 < minimumDuration) {
+        throw new Error(`YouTube upload blocked: recording duration is below the ${minimumDuration}s minimum.`);
+    }
+
+    const announcer = exportResult.announcer;
+    const requirements = quality.announcer;
+    if (requirements.required) {
+        if (announcer?.assetsReady !== true || Number(announcer.loadedCueCount) < 1) {
+            throw new Error("YouTube upload blocked: announcer assets were not ready for the recording.");
+        }
+        if (Number(announcer.sequences) < 1) {
+            throw new Error("YouTube upload blocked: no announcer sequence was recorded for the battle.");
+        }
+        if (requirements.spokenCueRequired && Number(announcer.spokenCueCount) < 1) {
+            throw new Error("YouTube upload blocked: no spoken announcer cue was recorded.");
+        }
+        if (requirements.splitOnlyWhenSplit && announcer.splitAnnouncerUsed === true && announcer.presentationWasSplit !== true) {
+            throw new Error("YouTube upload blocked: split announcer audio was used without a split presentation.");
+        }
+    }
+    return true;
 }
 
 function validateVideoReadySection(section, label, allowedIds) {

@@ -39,8 +39,14 @@
             "longform": 60
         },
         "layerStrengths": {
-            "short": [750, 1000, 1500, 2000, 3000],
+            "short": [750, 1000, 1500],
             "longform": [750, 1000, 1500, 2000, 3000, 4500, 6500, 8500, 11000, 14000, 18000, 24000, 32000]
+        },
+        "maximumShortLayers": 3,
+        "announcer": {
+            "required": true,
+            "spokenCueRequired": true,
+            "splitOnlyWhenSplit": true
         },
         "strongerTeamLayerScaleMax": 2,
         "closeBattle": {

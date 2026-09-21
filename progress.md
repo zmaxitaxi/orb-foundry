@@ -4301,6 +4301,27 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Documented deterministic generic fallback behavior so a missing specialized
   clip does not silently remove announcer coverage.
 
+## 2026-09-20 — Cap Shorts at three layers
+
+- Reduced the automated Short layer profile to three ascending layers and added
+  a validated `maximumShortLayers` contract so future configuration changes
+  cannot exceed the requested cap.
+- Updated the YouTube publishing documentation, README quality summary, and
+  publishing tests to cover the three-layer maximum.
+
+## 2026-09-20 — Make the YouTube upload checklist mandatory
+
+- Added a per-upload checklist covering the original two-day cooldown,
+  allowlisted roster, multi-orb support, duration minimums, close-battle gate,
+  500-HP floor, ascending layers, and the three-layer Short maximum.
+- Added a hard announcer gate: the exporter waits for announcer assets, records
+  announcer proof in metadata, and refuses to upload unless an announcer
+  sequence with at least one spoken cue was captured. Split-wise audio remains
+  valid only for a genuinely split presentation.
+- Added a defense-in-depth artifact validator before transcoding/upload so a
+  mismatched duration, layer profile, metadata contract, run tag, or announcer
+  proof stops the run.
+
 ## 2026-09-20 — Reliable scheduled YouTube quality pipeline
 
 - Changed the YouTube workflow to render a morning batch, upload videos privately, and set YouTube `publishAt` timestamps for noon and 3:00 PM Pacific. This avoids missing a slot when GitHub Actions starts late.

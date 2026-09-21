@@ -10,6 +10,7 @@ import {
     youtubeDescription,
     youtubeMetadata,
     youtubeTitle,
+    validateYouTubeExportArtifact,
 } from "../scripts/youtube-publishing.mjs";
 import {
     buildYouTubePublishPlan,
@@ -27,6 +28,13 @@ test("YouTube publishing contract loads with three daily slots", async () => {
         { id: "afternoon-short", contentType: "short", localTime: "15:00" },
     ]);
     assert.equal(config.delivery.requireApproval, false);
+    assert.equal(config.quality.maximumShortLayers, 3);
+    assert.ok(config.quality.layerStrengths.short.length <= config.quality.maximumShortLayers);
+    assert.deepEqual(config.quality.announcer, {
+        required: true,
+        spokenCueRequired: true,
+        splitOnlyWhenSplit: true,
+    });
     assert.equal(config.rosterSource.channelName, "OrbBattlegroundsSimulator");
     assert.equal(config.rosterSource.channelUrl, "https://www.youtube.com/@OrbBattlegroundSimulator");
     assert.ok(config.videoReady.orbRace.orbs.includes("hydrogen-bomb"));
@@ -83,6 +91,62 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.equal(plan.minimumDurationSeconds, 25);
     assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
+    assert.ok(plan.raceLayerStrengths.length <= config.quality.maximumShortLayers);
+});
+
+test("YouTube upload gate requires spoken announcer proof and the complete artifact contract", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const slot = config.schedule.find(({ id }) => id === "noon-short");
+    const plan = buildYouTubePublishPlan({ dateKey: "2026-09-20", slot, config });
+    const artifact = {
+        ...plan,
+        gameplayMode: "orb-race",
+        videoPath: "/tmp/orb-foundry-short.webm",
+        announcer: {
+            assetsReady: true,
+            loadedCueCount: 10,
+            sequences: 1,
+            spokenCueCount: 2,
+            splitAnnouncerUsed: false,
+            presentationWasSplit: false,
+        },
+        state: {
+            recordingResult: { duration: 25.4 },
+        },
+    };
+    assert.equal(validateYouTubeExportArtifact({ exportResult: artifact, plan, config }), true);
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, announcer: { ...artifact.announcer, spokenCueCount: 0 } },
+            plan,
+            config,
+        }),
+        /no spoken announcer cue/,
+    );
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, announcer: { ...artifact.announcer, sequences: 0 } },
+            plan,
+            config,
+        }),
+        /no announcer sequence/,
+    );
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, raceLayerStrengths: [750, 1000, 1500, 2000] },
+            plan: { ...plan, raceLayerStrengths: [750, 1000, 1500, 2000] },
+            config,
+        }),
+        /Shorts cannot exceed 3 layers/,
+    );
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, raceOrbs: [...artifact.raceOrbs].reverse() },
+            plan,
+            config,
+        }),
+        /teams, orbs, or layer profile does not match/,
+    );
 });
 
 test("daily plans keep orbs out for two days and support multi-orb battles", async () => {
