@@ -39,8 +39,11 @@ Every unattended video must satisfy the quality contract in
 - A battle may be a 1v1 duel or a multi-orb team duel. The selected format and
   every stable orb ID are recorded in the export metadata.
 - Shorts are at least 25 seconds; long-form videos are at least 60 seconds.
-  The browser recorder holds the winner reveal until the minimum is reached,
-  and the exporter rejects a shorter recording.
+  If a long-form race finishes before the recording reaches one minute, the
+  recorder immediately starts another seeded race with the same matchup and
+  keeps recording. The final race completes with its winner reveal, so the
+  minimum is filled with racing instead of a held end screen. The exporter
+  rejects a shorter recording.
 - Every layer starts at or above 500 HP. The profiles are ascending for Shorts
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
@@ -66,7 +69,9 @@ before YouTube receives the video:
    distinct when the roster allows it.
 3. Use either a 1v1 battle or an allowed multi-orb team battle; record every
    stable orb ID and team label in the export metadata.
-4. Use at least 25 seconds for a Short and at least 60 seconds for long-form.
+4. Use at least 25 seconds for a Short and at least 60 seconds for long-form;
+   early long-form finishes must continue with a seeded rematch until the
+   one-minute recording threshold is reached.
 5. Use no more than three layers for a Short. Every layer must be at least
    500 HP, and Short layer HP must be ascending. Long-form uses its separate
    ascending profile.

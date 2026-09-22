@@ -155,7 +155,9 @@ Actions secrets documented in
 Each batch enforces the quality contract: two-day orb cooldowns, optional
 multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
 matchups, 500-HP minimum layers, ascending layer health for short-form, and no
-more than three layers in each Short.
+more than three layers in each Short. If a long-form race ends before a minute
+has been recorded, a fresh seeded race with the same matchup starts immediately
+and recording continues through its winner reveal.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Each description asks “Who will break the

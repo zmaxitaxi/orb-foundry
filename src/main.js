@@ -9,7 +9,7 @@ import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
   raceTargetAnnouncerCueFor,
-} from "./audio.js?v=20260920-youtube-announcer-gate1";
+} from "./audio.js?v=20260922-youtube-min-duration-replays1";
 import { SocialBattleRenderer } from "./social-renderer.js?v=20260825-tsar-all-in-one1";
 import {
   RECORDER_STATES,
@@ -175,6 +175,7 @@ let socialLastEventId = 0;
 let socialPresentation = createSocialPresentationState();
 let socialRecordingResult = null;
 let socialMinimumRecordingUntil = 0;
+let socialMinimumDurationReplayCount = 0;
 let raceLayerRenderTimer = 0;
 
 function applyTheme(themeId) {
@@ -2558,9 +2559,15 @@ function launchBattle(nextSettings = settings, {
   applyFeatureVisibility();
 }
 
-function startSimulation({ tournamentTransition: transition = tournamentTransition } = {}) {
+function startSimulation({
+  tournamentTransition: transition = tournamentTransition,
+  preserveSocialRecording = false,
+  seedOverride = null,
+} = {}) {
+  const preservedMinimumRecordingUntil = socialMinimumRecordingUntil;
   const options = simulationSettings({
     spawnSeed: settings.gameplayMode === WORLD_CUP_MODE ? createFightSpawnSeed() : settings.seed,
+    ...(seedOverride === null ? {} : { seed: Number(seedOverride) }),
   });
   try {
     sim = createSimulation(options);
@@ -2579,24 +2586,28 @@ function startSimulation({ tournamentTransition: transition = tournamentTransiti
   }
   document.body.dataset.gameplayMode = settings.gameplayMode;
   document.body.dataset.classicTheme = settings.classicBlackTheme ? "black" : "light";
-  audio.reset();
+  audio.reset({ preserveAnnouncerPlayback: preserveSocialRecording });
   const continuousTransition = transition?.mode === "pan-to-next";
   if (!continuousTransition) tournamentZoomCueKey = null;
   paused = false;
   accumulator = 0;
   socialLastEventId = 0;
-  socialMinimumRecordingUntil = 0;
-  if (!continuousTransition) socialRecordingResult = null;
+  socialMinimumRecordingUntil = preserveSocialRecording ? preservedMinimumRecordingUntil : 0;
+  if (!preserveSocialRecording) socialMinimumDurationReplayCount = 0;
+  else socialMinimumDurationReplayCount += 1;
+  if (!continuousTransition && !preserveSocialRecording) socialRecordingResult = null;
   socialPresentation = createSocialPresentationState(
-    continuousTransition ? false : settings.features.introCards,
+    continuousTransition || preserveSocialRecording ? false : settings.features.introCards,
   );
   updateSocialMetrics();
   socialRenderer.setTheme(settings.theme);
   socialRenderer.setFormat(settings.social.format);
   elements.pauseButton.textContent = "II";
   elements.pauseButton.setAttribute("aria-label", "Pause simulation");
-  elements.socialRecordingStatus.textContent = "PREPARING";
-  elements.socialRecordingDetail.textContent = settings.gameplayMode === WORLD_CUP_MODE
+  elements.socialRecordingStatus.textContent = preserveSocialRecording ? "RECORDING" : "PREPARING";
+  elements.socialRecordingDetail.textContent = preserveSocialRecording
+    ? "Long-form rematch · continuous recording"
+    : settings.gameplayMode === WORLD_CUP_MODE
     ? "World Cup mode · momentum collisions · pickup damage"
     : settings.gameplayMode === ORB_RACE_MODE
       ? settings.raceTournament
@@ -2700,6 +2711,20 @@ function queueNextTournamentMatch() {
 
 function finishBattle() {
   if (!sim.finished) return;
+  if (
+    settings.gameplayMode === ORB_RACE_MODE
+    && settings.social.format === "race-landscape"
+    && Number(settings.social.minimumDurationSeconds) > 0
+    && !sim.raceTournament
+    && socialRecorder.machine.state === RECORDER_STATES.RECORDING
+    && socialMinimumRecordingUntil > performance.now()
+  ) {
+    const replayIndex = socialMinimumDurationReplayCount + 1;
+    const baseSeed = Math.max(1, Math.floor(Number(settings.seed) || 1));
+    const replaySeed = ((baseSeed + replayIndex * 104_729 - 1) % 999_999_999) + 1;
+    startSimulation({ preserveSocialRecording: true, seedOverride: replaySeed });
+    return;
+  }
   if (!socialPresentation.winnerUntil) {
     socialPresentation.phase = "battle";
     socialPresentation.highlight = null;
@@ -3490,6 +3515,7 @@ window.__ORB_FOUNDRY__ = {
         ? "profile"
         : elements.socialPreviewDialog.open ? "social-preview" : "social-battle",
     seed: sim.seed,
+    minimumDurationReplayCount: socialMinimumDurationReplayCount,
     arenaModifier: sim.arenaModifier,
     arenaSize: sim.arenaSize,
     arenaSizeLabel: sim.arenaSizeLabel,
@@ -3550,6 +3576,7 @@ window.render_game_to_text = () => JSON.stringify({
         : "social-battle",
   match: {
     seed: sim.seed,
+    minimumDurationReplayCount: socialMinimumDurationReplayCount,
     gameplayMode: sim.gameplayMode,
     hill: sim.hill ? {
       x: sim.hill.x,

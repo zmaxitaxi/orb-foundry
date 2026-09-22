@@ -1879,12 +1879,12 @@ export class CombatAudio {
     };
   }
 
-  reset() {
+  reset({ preserveAnnouncerPlayback = false } = {}) {
     this.hydrogenSirenRequested = false;
     this.stopHydrogenSiren();
     this.lastEventId = 0;
     this.lastPlayed.clear();
-    this.announcerPlayback = emptyAnnouncerPlayback();
+    if (!preserveAnnouncerPlayback) this.announcerPlayback = emptyAnnouncerPlayback();
     this.mathPowerDuckUntil = 0;
     this.mathPowerDuckReleaseUntil = 0;
     if (this.nonAnnouncerGain && this.context) {

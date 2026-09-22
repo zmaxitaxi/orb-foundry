@@ -1,5 +1,11 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## Long-Form YouTube Action Minimum (2026-09-22)
+
+- Long-form Orb Race recordings now start a deterministic-seed rematch with the same matchup if a race ends before the one-minute recording threshold. Recording stays continuous until a final race completes, removing the long held winner screen while retaining its short finale tail.
+- Rematch simulation resets preserve the initial announcer proof across the continuous recording. Added replay count to exported browser state and advanced the audio/page cache keys.
+- Updated the YouTube publishing quality contract and README to describe the action-filled minimum.
+
 ## Pancake Single-Body Visual (2026-08-06)
 
 - Removed the visible multi-pancake pile while preserving Pancake’s gameplay stack count and damage state in simulation/HUD data.
