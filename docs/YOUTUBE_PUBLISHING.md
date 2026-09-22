@@ -12,8 +12,10 @@ Orb Foundry's approved YouTube publishing contract is stored in
 - Upload mode: private uploads with YouTube `publishAt` scheduling, so the
   hosted runner can prepare the videos before the Pacific release times.
 - Video approval: not required.
-- Title: `{left} VS {right}`.
-- Description hashtags: `#physics #shorts #simulation #satisfying`.
+- Title: `{left} VS {right}`, with readable title casing for orb and group names
+  (for example, `Splodey VS Jackpot`, never `SPLODEY VS JACKPOT`).
+- Description: `Who will break the {layerHealth} HP layer first, {left} or
+  {right}?`, followed by `#physics #shorts #simulation #satisfying`.
 - Group matchups use the group label in the title instead of expanding every orb name.
 - Supported content sources will be Orb Race and Orb Foundry, selected through the
   explicit `videoReady` allowlist.
@@ -83,6 +85,9 @@ before YouTube receives the video:
 9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
    and validate the final artifact again. Reject any artifact whose title,
    description, duration, layers, or announcer proof no longer matches the plan.
+   Titles must use readable casing for orb/group names, and descriptions must
+   contain the actual first-layer HP and both displayed matchup names before
+   the required hashtags.
 10. Check YouTube for the run tag before upload. Upload only as private with the
     planned Pacific `publishAt` timestamp. Never upload after any checklist item
     fails.

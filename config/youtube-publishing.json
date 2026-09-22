@@ -25,6 +25,7 @@
         }
     ],
     "titleTemplate": "{left} VS {right}",
+    "descriptionTemplate": "Who will break the {layerHealth} HP layer first, {left} or {right}?",
     "descriptionHashtags": [
         "#physics",
         "#shorts",

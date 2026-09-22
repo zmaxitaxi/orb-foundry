@@ -115,7 +115,12 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
         .find(({ slot: candidate }) => candidate.id === slot.id);
     if (!selected) throw new Error(`YouTube slot ${slot.id} is not present in the publishing schedule.`);
     const matchup = selected.matchup;
-    const metadata = youtubeMetadata({ left: matchup.left, right: matchup.right, config });
+    const metadata = youtubeMetadata({
+        left: matchup.left,
+        right: matchup.right,
+        layerHealth: matchup.battleQuality.layerStrengths[0],
+        config,
+    });
     const runTag = youtubeRunTag(dateKey, slot.id);
     const minimumDurationSeconds = Number(config.quality.minimumDurationSeconds[slot.contentType]);
     const plan = {

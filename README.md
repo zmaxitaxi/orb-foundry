@@ -157,6 +157,11 @@ multi-orb teams, 25-second Shorts, 60-second long-form videos, close determinist
 matchups, 500-HP minimum layers, ascending layer health for short-form, and no
 more than three layers in each Short.
 
+YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
+(for example, `Splodey VS Jackpot`). Each description asks “Who will break the
+{layerHealth} HP layer first, {left} or {right}?” and then includes the required
+`#physics #shorts #simulation #satisfying` hashtags.
+
 Every battle recording also requires announcer coverage. Cue selection uses the
 battle's semantic context—mode, matchup shape, phase, and actual split state—so
 normal battles use the standard announcer, split announcer clips are used only

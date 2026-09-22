@@ -29,6 +29,7 @@ test("YouTube publishing contract loads with three daily slots", async () => {
         { id: "afternoon-short", contentType: "short", localTime: "15:00" },
     ]);
     assert.equal(config.delivery.requireApproval, false);
+    assert.equal(config.descriptionTemplate, "Who will break the {layerHealth} HP layer first, {left} or {right}?");
     assert.equal(config.quality.maximumShortLayers, 3);
     assert.ok(config.quality.layerStrengths.short.length <= config.quality.maximumShortLayers);
     assert.deepEqual(config.quality.announcer, {
@@ -44,12 +45,15 @@ test("YouTube publishing contract loads with three daily slots", async () => {
 });
 
 test("YouTube metadata uses the approved VS title and hashtags", () => {
-    assert.equal(youtubeTitle("DUPLICATOR", "ORBITAL"), "DUPLICATOR VS ORBITAL");
-    assert.deepEqual(youtubeMetadata({ left: "MATH ORBS", right: "WEAPON ORBS" }), {
-        title: "MATH ORBS VS WEAPON ORBS",
-        description: "#physics #shorts #simulation #satisfying",
+    assert.equal(youtubeTitle("DUPLICATOR", "ORBITAL"), "Duplicator VS Orbital");
+    assert.deepEqual(youtubeMetadata({ left: "MATH ORBS", right: "WEAPON ORBS", layerHealth: 750 }), {
+        title: "Math Orbs VS Weapon Orbs",
+        description: "Who will break the 750 HP layer first, Math Orbs or Weapon Orbs?\n\n#physics #shorts #simulation #satisfying",
     });
-    assert.equal(youtubeDescription(), "#physics #shorts #simulation #satisfying");
+    assert.equal(
+        youtubeDescription({ left: "SPLODEY", right: "JACKPOT", layerHealth: 750 }),
+        "Who will break the 750 HP layer first, Splodey or Jackpot?\n\n#physics #shorts #simulation #satisfying",
+    );
 });
 
 test("schedule matching follows Pacific time across standard and daylight time", async () => {
@@ -85,8 +89,9 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.deepEqual(first, second);
     assert.ok(config.videoReady.orbRace.orbs.includes(first.leftId));
     assert.ok(config.videoReady.orbRace.orbs.includes(first.rightId));
-    assert.equal(plan.title, `${plan.left} VS ${plan.right}`);
-    assert.equal(plan.description, "#physics #shorts #simulation #satisfying");
+    assert.equal(plan.title, youtubeTitle(plan.left, plan.right, config));
+    assert.match(plan.description, new RegExp(`^Who will break the ${plan.raceLayerStrengths[0]} HP layer first, `));
+    assert.match(plan.description, /\n\n#physics #shorts #simulation #satisfying$/);
     assert.equal(plan.runTag, "of-20260919-noon-short");
     assert.ok(plan.battleQuality.accepted);
     assert.equal(plan.minimumDurationSeconds, 25);
@@ -94,6 +99,10 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
     assert.ok(plan.raceLayerStrengths.length <= config.quality.maximumShortLayers);
     assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
+    assert.throws(
+        () => validateYouTubeGenerationSpec({ plan: { ...plan, description: "wrong" }, config }),
+        /title or description does not match/,
+    );
     assert.throws(
         () => validateYouTubeGenerationSpec({
             plan: { ...plan, raceLayerStrengths: [750, 1000, 1500, 2000] },

@@ -14,6 +14,7 @@ export const YOUTUBE_DESCRIPTION_HASHTAGS = Object.freeze([
     "#simulation",
     "#satisfying",
 ]);
+export const YOUTUBE_DESCRIPTION_TEMPLATE = "Who will break the {layerHealth} HP layer first, {left} or {right}?";
 export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
 export const YOUTUBE_MINIMUM_LAYER_HEALTH = 500;
 export const YOUTUBE_MAXIMUM_SHORT_LAYERS = 3;
@@ -43,6 +44,17 @@ export function validateYouTubePublishingConfig(config) {
     }
     if (typeof config.titleTemplate !== "string" || !config.titleTemplate.includes("{left}") || !config.titleTemplate.includes("{right}")) {
         throw new Error("YouTube titleTemplate must include {left} and {right}.");
+    }
+    if (
+        typeof config.descriptionTemplate !== "string"
+        || !config.descriptionTemplate.includes("{layerHealth}")
+        || !config.descriptionTemplate.includes("{left}")
+        || !config.descriptionTemplate.includes("{right}")
+    ) {
+        throw new Error("YouTube descriptionTemplate must include {layerHealth}, {left}, and {right}.");
+    }
+    if (config.descriptionTemplate !== YOUTUBE_DESCRIPTION_TEMPLATE) {
+        throw new Error("YouTube descriptionTemplate must match the approved publishing contract.");
     }
     if (!Array.isArray(config.descriptionHashtags) || config.descriptionHashtags.length === 0) {
         throw new Error("YouTube descriptionHashtags must contain at least one hashtag.");
@@ -197,6 +209,16 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
         previous = health;
     }
 
+    const expectedMetadata = youtubeMetadata({
+        left: plan.left,
+        right: plan.right,
+        layerHealth: layers[0],
+        config,
+    });
+    if (plan.title !== expectedMetadata.title || plan.description !== expectedMetadata.description) {
+        throw new Error("YouTube generation blocked: title or description does not match the approved metadata contract.");
+    }
+
     if (JSON.stringify(plan.announcerRequirements) !== JSON.stringify(config.quality.announcer)) {
         throw new Error("YouTube generation blocked: announcer requirements are not enabled on the approved plan.");
     }
@@ -296,14 +318,26 @@ export function youtubeTitle(left, right, config = null) {
     return template.replaceAll("{left}", leftLabel).replaceAll("{right}", rightLabel);
 }
 
-export function youtubeDescription(config = null) {
-    return (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS).join(" ");
+export function youtubeDescription({ left = "Orb 1", right = "Orb 2", layerHealth = "first", config = null } = {}) {
+    const leftLabel = titlePart(left, "left");
+    const rightLabel = titlePart(right, "right");
+    const normalizedLayerHealth = Number.isFinite(Number(layerHealth))
+        ? String(Math.round(Number(layerHealth)))
+        : String(layerHealth).trim();
+    if (!normalizedLayerHealth) throw new Error("YouTube description layer health is required.");
+    const template = config?.descriptionTemplate || YOUTUBE_DESCRIPTION_TEMPLATE;
+    const question = template
+        .replaceAll("{layerHealth}", normalizedLayerHealth)
+        .replaceAll("{left}", leftLabel)
+        .replaceAll("{right}", rightLabel);
+    const hashtags = (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS).join(" ");
+    return `${question}\n\n${hashtags}`;
 }
 
-export function youtubeMetadata({ left, right, config = null } = {}) {
+export function youtubeMetadata({ left, right, layerHealth, config = null } = {}) {
     return {
         title: youtubeTitle(left, right, config),
-        description: youtubeDescription(config),
+        description: youtubeDescription({ left, right, layerHealth, config }),
     };
 }
 
@@ -401,7 +435,9 @@ function timeZoneOffsetMinutes(date, timeZone) {
 
 function titlePart(value, label) {
     if (typeof value !== "string" || !value.trim()) throw new Error(`YouTube title ${label} is required.`);
-    return value.trim();
+    const normalized = value.trim();
+    if (normalized !== normalized.toUpperCase() || !/[A-Z]/.test(normalized)) return normalized;
+    return normalized.toLowerCase().replace(/(^|[\s/+×&^_-])([a-z])/g, (_match, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

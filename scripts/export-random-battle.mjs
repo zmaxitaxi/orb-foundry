@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { createReadStream, existsSync } from "node:fs";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { spawn } from "node:child_process";
@@ -133,7 +133,6 @@ export async function exportSocialVideo(options = {}) {
   const server = await startStaticServer(ROOT);
   const tempProfile = await mkdtemp(join(tmpdir(), "orb-foundry-chrome-"));
   const chrome = launchChrome({
-    port: server.port + 1,
     userDataDir: tempProfile,
     url: `http://127.0.0.1:${server.port}/`,
   });
@@ -246,7 +245,7 @@ function startStaticServer(root) {
   });
 }
 
-function launchChrome({ port, userDataDir, url }) {
+function launchChrome({ userDataDir, url }) {
   const executablePath = process.env.CHROME_PATH || [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/usr/bin/google-chrome",
@@ -264,7 +263,10 @@ function launchChrome({ port, userDataDir, url }) {
     "--no-default-browser-check",
     "--remote-debugging-address=127.0.0.1",
     "--autoplay-policy=no-user-gesture-required",
-    `--remote-debugging-port=${port}`,
+    // Let Chromium choose an unused port. A fixed adjacent port can already be
+    // occupied on a hosted runner, leaving Chrome alive but without a usable
+    // DevTools endpoint and causing a misleading readiness timeout.
+    "--remote-debugging-port=0",
     `--user-data-dir=${userDataDir}`,
     url,
   ];
@@ -275,26 +277,42 @@ function launchChrome({ port, userDataDir, url }) {
   const stderr = [];
   child.stderr.on("data", (chunk) => stderr.push(String(chunk)));
   child.stderr.setEncoding("utf8");
-  return { child, port, stderr };
+  return { child, userDataDir, port: null, stderr };
 }
 
 async function connectToPage(chrome) {
-  const { child, port, stderr } = chrome;
-  const deadline = Date.now() + 20_000;
+  const { child, userDataDir, stderr } = chrome;
+  const timeoutMs = Number(process.env.CHROME_CONNECT_TIMEOUT_MS) || 60_000;
+  const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (child.exitCode !== null) {
       const details = stderr.join("").trim();
       throw new Error(`Chrome exited before remote debugging was ready (code ${child.exitCode}).${details ? ` ${details}` : ""}`);
     }
-    try {
-      const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
-      const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
-      if (pageTarget) return new CdpPage(pageTarget.webSocketDebuggerUrl);
-    } catch {
-      await delay(200);
+    if (!chrome.port) chrome.port = await readDevToolsPort(userDataDir);
+    if (chrome.port) {
+      try {
+        const targets = await fetchJson(`http://127.0.0.1:${chrome.port}/json/list`);
+        const pageTarget = targets.find((target) => target.type === "page" && target.webSocketDebuggerUrl);
+        if (pageTarget) return new CdpPage(pageTarget.webSocketDebuggerUrl);
+      } catch {
+        // Chromium may create DevToolsActivePort before its HTTP endpoint is ready.
+      }
     }
+    await delay(200);
   }
-  throw new Error("Timed out waiting for Chrome remote debugging.");
+  const details = stderr.join("").trim();
+  throw new Error(`Timed out waiting for Chrome remote debugging after ${timeoutMs}ms.${details ? ` ${details}` : ""}`);
+}
+
+async function readDevToolsPort(userDataDir) {
+  try {
+    const [portText] = (await readFile(join(userDataDir, "DevToolsActivePort"), "utf8")).trim().split(/\s+/);
+    const port = Number(portText);
+    return Number.isInteger(port) && port > 0 && port <= 65_535 ? port : null;
+  } catch {
+    return null;
+  }
 }
 
 class CdpPage {
