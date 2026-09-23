@@ -71,6 +71,8 @@ import {
   normalizeSocialOptions,
   presentationPauseMs,
   recordingFilename,
+  shouldReplayRaceForMinimumDuration,
+  socialRaceReplaySeed,
   socialEventAnnouncement,
   statusIndicators,
 } from "../src/social.js";
@@ -3981,6 +3983,27 @@ function run(sim, seconds = 120) {
     showWinProbability: true,
   });
   assert.equal(normalizeSocialOptions({ format: "longform" }).format, "race-landscape");
+  const replayOptions = {
+    gameplayMode: "orb-race",
+    isTournament: false,
+    isRecording: true,
+    recordingDeadline: 60_000,
+    now: 59_999,
+  };
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, minimumDurationSeconds: 25 }), true,
+    "short-form races should restart when they finish before their minimum duration");
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, minimumDurationSeconds: 60 }), true,
+    "long-form races should restart when they finish before their minimum duration");
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, isTournament: true, minimumDurationSeconds: 60 }), false,
+    "tournament match boundaries must keep their existing recording flow");
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, isRecording: false, minimumDurationSeconds: 60 }), false,
+    "a preview without an active recorder must not start a recording rematch");
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, now: 60_000, minimumDurationSeconds: 60 }), false,
+    "the winner reveal should be allowed once the action-duration deadline is reached");
+  assert.equal(shouldReplayRaceForMinimumDuration({ ...replayOptions, gameplayMode: "classic", minimumDurationSeconds: 60 }), false,
+    "non-racing social modes must retain their current finish behavior");
+  assert.equal(socialRaceReplaySeed(17, 1), 104_746);
+  assert.equal(socialRaceReplaySeed(17, 2), 209_475, "each continuous rematch should get a new deterministic seed");
 }
 
 {

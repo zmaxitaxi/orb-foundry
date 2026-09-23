@@ -28,7 +28,9 @@ import {
   normalizeSocialOptions,
   presentationPauseMs,
   recordingFilename,
-} from "./social.js?v=20260825-tsar-all-in-one1";
+  shouldReplayRaceForMinimumDuration,
+  socialRaceReplaySeed,
+} from "./social.js?v=20260923-race-action-minimum1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -2606,7 +2608,7 @@ function startSimulation({
   elements.pauseButton.setAttribute("aria-label", "Pause simulation");
   elements.socialRecordingStatus.textContent = preserveSocialRecording ? "RECORDING" : "PREPARING";
   elements.socialRecordingDetail.textContent = preserveSocialRecording
-    ? "Long-form rematch · continuous recording"
+    ? "Race rematch · continuous recording"
     : settings.gameplayMode === WORLD_CUP_MODE
     ? "World Cup mode · momentum collisions · pickup damage"
     : settings.gameplayMode === ORB_RACE_MODE
@@ -2711,17 +2713,17 @@ function queueNextTournamentMatch() {
 
 function finishBattle() {
   if (!sim.finished) return;
-  if (
-    settings.gameplayMode === ORB_RACE_MODE
-    && settings.social.format === "race-landscape"
-    && Number(settings.social.minimumDurationSeconds) > 0
-    && !sim.raceTournament
-    && socialRecorder.machine.state === RECORDER_STATES.RECORDING
-    && socialMinimumRecordingUntil > performance.now()
-  ) {
+  if (shouldReplayRaceForMinimumDuration({
+    gameplayMode: settings.gameplayMode,
+    isTournament: Boolean(sim.raceTournament),
+    minimumDurationSeconds: settings.social.minimumDurationSeconds,
+    isRecording: socialRecorder.machine.state === RECORDER_STATES.RECORDING,
+    recordingDeadline: socialMinimumRecordingUntil,
+    now: performance.now(),
+  })) {
     const replayIndex = socialMinimumDurationReplayCount + 1;
     const baseSeed = Math.max(1, Math.floor(Number(settings.seed) || 1));
-    const replaySeed = ((baseSeed + replayIndex * 104_729 - 1) % 999_999_999) + 1;
+    const replaySeed = socialRaceReplaySeed(baseSeed, replayIndex);
     startSimulation({ preserveSocialRecording: true, seedOverride: replaySeed });
     return;
   }

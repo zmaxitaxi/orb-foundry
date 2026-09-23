@@ -103,6 +103,17 @@ test("Classic team names, announcer routing, and team outlines stay visible in t
   assert.match(classicOrbSource, /1:\s*"#e11d48"/, "Team 2 should use the red outline");
 });
 
+test("Short and long-form Orb Race recordings rematch instead of holding a winner screen", () => {
+  const finishBattleSource = mainSource.slice(
+    mainSource.indexOf("function finishBattle()"),
+    mainSource.indexOf("function drawSocialBattle(", mainSource.indexOf("function finishBattle()")),
+  );
+  assert.match(finishBattleSource, /shouldReplayRaceForMinimumDuration\(/);
+  assert.doesNotMatch(finishBattleSource, /settings\.social\.format\s*===\s*"race-landscape"/);
+  assert.match(finishBattleSource, /startSimulation\(\{ preserveSocialRecording: true, seedOverride: replaySeed \}\)/);
+  assert.match(finishBattleSource, /socialRaceReplaySeed\(baseSeed, replayIndex\)/);
+});
+
 test("Orb Race setup keeps the new racer roster registry-driven in both teams", () => {
   for (const [id, name] of [["grappler", "GRAPPLER"], ["artists", "ARTIST"], ["pancake", "PANCAKE"], ["tree", "TREE"]]) {
     assert.ok(ORB_RACER_IDS.includes(id), `${id} should be registered for setup`);

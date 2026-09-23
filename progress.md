@@ -6,6 +6,12 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Rematch simulation resets preserve the initial announcer proof across the continuous recording. Added replay count to exported browser state and advanced the audio/page cache keys.
 - Updated the YouTube publishing quality contract and README to describe the action-filled minimum.
 
+## Short-Form YouTube Action Minimum (2026-09-23)
+
+- Extended the continuous seeded Orb Race rematch rule to Shorts as well as long-form recordings. Any non-tournament race that ends before its configured minimum duration restarts with the same matchup while recording remains active, avoiding a held winner screen.
+- Extracted and tested the rematch gate and deterministic replay-seed calculation; tournament recording boundaries, previews, and non-racing modes keep their existing behavior. Updated the upload contract and browser cache key.
+- Verification: `npm test` passes 183/183; `npm run youtube:validate` passes. A local portrait export with a shortened three-second test minimum performed four rematches and recorded 5.06 seconds including the final reveal; frame inspection showed race activity across the minimum rather than a held end screen. No upload was attempted.
+
 ## Pancake Single-Body Visual (2026-08-06)
 
 - Removed the visible multi-pancake pile while preserving Pancake’s gameplay stack count and damage state in simulation/HUD data.
