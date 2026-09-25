@@ -38,13 +38,14 @@ Every unattended video must satisfy the quality contract in
   also keeps all three videos on the same day distinct when the roster allows it.
 - A battle may be a 1v1 duel or a multi-orb team duel. The selected format and
   every stable orb ID are recorded in the export metadata.
-- Shorts contain at least 25 seconds of race action; long-form videos contain
-  at least 60 seconds of race action. If a race finishes before its action
-  minimum, the recorder immediately starts another deterministically seeded
-  race with the same matchup and keeps recording continuously. This applies to
-  Shorts and long-form videos, and prevents the minimum from being padded with
-  a stale winner screen. The final race completes with its winner reveal, and
-  the exporter rejects a recording shorter than the configured minimum.
+- Each video contains exactly one matchup. Shorts include at least 25 seconds
+  of live race action; long-form includes at least 60 seconds. The planner
+  preflights the chosen matchup and computes a deterministic action playback
+  rate so the race itself—not a pause, end screen, or rematch—fills the target.
+  Long-form courses expand to 50 ascending layers to provide a longer natural
+  race before slow motion is applied. Race simulation starts only after the
+  recorder is active. The exporter measures action time and matchup count, and
+  rejects a clip if it misses either contract.
 - Every layer starts at or above 500 HP. The profiles are ascending for Shorts
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
@@ -70,10 +71,12 @@ before YouTube receives the video:
    distinct when the roster allows it.
 3. Use either a 1v1 battle or an allowed multi-orb team battle; record every
    stable orb ID and team label in the export metadata.
-4. Keep race action on screen for at least 25 seconds in a Short and 60 seconds
-   in long-form. If a race ends before its action minimum, continue immediately
-   with a seeded rematch using the same matchup; do not fill the remaining time
-   with a static winner screen.
+4. Plan exactly one matchup whose live race action fills the duration: at least
+   25 seconds for a Short and 60 seconds for long-form. Preflight its simulation
+   duration and set the deterministic action playback rate; use the 50-layer
+   long-form course where applicable. Do not restart, replay, or rematch the
+   battle, and do not pad action time with a pause or static end screen. Verify
+   the recorded action clock and exactly-one-match counter before upload.
 5. Use no more than three layers for a Short. Every layer must be at least
    500 HP, and Short layer HP must be ascending. Long-form uses its separate
    ascending profile.
@@ -86,9 +89,9 @@ before YouTube receives the video:
    unavailable, use a valid generic spoken fallback. Procedural-only or silent
    announcer output is a hard failure.
 8. Validate the complete generation spec before starting the browser recorder:
-   the selected roster, teams, close-battle result, duration, layer profile, and
-   announcer requirements must already match the contract. If preflight fails,
-   do not render or upload that slot.
+   the selected roster, teams, close-battle result, planned action rate and
+   duration, layer profile, and announcer requirements must already match the
+   contract. If preflight fails, do not render or upload that slot.
 9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
    and validate the final artifact again. Reject any artifact whose title,
    description, duration, layers, or announcer proof no longer matches the plan.

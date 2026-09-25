@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ORB_RACERS } from "../src/orb-race.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
+import { socialActionPlaybackRateForDuration } from "../src/social.js";
 import { exportSocialVideo } from "./export-random-battle.mjs";
 import { transcodeBattleVideo } from "./transcode-battle-video.mjs";
 import {
@@ -130,6 +131,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
         format: slot.contentType === "longform" ? "race-landscape" : "portrait",
         scheduledPublishAt: scheduledPublishAt(dateKey, slot.localTime, config.timeZone),
         minimumDurationSeconds,
+        actionPlaybackRate: matchup.battleQuality.actionPlaybackRate,
         raceLayerStrengths: [...matchup.battleQuality.layerStrengths],
         announcerRequirements: { ...config.quality.announcer },
         runTag,
@@ -154,7 +156,12 @@ export function buildYouTubePublishPlan({ dateKey, slot, config }) {
 
 function layerStrengthsFor(config, slotId) {
     const contentType = config.schedule.find(({ id }) => id === slotId)?.contentType || "short";
-    return [...config.quality.layerStrengths[contentType]];
+    const layers = [...config.quality.layerStrengths[contentType]];
+    if (contentType !== "longform") return layers;
+    const targetCount = Number(config.quality.longformLayerCount) || layers.length;
+    const lastIncrement = Math.max(1, layers.at(-1) - layers.at(-2));
+    while (layers.length < targetCount) layers.push(layers.at(-1) + lastIncrement);
+    return layers;
 }
 
 function weightedBattleFormat(formats, seed) {
@@ -215,6 +222,9 @@ function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, q
     const progress = sim.raceTeams.map((team) => raceTeamProgress(team, sim, adjustedLayerStrengths));
     const progressMargin = Math.abs(progress[0] - progress[1]);
     const layerLead = Math.abs(Math.floor(progress[0]) - Math.floor(progress[1]));
+    const minimumActionDurationSeconds = Math.max(0, Number(quality.minimumDurationSeconds?.[contentType]) || 0);
+    const targetActionDurationSeconds = minimumActionDurationSeconds * 1.05;
+    const actionPlaybackRate = socialActionPlaybackRateForDuration(sim.time, targetActionDurationSeconds);
     const maxProgressMargin = Number(quality.closeBattle.maxProgressMargin);
     const maxLayerLead = Number(quality.closeBattle.maxLayerLead);
     return {
@@ -222,6 +232,8 @@ function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, q
         finished: sim.finished,
         winnerTeamIndex: Number.isInteger(sim.winningRaceTeamIndex) ? sim.winningRaceTeamIndex : null,
         simulatedSeconds: Number(sim.time.toFixed(3)),
+        actionPlaybackRate,
+        plannedActionDurationSeconds: Number((sim.time / actionPlaybackRate).toFixed(3)),
         progress: progress.map((value) => Number(value.toFixed(3))),
         progressMargin: Number(progressMargin.toFixed(3)),
         layerLead,
@@ -334,6 +346,7 @@ export async function publishDueYouTubeSlots({
                 format: plan.format,
                 seed: plan.seed,
                 minimumDurationSeconds: plan.minimumDurationSeconds,
+                actionPlaybackRate: plan.actionPlaybackRate,
                 title: plan.title,
                 description: plan.description,
                 runTag: plan.runTag,

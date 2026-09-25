@@ -1,5 +1,19 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## Single-Match Video Duration (2026-09-24)
+
+- Replaced the rematch-based minimum-duration behavior for YouTube races. Each
+  export now preserves one matchup and uses its deterministic preflight duration
+  to set an action playback rate, keeping the race itself on screen for at least
+  25 seconds (Shorts) or 60 seconds (long-form); only the brief winner reveal
+  follows the race.
+- Expanded generated long-form courses to 50 ascending layers, while Shorts
+  retain the three-layer cap. Race progression waits until its recorder is live,
+  and the upload gate checks both measured race-action time and an exactly-one-
+  matchup counter before allowing upload.
+- This supersedes the rematch approach recorded in the Sep 22–23 entries below.
+- Verification: `npm test` passes 183/183; `npm run youtube:validate` passes; the required Playwright browser client completed with no console/page errors. Local production-format exports passed the exact YouTube artifact gate: Short = 27.47s total / 26.26s race action / one matchup / three layers; long-form = 64.24s total / 63.01s race action / one matchup / 50 layers. Inspected representative frames across both clips; no repeated matchup or padded winner screen appeared. No upload was attempted.
+
 ## Long-Form YouTube Action Minimum (2026-09-22)
 
 - Long-form Orb Race recordings now start a deterministic-seed rematch with the same matchup if a race ends before the one-minute recording threshold. Recording stays continuous until a final race completes, removing the long held winner screen while retaining its short finale tail.

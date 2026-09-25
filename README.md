@@ -157,8 +157,11 @@ multi-orb teams, 25-second Shorts, 60-second long-form videos, close determinist
 matchups, 500-HP minimum layers, ascending layer health for short-form, and no
 more than three layers in each Short. Shorts require at least 25 seconds of race
 action and long-form videos at least 60 seconds. If a race ends before its
-action-duration minimum, a fresh seeded race with the same matchup starts
-immediately; recording continues through the final race and its winner reveal.
+action-duration minimum at normal speed, the same single matchup is recorded at
+a deterministic slow-motion rate so its live race action fills the duration.
+Long-form courses expand to 50 ascending layers; every video records exactly one
+matchup, then only a brief winner reveal. A duration or matchup-count check
+rejects the upload if the action is short or a second matchup appears.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Each description asks “Who will break the

@@ -107,27 +107,13 @@ export function normalizeSocialOptions(input = {}) {
   };
 }
 
-export function shouldReplayRaceForMinimumDuration({
-  gameplayMode,
-  isTournament,
-  minimumDurationSeconds,
-  isRecording,
-  recordingDeadline,
-  now,
-} = {}) {
-  // Deliberately do not gate on social format: Shorts and long-form need the
-  // same continuous-action guarantee.
-  return gameplayMode === "orb-race"
-    && isTournament !== true
-    && Number(minimumDurationSeconds) > 0
-    && isRecording === true
-    && Number(recordingDeadline) > Number(now);
-}
-
-export function socialRaceReplaySeed(baseSeed, replayIndex) {
-  const normalizedBaseSeed = Math.max(1, Math.floor(Number(baseSeed) || 1));
-  const normalizedReplayIndex = Math.max(1, Math.floor(Number(replayIndex) || 1));
-  return ((normalizedBaseSeed + normalizedReplayIndex * 104_729 - 1) % 999_999_999) + 1;
+export function socialActionPlaybackRateForDuration(simulatedSeconds, targetActionSeconds) {
+  const requestedDuration = Number(simulatedSeconds);
+  const requestedTarget = Number(targetActionSeconds);
+  const duration = Number.isFinite(requestedDuration) ? Math.max(0, requestedDuration) : 0;
+  const target = Number.isFinite(requestedTarget) ? Math.max(0, requestedTarget) : 0;
+  if (duration <= 0 || target <= 0) return 1;
+  return Math.min(1, duration / target);
 }
 
 export function buildAbilityHud(fighter, simTime = 0) {

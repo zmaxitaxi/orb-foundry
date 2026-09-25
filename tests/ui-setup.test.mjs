@@ -103,15 +103,17 @@ test("Classic team names, announcer routing, and team outlines stay visible in t
   assert.match(classicOrbSource, /1:\s*"#e11d48"/, "Team 2 should use the red outline");
 });
 
-test("Short and long-form Orb Race recordings rematch instead of holding a winner screen", () => {
+test("Short and long-form Orb Race recordings preserve one matchup and measure its action duration", () => {
   const finishBattleSource = mainSource.slice(
     mainSource.indexOf("function finishBattle()"),
     mainSource.indexOf("function drawSocialBattle(", mainSource.indexOf("function finishBattle()")),
   );
-  assert.match(finishBattleSource, /shouldReplayRaceForMinimumDuration\(/);
-  assert.doesNotMatch(finishBattleSource, /settings\.social\.format\s*===\s*"race-landscape"/);
-  assert.match(finishBattleSource, /startSimulation\(\{ preserveSocialRecording: true, seedOverride: replaySeed \}\)/);
-  assert.match(finishBattleSource, /socialRaceReplaySeed\(baseSeed, replayIndex\)/);
+  assert.doesNotMatch(finishBattleSource, /startSimulation\(/, "a finished matchup must never restart during recording");
+  assert.match(finishBattleSource, /socialRaceActionEndedAt\s*\?\?=/);
+  assert.doesNotMatch(mainSource, /socialMinimumDurationReplayCount|socialRaceReplaySeed|shouldReplayRaceForMinimumDuration/);
+  assert.match(mainSource, /raceMatchupCount: socialRaceMatchupCount/);
+  assert.match(mainSource, /raceActionDurationSeconds: socialRaceActionDurationSeconds\(\)/);
+  assert.match(mainSource, /return actionPlaybackRate;/);
 });
 
 test("Orb Race setup keeps the new racer roster registry-driven in both teams", () => {

@@ -93,6 +93,7 @@ export async function exportSocialVideo(options = {}) {
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
         minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
+        actionPlaybackRate: Number(options.actionPlaybackRate) || 1,
         requireAnnouncer: options.requireAnnouncer === true,
       },
       features: {
@@ -179,6 +180,7 @@ export async function exportSocialVideo(options = {}) {
       raceTeams: gameplayMode === "orb-race" ? settings.raceTeams : [],
       raceLayerStrengths: gameplayMode === "orb-race" ? settings.raceLayerStrengths : [],
       minimumDurationSeconds: Number(settings.social.minimumDurationSeconds) || 0,
+      actionPlaybackRate: Number(settings.social.actionPlaybackRate) || 1,
       orbNames,
       title: options.title || `${orbNames[0]} VS ${orbNames[1]}`,
       description: caption,

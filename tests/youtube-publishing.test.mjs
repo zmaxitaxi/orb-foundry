@@ -95,10 +95,20 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     assert.equal(plan.runTag, "of-20260919-noon-short");
     assert.ok(plan.battleQuality.accepted);
     assert.equal(plan.minimumDurationSeconds, 25);
+    assert.ok(plan.actionPlaybackRate > 0 && plan.actionPlaybackRate < 1);
+    assert.ok(plan.battleQuality.plannedActionDurationSeconds >= 26.25);
     assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
     assert.ok(plan.raceLayerStrengths.length <= config.quality.maximumShortLayers);
     assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
+    const longformSlot = config.schedule.find(({ id }) => id === "noon-longform");
+    const longformPlan = buildYouTubePublishPlan({ dateKey: "2026-09-19", slot: longformSlot, config });
+    assert.equal(longformPlan.raceLayerStrengths.length, config.quality.longformLayerCount);
+    assert.ok(longformPlan.battleQuality.plannedActionDurationSeconds >= 63);
+    assert.deepEqual(
+        longformPlan.raceLayerStrengths,
+        [...longformPlan.raceLayerStrengths].sort((a, b) => a - b),
+    );
     assert.throws(
         () => validateYouTubeGenerationSpec({ plan: { ...plan, description: "wrong" }, config }),
         /title or description does not match/,
@@ -129,7 +139,10 @@ test("YouTube upload gate requires spoken announcer proof and the complete artif
             presentationWasSplit: false,
         },
         state: {
-            recordingResult: { duration: 25.4 },
+            recordingResult: { duration: 27.1 },
+            raceMatchupCount: 1,
+            raceActionDurationSeconds: 26.7,
+            settings: { social: { actionPlaybackRate: plan.actionPlaybackRate } },
         },
     };
     assert.equal(validateYouTubeExportArtifact({ exportResult: artifact, plan, config }), true);
@@ -164,6 +177,22 @@ test("YouTube upload gate requires spoken announcer proof and the complete artif
             config,
         }),
         /teams, orbs, or layer profile does not match/,
+    );
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, state: { ...artifact.state, raceMatchupCount: 2 } },
+            plan,
+            config,
+        }),
+        /exactly one matchup/,
+    );
+    assert.throws(
+        () => validateYouTubeExportArtifact({
+            exportResult: { ...artifact, state: { ...artifact.state, raceActionDurationSeconds: 24.9 } },
+            plan,
+            config,
+        }),
+        /single-match race action is below/,
     );
 });
 

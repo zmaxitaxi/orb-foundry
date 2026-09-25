@@ -123,6 +123,9 @@ function arrangeHit(attacker, target) {
 
 {
   const defaults = normalizeSettings({}, classes);
+  assert.equal(defaults.social.actionPlaybackRate, 1, "the social recording speed should default to normal time");
+  assert.equal(normalizeSettings({ social: { actionPlaybackRate: 0.2 } }, classes).social.actionPlaybackRate, 0.2);
+  assert.equal(normalizeSettings({ social: { actionPlaybackRate: 3 } }, classes).social.actionPlaybackRate, 1);
   assert.deepEqual(defaults.classes, CLASSIC_DEFAULT_CLASSES, "Classic should use the registry-owned safe matchup");
   assert.deepEqual(defaults.classicTeams, CLASSIC_DEFAULT_TEAMS);
   assert.equal(classicTeamMemberCount(defaults.classicTeams, defaults.classicTeamOptions), 2);

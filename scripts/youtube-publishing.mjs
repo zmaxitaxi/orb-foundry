@@ -3,7 +3,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLASSIC_ORB_IDS } from "../src/classic-orbs.js";
-import { ORB_RACER_IDS } from "../src/orb-race.js";
+import {
+    ORB_RACE_MAX_LAYER_COUNT,
+    ORB_RACE_MAX_LAYER_STRENGTH,
+    ORB_RACER_IDS,
+} from "../src/orb-race.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const YOUTUBE_CONFIG_PATH = resolve(ROOT, "config", "youtube-publishing.json");
@@ -123,6 +127,12 @@ function validateYouTubeQuality(quality) {
             previous = health;
         }
     }
+    const longformLayerCount = Number(quality.longformLayerCount);
+    if (!Number.isInteger(longformLayerCount)
+        || longformLayerCount < quality.layerStrengths.longform.length
+        || longformLayerCount > ORB_RACE_MAX_LAYER_COUNT) {
+        throw new Error(`YouTube longformLayerCount must be between its configured profile length and ${ORB_RACE_MAX_LAYER_COUNT}.`);
+    }
     const announcer = quality.announcer;
     if (
         !announcer
@@ -175,6 +185,18 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     if (Number(plan.minimumDurationSeconds) !== expectedDuration) {
         throw new Error("YouTube generation blocked: the plan duration does not match the configured minimum.");
     }
+    const actionPlaybackRate = Number(plan.actionPlaybackRate);
+    const simulatedSeconds = Number(plan.battleQuality.simulatedSeconds);
+    const plannedActionDurationSeconds = Number(plan.battleQuality.plannedActionDurationSeconds);
+    const expectedActionDurationSeconds = simulatedSeconds / actionPlaybackRate;
+    if (!Number.isFinite(actionPlaybackRate) || actionPlaybackRate <= 0 || actionPlaybackRate > 1
+        || Number(plan.battleQuality.actionPlaybackRate) !== actionPlaybackRate
+        || !Number.isFinite(expectedActionDurationSeconds)
+        || expectedActionDurationSeconds + 0.05 < expectedDuration * 1.05
+        || !Number.isFinite(plannedActionDurationSeconds)
+        || Math.abs(plannedActionDurationSeconds - expectedActionDurationSeconds) > 0.01) {
+        throw new Error("YouTube generation blocked: the single-match action-duration plan is invalid.");
+    }
 
     const allowedOrbs = new Set(config.videoReady.orbRace.orbs);
     const raceOrbs = Array.isArray(plan.raceOrbs) ? plan.raceOrbs : [];
@@ -190,7 +212,11 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     }
 
     const layers = plan.raceLayerStrengths;
+    const expectedLayerCount = plan.contentType === "longform"
+        ? Number(config.quality.longformLayerCount)
+        : config.quality.layerStrengths.short.length;
     if (!Array.isArray(layers) || layers.length < 2
+        || layers.length !== expectedLayerCount
         || JSON.stringify(layers) !== JSON.stringify(plan.battleQuality.layerStrengths)) {
         throw new Error("YouTube generation blocked: the plan layer profile is missing or inconsistent.");
     }
@@ -200,7 +226,8 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     let previous = 0;
     for (const value of layers) {
         const health = Number(value);
-        if (!Number.isInteger(health) || health < Number(config.quality.minimumLayerHealth)) {
+        if (!Number.isInteger(health) || health < Number(config.quality.minimumLayerHealth)
+            || health > ORB_RACE_MAX_LAYER_STRENGTH) {
             throw new Error("YouTube generation blocked: every generated layer must meet the minimum HP requirement.");
         }
         if (health < previous) {
@@ -277,6 +304,16 @@ export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
     const minimumDuration = Number(plan.minimumDurationSeconds);
     if (!Number.isFinite(recordedDuration) || recordedDuration + 0.05 < minimumDuration) {
         throw new Error(`YouTube upload blocked: recording duration is below the ${minimumDuration}s minimum.`);
+    }
+    if (Number(exportResult.state?.raceMatchupCount) !== 1) {
+        throw new Error("YouTube upload blocked: the recording must contain exactly one matchup.");
+    }
+    const recordedActionDuration = Number(exportResult.state?.raceActionDurationSeconds);
+    if (!Number.isFinite(recordedActionDuration) || recordedActionDuration + 0.05 < minimumDuration) {
+        throw new Error(`YouTube upload blocked: single-match race action is below the ${minimumDuration}s minimum.`);
+    }
+    if (Number(exportResult.state?.settings?.social?.actionPlaybackRate) !== Number(plan.actionPlaybackRate)) {
+        throw new Error("YouTube upload blocked: the recorded action speed does not match the approved duration plan.");
     }
 
     const announcer = exportResult.announcer;

@@ -28,9 +28,7 @@ import {
   normalizeSocialOptions,
   presentationPauseMs,
   recordingFilename,
-  shouldReplayRaceForMinimumDuration,
-  socialRaceReplaySeed,
-} from "./social.js?v=20260923-race-action-minimum1";
+} from "./social.js?v=20260924-single-match-duration1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -50,7 +48,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20260920-youtube-upload-gate1";
+} from "./config.js?v=20260924-single-match-duration1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -176,8 +174,9 @@ let setupOrigin = "game";
 let socialLastEventId = 0;
 let socialPresentation = createSocialPresentationState();
 let socialRecordingResult = null;
-let socialMinimumRecordingUntil = 0;
-let socialMinimumDurationReplayCount = 0;
+let socialRaceActionStartedAt = null;
+let socialRaceActionEndedAt = null;
+let socialRaceMatchupCount = 0;
 let raceLayerRenderTimer = 0;
 
 function applyTheme(themeId) {
@@ -2219,10 +2218,18 @@ function consumeSocialEvents(now) {
 }
 
 function socialSimulationRate(now) {
-  // Recorder/audio setup is asynchronous. It must not gate the fixed-step
-  // match: preview-only browsers and slow audio unlocks should still start
-  // both race lanes immediately. Explicit presentation phases remain the
-  // only simulation pause gate.
+  // Normal previews still start gameplay while audio/recording initializes.
+  // Duration-qualified Orb Race exports wait for the recorder so their one
+  // matchup starts at the first captured action frame.
+  const durationMatchedRace = settings.gameplayMode === ORB_RACE_MODE
+    && !sim.raceTournament
+    && settings.social.requireAnnouncer === true
+    && Number(settings.social.minimumDurationSeconds) > 0
+    && socialRecorder.supported();
+  if (durationMatchedRace && socialRecorder.machine.state !== RECORDER_STATES.RECORDING) return 0;
+  const actionPlaybackRate = durationMatchedRace
+    ? Math.max(0.001, Math.min(1, Number(settings.social.actionPlaybackRate) || 1))
+    : 1;
   if (socialPresentation.phase === "countdown") return 0;
   if (settings.features.hitStop && now < socialPresentation.hitStopUntil) return 0;
   if (
@@ -2231,9 +2238,9 @@ function socialSimulationRate(now) {
     socialPresentation.highlight.strength >= 0.75 &&
     now < socialPresentation.highlightUntil
   ) {
-    return socialPresentation.highlight.kind === "final-blow" ? 0.28 : 0.52;
+    return actionPlaybackRate * (socialPresentation.highlight.kind === "final-blow" ? 0.28 : 0.52);
   }
-  return 1;
+  return actionPlaybackRate;
 }
 
 async function startSocialRecording({ transitionOverride = null } = {}) {
@@ -2257,7 +2264,6 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
     elements.socialRecordingDetail.textContent =
       "Canvas recording is unavailable in this browser. The Social Battle remains fully playable.";
     elements.socialStopButton.disabled = true;
-    socialMinimumRecordingUntil = 0;
     socialPresentation.started = true;
     return;
   }
@@ -2323,8 +2329,11 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
     } else {
       await socialRecorder.start({ fps: settings.social.fps });
     }
-    socialMinimumRecordingUntil = performance.now()
-      + Math.max(0, Number(settings.social.minimumDurationSeconds) || 0) * 1000;
+    if (settings.gameplayMode === ORB_RACE_MODE && !sim.raceTournament) {
+      socialRaceMatchupCount = 1;
+      socialRaceActionStartedAt = performance.now();
+      socialRaceActionEndedAt = null;
+    }
     socialPresentation.started = true;
   } catch (error) {
     elements.socialRecordingStatus.textContent = "RECORDING UNAVAILABLE";
@@ -2563,13 +2572,19 @@ function launchBattle(nextSettings = settings, {
 
 function startSimulation({
   tournamentTransition: transition = tournamentTransition,
-  preserveSocialRecording = false,
-  seedOverride = null,
 } = {}) {
-  const preservedMinimumRecordingUntil = socialMinimumRecordingUntil;
+  const continuingRecordedRace = socialRecorder.machine.state === RECORDER_STATES.RECORDING
+    && settings.gameplayMode === ORB_RACE_MODE
+    && !settings.raceTournament;
+  if (continuingRecordedRace) {
+    socialRaceMatchupCount += 1;
+  } else {
+    socialRaceMatchupCount = 0;
+    socialRaceActionStartedAt = null;
+    socialRaceActionEndedAt = null;
+  }
   const options = simulationSettings({
     spawnSeed: settings.gameplayMode === WORLD_CUP_MODE ? createFightSpawnSeed() : settings.seed,
-    ...(seedOverride === null ? {} : { seed: Number(seedOverride) }),
   });
   try {
     sim = createSimulation(options);
@@ -2588,28 +2603,23 @@ function startSimulation({
   }
   document.body.dataset.gameplayMode = settings.gameplayMode;
   document.body.dataset.classicTheme = settings.classicBlackTheme ? "black" : "light";
-  audio.reset({ preserveAnnouncerPlayback: preserveSocialRecording });
+  audio.reset();
   const continuousTransition = transition?.mode === "pan-to-next";
   if (!continuousTransition) tournamentZoomCueKey = null;
   paused = false;
   accumulator = 0;
   socialLastEventId = 0;
-  socialMinimumRecordingUntil = preserveSocialRecording ? preservedMinimumRecordingUntil : 0;
-  if (!preserveSocialRecording) socialMinimumDurationReplayCount = 0;
-  else socialMinimumDurationReplayCount += 1;
-  if (!continuousTransition && !preserveSocialRecording) socialRecordingResult = null;
+  if (!continuousTransition) socialRecordingResult = null;
   socialPresentation = createSocialPresentationState(
-    continuousTransition || preserveSocialRecording ? false : settings.features.introCards,
+    continuousTransition ? false : settings.features.introCards,
   );
   updateSocialMetrics();
   socialRenderer.setTheme(settings.theme);
   socialRenderer.setFormat(settings.social.format);
   elements.pauseButton.textContent = "II";
   elements.pauseButton.setAttribute("aria-label", "Pause simulation");
-  elements.socialRecordingStatus.textContent = preserveSocialRecording ? "RECORDING" : "PREPARING";
-  elements.socialRecordingDetail.textContent = preserveSocialRecording
-    ? "Race rematch · continuous recording"
-    : settings.gameplayMode === WORLD_CUP_MODE
+  elements.socialRecordingStatus.textContent = "PREPARING";
+  elements.socialRecordingDetail.textContent = settings.gameplayMode === WORLD_CUP_MODE
     ? "World Cup mode · momentum collisions · pickup damage"
     : settings.gameplayMode === ORB_RACE_MODE
       ? settings.raceTournament
@@ -2713,19 +2723,8 @@ function queueNextTournamentMatch() {
 
 function finishBattle() {
   if (!sim.finished) return;
-  if (shouldReplayRaceForMinimumDuration({
-    gameplayMode: settings.gameplayMode,
-    isTournament: Boolean(sim.raceTournament),
-    minimumDurationSeconds: settings.social.minimumDurationSeconds,
-    isRecording: socialRecorder.machine.state === RECORDER_STATES.RECORDING,
-    recordingDeadline: socialMinimumRecordingUntil,
-    now: performance.now(),
-  })) {
-    const replayIndex = socialMinimumDurationReplayCount + 1;
-    const baseSeed = Math.max(1, Math.floor(Number(settings.seed) || 1));
-    const replaySeed = socialRaceReplaySeed(baseSeed, replayIndex);
-    startSimulation({ preserveSocialRecording: true, seedOverride: replaySeed });
-    return;
+  if (settings.gameplayMode === ORB_RACE_MODE && !sim.raceTournament && socialRaceActionStartedAt !== null) {
+    socialRaceActionEndedAt ??= performance.now();
   }
   if (!socialPresentation.winnerUntil) {
     socialPresentation.phase = "battle";
@@ -2733,13 +2732,7 @@ function finishBattle() {
     const tailMs = sim.raceTournament
       ? Math.max(MATCH_FINALE_RECORDING_TAIL_MS, tournamentConclusionRecordingTailMs())
       : MATCH_FINALE_RECORDING_TAIL_MS;
-    socialPresentation.winnerUntil = Math.max(
-      performance.now() + tailMs,
-      socialMinimumRecordingUntil,
-    );
-  }
-  if (socialMinimumRecordingUntil > socialPresentation.winnerUntil) {
-    socialPresentation.winnerUntil = socialMinimumRecordingUntil;
+    socialPresentation.winnerUntil = performance.now() + tailMs;
   }
   if (performance.now() >= socialPresentation.winnerUntil) {
     const tournament = sim.raceTournament;
@@ -2778,6 +2771,12 @@ function finishBattle() {
     }
     if (socialRecorder.machine.state === RECORDER_STATES.RECORDING) socialRecorder.stop();
   }
+}
+
+function socialRaceActionDurationSeconds() {
+  if (socialRaceActionStartedAt === null) return 0;
+  const end = socialRaceActionEndedAt ?? performance.now();
+  return Math.max(0, (end - socialRaceActionStartedAt) / 1000);
 }
 
 function drawSocialBattle(now, recording = socialRecorder.machine.state === RECORDER_STATES.RECORDING) {
@@ -3517,7 +3516,8 @@ window.__ORB_FOUNDRY__ = {
         ? "profile"
         : elements.socialPreviewDialog.open ? "social-preview" : "social-battle",
     seed: sim.seed,
-    minimumDurationReplayCount: socialMinimumDurationReplayCount,
+    raceMatchupCount: socialRaceMatchupCount,
+    raceActionDurationSeconds: socialRaceActionDurationSeconds(),
     arenaModifier: sim.arenaModifier,
     arenaSize: sim.arenaSize,
     arenaSizeLabel: sim.arenaSizeLabel,
@@ -3578,7 +3578,8 @@ window.render_game_to_text = () => JSON.stringify({
         : "social-battle",
   match: {
     seed: sim.seed,
-    minimumDurationReplayCount: socialMinimumDurationReplayCount,
+    raceMatchupCount: socialRaceMatchupCount,
+    raceActionDurationSeconds: socialRaceActionDurationSeconds(),
     gameplayMode: sim.gameplayMode,
     hill: sim.hill ? {
       x: sim.hill.x,

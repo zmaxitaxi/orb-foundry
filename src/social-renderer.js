@@ -26,7 +26,7 @@ import {
   PIXEL_WEAPON_PROFILES,
   classicVisualColorFor,
 } from "./renderer.js?v=20260825-tsar-all-in-one1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20260825-tsar-all-in-one1";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20260924-single-match-duration1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
