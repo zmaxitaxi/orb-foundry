@@ -1,11 +1,8 @@
+# Scheduled publishing moved off GitHub Actions to a separate machine.
+# This workflow remains for manual runs only.
 name: YouTube publishing
 
 on:
-  # GitHub cron is UTC. Run a morning batch in both daylight/standard-time
-  # positions; YouTube receives private uploads with the exact Pacific publish
-  # times, so scheduler drift no longer causes a missed noon window.
-  schedule:
-    - cron: "0 13,14 * * *"
   workflow_dispatch:
     inputs:
       slot_id:
@@ -86,7 +83,7 @@ jobs:
         run: |
           set -euo pipefail
           args=()
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "$DISPATCH_SLOT" = "batch" ]; then
+          if [ "$DISPATCH_SLOT" = "batch" ]; then
             args+=("--batch")
           elif [ "$DISPATCH_SLOT" != "auto" ]; then
             args+=("--slot=$DISPATCH_SLOT")
