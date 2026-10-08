@@ -3,7 +3,7 @@ import {
   raceAbilityIdsFor,
   raceComboAnnouncerCueFor,
   raceTeamDisplayParts,
-} from "./orb-race.js?v=20260825-tsar-all-in-one1";
+} from "./orb-race.js?v=20261008-purple-sun-title1";
 import {
   classicTeamDisplayParts,
 } from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
@@ -151,7 +151,7 @@ export const RACE_ANNOUNCER_NAMES = Object.freeze({
   charger: "Charger",
   bouncer: "Bouncer",
   "blue-sun": "Blue Sun",
-  "purple-sun": "The Fucking Purple Sun",
+  "purple-sun": "Purple Sun",
   "phase-three-sun": "The Sun",
   "phase-two-sun": "Phase Two Sun",
   trifecta: "Trifecta",

@@ -14,7 +14,7 @@ import {
   normalizeRaceOrbScale,
   normalizeRaceTeamOptions,
   normalizeRaceTeams,
-} from "./orb-race.js?v=20260825-tsar-all-in-one1";
+} from "./orb-race.js?v=20261008-purple-sun-title1";
 import {
     CLASSIC_DEFAULT_CLASSES,
     CLASSIC_DEFAULT_TEAMS,

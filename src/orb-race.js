@@ -230,7 +230,7 @@ export const ORB_RACERS = Object.freeze({
   charger: racer("charger", "CHARGER", "#0b5d32", "#5dff9a", "C", "CHARGE", 0),
   bouncer: racer("bouncer", "BOUNCER", "#ff4fb8", "#ffd1eb", "B", "MINI ORBS", 0),
   "blue-sun": racer("blue-sun", "BLUE SUN", "#050505", "#00eaff", "", "POWER LEVEL", 0),
-  "purple-sun": racer("purple-sun", "THE FUCKING PURPLE SUN", "#a855f7", "#f0abfc", "", "POWER LEVEL", 0),
+  "purple-sun": racer("purple-sun", "PURPLE SUN", "#a855f7", "#f0abfc", "", "POWER LEVEL", 0),
   "phase-three-sun": racer("phase-three-sun", "THE SUN", "#d8a800", "#fff36b", "III", "POWER LEVEL", 0),
   "phase-two-sun": racer("phase-two-sun", "PHASE TWO SUN", "#f97316", "#ffd166", "II", "POWER LEVEL", 0),
   snake: racer("snake", "SNAKE", "#164b2b", "#8aff8a", "S", "TAIL", 0),
