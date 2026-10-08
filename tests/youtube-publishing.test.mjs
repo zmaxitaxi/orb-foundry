@@ -16,6 +16,7 @@ import {
 import {
     buildYouTubePublishPlan,
     buildDailyYouTubePlans,
+    planningSpawnedEntityCount,
     publishDueYouTubeSlots,
     selectYouTubeMatchup,
 } from "../scripts/youtube-publish.mjs";
@@ -215,6 +216,70 @@ test("daily plans keep orbs out for two days and support multi-orb battles", asy
     assert.ok(current.some(({ matchup }) => matchup.raceTeams.some((team) => team.length > 1)));
     assert.equal(config.delivery.visibility, "private");
     assert.equal(config.delivery.scheduleOnYouTube, true);
+});
+
+test("planning entity budget counts spawned orbs and projectiles", () => {
+    const sim = {
+        fighters: [
+            { raceDuplicateOrbs: [{}, {}], raceDrillProjectiles: [{}], name: "ignored" },
+            { raceParasites: [{}, {}, {}] },
+        ],
+    };
+    assert.equal(planningSpawnedEntityCount(sim), 6);
+    assert.equal(planningSpawnedEntityCount({ fighters: [] }), 0);
+});
+
+test("a capped search keeps the best finished matchup when no close battle appears", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const slot = config.schedule.find(({ id }) => id === "noon-longform");
+    const matchup = selectYouTubeMatchup({
+        dateKey: "2026-10-08",
+        slotId: slot.id,
+        config,
+        maxAttempts: 1,
+    });
+    assert.equal(matchup.battleQuality.finished, true);
+    assert.equal(matchup.battleQuality.runaway, false);
+    assert.equal(matchup.battleQuality.fallback, true);
+    assert.equal(matchup.battleQuality.accepted, true);
+    assert.ok(matchup.battleQuality.progressMargin > config.quality.closeBattle.maxProgressMargin);
+    const plan = buildYouTubePublishPlan({ dateKey: "2026-10-08", slot, config, matchup });
+    assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
+    assert.equal(plan.battleQuality.fallback, true);
+    const repeated = selectYouTubeMatchup({
+        dateKey: "2026-10-08",
+        slotId: slot.id,
+        config,
+        maxAttempts: 1,
+    });
+    assert.deepEqual(repeated.raceTeams, matchup.raceTeams);
+    assert.equal(repeated.seed, matchup.seed);
+});
+
+test("October 8 planning terminates without a runaway duplicator battle", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const plans = buildDailyYouTubePlans({ dateKey: "2026-10-08", config });
+    assert.equal(plans.length, 3);
+    for (const { slot, matchup } of plans) {
+        assert.equal(matchup.battleQuality.runaway, false, slot.id);
+        assert.equal(matchup.battleQuality.accepted, true, slot.id);
+        assert.equal(matchup.battleQuality.finished, true, slot.id);
+        const plan = buildYouTubePublishPlan({
+            dateKey: "2026-10-08",
+            slot,
+            config,
+            matchup,
+        });
+        assert.equal(validateYouTubeGenerationSpec({ plan, config }), true, slot.id);
+    }
+    assert.deepEqual(
+        plans.map(({ matchup }) => [matchup.seed, matchup.raceTeams, matchup.battleQuality.fallback]),
+        [
+            [958840975, [["blue-sun", "purple-sun"], ["phase-three-sun", "phase-two-sun"]], false],
+            [818404014, [["bouncer"], ["snake"]], false],
+            [17450621, [["charger"], ["vampire"]], false],
+        ],
+    );
 });
 
 test("dry-run publishing plans both noon uploads without credentials or media side effects", async () => {

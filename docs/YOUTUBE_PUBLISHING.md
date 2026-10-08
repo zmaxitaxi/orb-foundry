@@ -50,8 +50,12 @@ Every unattended video must satisfy the quality contract in
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
 - Before rendering, the planner runs the deterministic matchup through the same
-  Orb Race simulation and only accepts a finished battle whose progress margin
-  and layer lead fit the configured close-battle thresholds.
+  Orb Race simulation and prefers a finished battle whose progress margin and
+  layer lead fit the configured close-battle thresholds. The search is capped
+  at 128 attempts. A candidate whose spawned orbs or projectiles grow past the
+  planning budget—Duplicator copies are the case that previously exhausted the
+  heap—is abandoned and the next matchup is tried. If the cap is reached first,
+  planning keeps the closest finished candidate so the dry run still terminates.
 - When the estimated damage strength is very uneven, the shared layer profile is
   scaled upward (within the configured cap) so stronger matchups work through
   more HP. This is a balancing aid, not a replacement for the close-battle gate.
