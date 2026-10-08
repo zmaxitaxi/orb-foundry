@@ -1436,6 +1436,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
     /if \(racer\?\.raceOrbId === "purple-sun"\) \{\s*return `LASER: \$\{formatCombatValue\(racer\.racePurpleSunBeamDamage \|\| 8000\)\}\/SEC`;/,
     "Purple Sun should show laser damage per second instead of generic weapon damage",
   );
+  assert.equal(ORB_RACERS["purple-sun"].name, "PURPLE SUN", "Purple Sun's public title should be Purple Sun");
   assert.equal(ORB_RACERS["purple-sun"].color, "#a855f7", "Purple Sun should use the lighter purple base theme");
   assert.equal(ORB_RACERS["purple-sun"].accent, "#f0abfc", "Purple Sun should use the lighter purple accent theme");
   assert.notEqual(
@@ -1709,7 +1710,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20260825-tsar-all-in-one1/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261008-purple-sun-title1/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -4484,7 +4485,7 @@ function run(sim, seconds = 120) {
     charger: "Charger",
     bouncer: "Bouncer",
     "blue-sun": "Blue Sun",
-    "purple-sun": "The Fucking Purple Sun",
+    "purple-sun": "Purple Sun",
     "phase-three-sun": "The Sun",
     "phase-two-sun": "Phase Two Sun",
     snake: "Snake",

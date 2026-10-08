@@ -5,12 +5,12 @@ import {
   classicCutterVisibleZoneGeometriesFor,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20260825-tsar-all-in-one1";
+} from "./simulation.js?v=20261008-purple-sun-title1";
 import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
 import { themeById } from "./presentation.js?v=20260811-classic-health-reactor-batman-fairy-zeus-frost3";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
-import { ORB_RACERS } from "./orb-race.js?v=20260825-tsar-all-in-one1";
+import { ORB_RACERS } from "./orb-race.js?v=20261008-purple-sun-title1";
 
 const TAU = Math.PI * 2;
 const PIXEL_FONT = "Roboto, Arial, sans-serif";

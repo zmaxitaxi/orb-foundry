@@ -19,6 +19,7 @@ import {
     publishDueYouTubeSlots,
     selectYouTubeMatchup,
 } from "../scripts/youtube-publish.mjs";
+import { ORB_RACERS } from "../src/orb-race.js";
 
 test("YouTube publishing contract loads with three daily slots", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
@@ -46,6 +47,11 @@ test("YouTube publishing contract loads with three daily slots", async () => {
 
 test("YouTube metadata uses the approved VS title and hashtags", () => {
     assert.equal(youtubeTitle("DUPLICATOR", "ORBITAL"), "Duplicator VS Orbital");
+    assert.equal(
+        youtubeTitle(ORB_RACERS["purple-sun"].name, ORB_RACERS["blue-sun"].name),
+        "Purple Sun VS Blue Sun",
+        "Purple Sun's YouTube title should be Purple Sun",
+    );
     assert.deepEqual(youtubeMetadata({ left: "MATH ORBS", right: "WEAPON ORBS", layerHealth: 750 }), {
         title: "Math Orbs VS Weapon Orbs",
         description: "Who will break the 750 HP layer first, Math Orbs or Weapon Orbs?\n\n#physics #shorts #simulation #satisfying",

@@ -11,6 +11,18 @@ __pycache__/
 .env.*
 !.env.example
 
+# OAuth tokens, API credentials, and private keys.
+client_secret*.json
+*credentials*.json
+*token.json
+*service-account*.json
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+id_ed25519
+
 # Generated recording and export output. Keep source media and QA evidence
 # under assets/ versioned for continued development.
 artifacts/

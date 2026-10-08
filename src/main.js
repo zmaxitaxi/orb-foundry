@@ -4,13 +4,13 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20260825-tsar-all-in-one1";
+} from "./simulation.js?v=20261008-purple-sun-title1";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
   raceTargetAnnouncerCueFor,
-} from "./audio.js?v=20260922-youtube-min-duration-replays1";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20260825-tsar-all-in-one1";
+} from "./audio.js?v=20261008-purple-sun-title1";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261008-purple-sun-title1";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -28,7 +28,7 @@ import {
   normalizeSocialOptions,
   presentationPauseMs,
   recordingFilename,
-} from "./social.js?v=20260924-single-match-duration1";
+} from "./social.js?v=20261008-purple-sun-title1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -48,7 +48,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20260924-single-match-duration1";
+} from "./config.js?v=20261008-purple-sun-title1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -92,7 +92,7 @@ import {
   normalizeRaceTeamOptions,
   normalizeRaceTeams,
   raceTeamMemberCount,
-} from "./orb-race.js?v=20260825-tsar-all-in-one1";
+} from "./orb-race.js?v=20261008-purple-sun-title1";
 import {
   CLASSIC_MAX_ORB_COPIES,
   CLASSIC_ORBS,
