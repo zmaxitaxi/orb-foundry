@@ -6,11 +6,13 @@ Orb Foundry's approved YouTube publishing contract is stored in
 ## Current contract
 
 - Timezone: `America/Los_Angeles` (Pacific time, including daylight-saving changes).
-- `12:00 PM`: one long-form video and the first Short.
-- `3:00 PM`: the second Short.
-- Delivery mode: daily automated morning batch.
+- `12:00 PM`: one long-form video.
+- `3:00 PM`: a second long-form video.
+- Shorts remain supported by the quality checks, but neither daily slot
+  schedules one.
+- Delivery mode: daily batch initiated by the separately configured scheduler.
 - Upload mode: private uploads with YouTube `publishAt` scheduling, so the
-  hosted runner can prepare the videos before the Pacific release times.
+  scheduler can prepare the videos before the Pacific release times.
 - Video approval: not required.
 - Title: `{left} VS {right}`, with readable title casing for orb and group names
   (for example, `Splodey VS Jackpot`, never `SPLODEY VS JACKPOT`).
@@ -35,7 +37,7 @@ Every unattended video must satisfy the quality contract in
 [`config/youtube-publishing.json`](../config/youtube-publishing.json):
 
 - An orb stays on cooldown for at least two full publishing days. The planner
-  also keeps all three videos on the same day distinct when the roster allows it.
+  also keeps the two videos on the same day distinct when the roster allows it.
 - A battle may be a 1v1 duel or a multi-orb team duel. The selected format and
   every stable orb ID are recorded in the export metadata.
 - Each video contains exactly one matchup. Shorts include at least 25 seconds
@@ -50,12 +52,12 @@ Every unattended video must satisfy the quality contract in
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
 - Before rendering, the planner runs the deterministic matchup through the same
-  Orb Race simulation and prefers a finished battle whose progress margin and
+  Orb Race simulation and requires a finished battle whose progress margin and
   layer lead fit the configured close-battle thresholds. The search is capped
   at 128 attempts. A candidate whose spawned orbs or projectiles grow past the
-  planning budget—Duplicator copies are the case that previously exhausted the
-  heap—is abandoned and the next matchup is tried. If the cap is reached first,
-  planning keeps the closest finished candidate so the dry run still terminates.
+  planning budget—Duplicator copies previously exhausted the heap—is abandoned
+  and the next matchup is tried. If no candidate passes, the slot stops before
+  rendering or upload; a merely closest non-close result is never accepted.
 - When the estimated damage strength is very uneven, the shared layer profile is
   scaled upward (within the configured cap) so stronger matchups work through
   more HP. This is a balancing aid, not a replacement for the close-battle gate.
@@ -71,7 +73,7 @@ before YouTube receives the video:
 
 1. Select only stable IDs in the `videoReady` allowlist derived from the
    `OrbBattlegroundsSimulator` channel roster.
-2. Enforce the two-full-day orb cooldown and keep the three same-day videos
+2. Enforce the two-full-day orb cooldown and keep the two same-day videos
    distinct when the roster allows it.
 3. Use either a 1v1 battle or an allowed multi-orb team battle; record every
    stable orb ID and team label in the export metadata.
@@ -124,14 +126,14 @@ is not in that allowlist must not be selected for a YouTube batch.
 
 ## Activation requirements
 
-The live publisher runs on the hosted GitHub Actions workflow
-`.github/workflows/youtube-publishing.yml`, so it can operate when the
-development computer is asleep or offline. It runs a morning batch in both
-UTC positions needed for Pacific standard/daylight time, then sets YouTube's
-publish times in `America/Los_Angeles` for noon and 3:00 PM.
+The daily scheduler is configured separately from this repository. The GitHub
+workflow `.github/workflows/youtube-publishing.yml` is manual-only; it does not
+run on a cron schedule. Keep the external scheduler aligned with the two slots
+in `config/youtube-publishing.json`. A repo update does not change that
+external bot's own schedule or credentials.
 
-Before enabling the scheduled uploads, create a Google Cloud OAuth client, enable the
-YouTube Data API v3, and add these GitHub Actions secrets:
+Create a Google Cloud OAuth client and enable the YouTube Data API v3. For
+manual GitHub Actions runs, add these repository secrets:
 
 - `YOUTUBE_CLIENT_ID`
 - `YOUTUBE_CLIENT_SECRET`
@@ -148,23 +150,24 @@ npm run youtube:oauth
 
 The OAuth client redirect URI must include
 `http://127.0.0.1:8787/oauth2callback`. Copy the printed refresh token into the
-private repository's `YOUTUBE_REFRESH_TOKEN` Actions secret. OAuth credentials
-and refresh tokens must never be committed to the repository.
+private repository's `YOUTUBE_REFRESH_TOKEN` Actions secret. The external
+scheduler also needs equivalent credentials in its own secret store. OAuth
+credentials and refresh tokens must never be committed to the repository.
 
 The publisher uses the YouTube Data API's resumable upload flow. It renders a
 deterministic, quality-gated Orb Race matchup from the active allowlist,
 transcodes it to MP4, checks for the run tag before uploading, and stores
-generated media only under ignored `artifacts/` output. Scheduled workflow runs
-prepare all three daily videos in the morning, upload them as private, and set
-their Pacific `publishAt` times. YouTube then makes each video public without a
-second runner invocation.
+generated media only under ignored `artifacts/` output. Each daily batch prepares
+both long-form videos, uploads them as private, and sets their Pacific
+`publishAt` times. YouTube then makes each video public without a second runner
+invocation.
 
 The workflow can be tested from GitHub's **Run workflow** menu. Manual runs
 default to `dry_run=true`; set it to false only after the OAuth secrets and
 Google Cloud project are ready. The local equivalent is:
 
 ```bash
-npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
+npm run youtube:publish -- --dry-run --slot=noon-longform --date=2026-09-19
 ```
 
 To preview the complete daily batch, use:
@@ -173,9 +176,9 @@ To preview the complete daily batch, use:
 npm run youtube:publish -- --batch --dry-run --date=2026-09-19
 ```
 
-If a scheduled run is missed, manually dispatch the workflow with `slot_id=batch`
-and `dry_run=false` to render and upload all three daily videos immediately. The
-same run tags protect against duplicate uploads.
+For a manual recovery run, dispatch the workflow with `slot_id=batch` and
+`dry_run=false` to render and upload both daily long-form videos. The same run
+tags protect against duplicate uploads.
 
 The publisher does not bypass [YouTube's API project restrictions](https://developers.google.com/youtube/v3/docs/videos#video-upload). Private scheduled
 uploads are intentional here; if Google applies an additional restriction, the

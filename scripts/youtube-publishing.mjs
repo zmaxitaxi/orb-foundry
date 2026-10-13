@@ -66,8 +66,17 @@ export function validateYouTubePublishingConfig(config) {
     if (config.descriptionHashtags.join(" ") !== YOUTUBE_DESCRIPTION_HASHTAGS.join(" ")) {
         throw new Error("YouTube description hashtags must match the approved publishing contract.");
     }
-    if (!Array.isArray(config.schedule) || config.schedule.length !== 3) {
-        throw new Error("YouTube publishing schedule must contain exactly three daily slots.");
+    const expectedSlots = [
+        { id: "noon-longform", contentType: "longform", localTime: "12:00" },
+        { id: "afternoon-longform", contentType: "longform", localTime: "15:00" },
+    ];
+    if (!Array.isArray(config.schedule) || config.schedule.length !== expectedSlots.length
+        || config.schedule.some((slot, index) => (
+            slot?.id !== expectedSlots[index].id
+            || slot?.contentType !== expectedSlots[index].contentType
+            || slot?.localTime !== expectedSlots[index].localTime
+        ))) {
+        throw new Error("YouTube publishing schedule must contain long-form slots at 12:00 PM and 3:00 PM Pacific.");
     }
     const ids = new Set();
     for (const slot of config.schedule) {
@@ -174,7 +183,16 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     if (!config || typeof config !== "object") {
         throw new Error("YouTube generation blocked: the publishing config is missing.");
     }
-    if (plan.battleQuality?.accepted !== true) {
+    const closeBattle = config.quality?.closeBattle;
+    if (
+        plan.battleQuality?.accepted !== true
+        || plan.battleQuality?.finished !== true
+        || plan.battleQuality?.fallback === true
+        || !Number.isFinite(plan.battleQuality?.progressMargin)
+        || !Number.isFinite(plan.battleQuality?.layerLead)
+        || Number(plan.battleQuality?.progressMargin) > Number(closeBattle?.maxProgressMargin)
+        || Number(plan.battleQuality?.layerLead) > Number(closeBattle?.maxLayerLead)
+    ) {
         throw new Error("YouTube generation blocked: the deterministic close-battle preflight did not pass.");
     }
     const slot = config.schedule?.find(({ id }) => id === plan.slotId);

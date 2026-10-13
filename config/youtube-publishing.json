@@ -14,13 +14,8 @@
             "localTime": "12:00"
         },
         {
-            "id": "noon-short",
-            "contentType": "short",
-            "localTime": "12:00"
-        },
-        {
-            "id": "afternoon-short",
-            "contentType": "short",
+            "id": "afternoon-longform",
+            "contentType": "longform",
             "localTime": "15:00"
         }
     ],

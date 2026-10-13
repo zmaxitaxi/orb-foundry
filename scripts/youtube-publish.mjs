@@ -85,7 +85,7 @@ export function selectYouTubeMatchup({
     const layerStrengths = layerStrengthsFor(config, slotId);
     const contentType = config.schedule.find(({ id }) => id === slotId)?.contentType || "short";
     const attemptLimit = Math.max(1, Math.floor(Number(maxAttempts)) || MAX_MATCHUP_ATTEMPTS);
-    let best = null;
+    const candidates = [];
     for (let attempt = 0; attempt < attemptLimit; attempt += 1) {
         const seed = seedForYouTubeRun(dateKey, `${slotId}:attempt-${attempt}`);
         const format = weightedBattleFormat(config.quality.battleFormats, seed);
@@ -95,15 +95,19 @@ export function selectYouTubeMatchup({
         const leftIds = orderedIds.slice(0, Number(format.teamSizes[0]));
         const rightIds = orderedIds.slice(leftIds.length, leftIds.length + Number(format.teamSizes[1]));
         const raceTeams = [leftIds, rightIds];
-        const battleQuality = evaluateYouTubeBattle({
+        const preview = createYouTubeSimulation({
             raceTeams,
+            raceOrbs: raceTeams.flat(),
             layerStrengths,
             contentType,
             seed,
-            quality: config.quality,
         });
-        if (battleQuality.runaway) continue;
-        const candidate = {
+        const estimatedDamagePerSecond = preview.raceTeams.map((team) => Math.max(0, Number(team.raceDamagePerSecond) || 0));
+        const positiveDamage = estimatedDamagePerSecond.filter((value) => value > 0);
+        const estimatedStrengthRatio = positiveDamage.length === 2
+            ? Math.max(...positiveDamage) / Math.max(1, Math.min(...positiveDamage))
+            : 1;
+        candidates.push({
             seed,
             formatId: format.id,
             raceTeams,
@@ -114,33 +118,57 @@ export function selectYouTubeMatchup({
             rightId: rightIds[0],
             left: teamLabel(leftIds),
             right: teamLabel(rightIds),
-            battleQuality,
-        };
-        if (!best || matchupScore(candidate) < matchupScore(best)) best = candidate;
-        if (battleQuality.accepted) return candidate;
+            estimatedDamagePerSecond,
+            estimatedStrengthRatio,
+        });
+    }
+
+    candidates.sort((left, right) => (
+        left.estimatedStrengthRatio - right.estimatedStrengthRatio
+        || left.seed - right.seed
+    ));
+    let best = null;
+    for (const candidate of candidates) {
+        const battleQuality = evaluateYouTubeBattle({
+            raceTeams: candidate.raceTeams,
+            layerStrengths,
+            contentType,
+            seed: candidate.seed,
+            quality: config.quality,
+            estimatedDamagePerSecond: candidate.estimatedDamagePerSecond,
+        });
+        if (battleQuality.runaway) continue;
+        const match = { ...candidate, battleQuality };
+        delete match.estimatedDamagePerSecond;
+        delete match.estimatedStrengthRatio;
+        if (!best || matchupScore(match) < matchupScore(best)) best = match;
+        if (battleQuality.accepted) return match;
     }
     if (best) {
-        if (!best.battleQuality.accepted) {
-            best.battleQuality.accepted = true;
-            best.battleQuality.fallback = true;
-        }
-        return best;
+        throw new Error(
+            `No close YouTube matchup found for ${dateKey}/${slotId}; best progress margin was ${best.battleQuality.progressMargin}.`,
+        );
     }
     throw new Error(`Unable to build a YouTube matchup for ${dateKey}/${slotId}.`);
 }
 
-export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATCHUP_ATTEMPTS }) {
+export function dailyYouTubeRosterForDate({ dateKey, config }) {
     const roster = config.videoReady.orbRace.orbs.filter((id) => ORB_RACERS[id]);
     const maxTeamMembers = Math.max(...config.quality.battleFormats.map((format) => (
         format.teamSizes.reduce((sum, size) => sum + Number(size), 0)
     )));
-    const dailyRoster = deterministicDailyRoster(
-        roster,
+    return deterministicDailyRoster(
+        deterministicRosterOrder(roster),
         dateKey,
-        config.schedule.length * maxTeamMembers * 2,
+        Math.max(24, config.schedule.length * maxTeamMembers * 2),
     );
+}
+
+export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATCHUP_ATTEMPTS }) {
+    const dailyRoster = dailyYouTubeRosterForDate({ dateKey, config });
     const usedToday = new Set();
-    return config.schedule.map((slot) => {
+    const matchupsBySlot = new Map();
+    for (const slot of [...config.schedule].reverse()) {
         const matchup = selectYouTubeMatchup({
             dateKey,
             slotId: slot.id,
@@ -150,8 +178,9 @@ export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATC
             maxAttempts,
         });
         matchup.raceOrbs.forEach((id) => usedToday.add(id));
-        return { slot, matchup };
-    });
+        matchupsBySlot.set(slot.id, { slot, matchup });
+    }
+    return config.schedule.map(({ id }) => matchupsBySlot.get(id));
 }
 
 export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null, maxAttempts = MAX_MATCHUP_ATTEMPTS }) {
@@ -217,11 +246,14 @@ function weightedBattleFormat(formats, seed) {
 }
 
 function availableRosterIds(roster, seed, blockedIds) {
-    const start = seed % roster.length;
-    const available = [];
-    for (let offset = 0; offset < roster.length; offset += 1) {
-        const id = roster[(start + offset) % roster.length];
-        if (!blockedIds.has(id)) available.push(id);
+    const available = roster.filter((id) => !blockedIds.has(id));
+    let state = seed >>> 0 || 1;
+    for (let index = available.length - 1; index > 0; index -= 1) {
+        state ^= state << 13;
+        state ^= state >>> 17;
+        state ^= state << 5;
+        const swapIndex = (state >>> 0) % (index + 1);
+        [available[index], available[swapIndex]] = [available[swapIndex], available[index]];
     }
     return available;
 }
@@ -230,15 +262,8 @@ function teamLabel(ids) {
     return ids.map((id) => ORB_RACERS[id].name).join(" + ");
 }
 
-function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, quality }) {
-    const preview = createYouTubeSimulation({
-        raceTeams,
-        raceOrbs: raceTeams.flat(),
-        layerStrengths,
-        contentType,
-        seed,
-    });
-    const damagePerSecond = preview.raceTeams.map((team) => Math.max(0, Number(team.raceDamagePerSecond) || 0));
+function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, quality, estimatedDamagePerSecond }) {
+    const damagePerSecond = estimatedDamagePerSecond;
     const positiveDamage = damagePerSecond.filter((value) => value > 0);
     const strengthRatio = positiveDamage.length === 2
         ? Math.max(...positiveDamage) / Math.max(1, Math.min(...positiveDamage))
@@ -313,6 +338,7 @@ function createYouTubeSimulation({ raceTeams, raceOrbs, layerStrengths, contentT
             enabled: true,
             format: contentType === "longform" ? "race-landscape" : "portrait",
         },
+        features: { replay: false },
     });
 }
 
@@ -373,6 +399,14 @@ function deterministicDailyRoster(roster, dateKey, dailyCapacity) {
     return Array.from({ length: capacity }, (_unused, index) => roster[(start + index) % roster.length]);
 }
 
+function deterministicRosterOrder(roster) {
+    return [...roster].sort((left, right) => (
+        seedForYouTubeRun("orb-foundry-roster-v1", left)
+        - seedForYouTubeRun("orb-foundry-roster-v1", right)
+        || left.localeCompare(right)
+    ));
+}
+
 export async function publishDueYouTubeSlots({
     now = new Date(),
     slotId = null,
@@ -400,17 +434,17 @@ export async function publishDueYouTubeSlots({
         };
     }
 
+    const matchupsBySlotId = new Map(buildDailyYouTubePlans({ dateKey: resolvedDateKey, config })
+        .map(({ slot, matchup }) => [slot.id, matchup]));
     const client = dryRun ? null : await createYouTubeApiClient({ env, fetchImpl });
     const items = [];
     const failures = [];
-    const plansBySlotId = new Map(buildDailyYouTubePlans({ dateKey: resolvedDateKey, config })
-        .map(({ slot, matchup }) => [slot.id, matchup]));
     for (const slot of slots) {
         const plan = buildYouTubePublishPlan({
             dateKey: resolvedDateKey,
             slot,
             config,
-            matchup: plansBySlotId.get(slot.id),
+            matchup: matchupsBySlotId.get(slot.id),
         });
         if (dryRun) {
             logger.log(JSON.stringify({ ...plan, action: "dry-run" }, null, 2));

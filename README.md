@@ -129,10 +129,10 @@ Captions use `ORB 1 vs ORB 2` plus `#weaponballs #orb #simulation`.
 The approved daily YouTube schedule and metadata contract lives in
 [`config/youtube-publishing.json`](config/youtube-publishing.json), with the
 activation requirements documented in
-[`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md). The publisher is
-designed for a hosted runner so it can operate while the development computer
-is offline. Its video-ready allowlist must be populated before scheduled uploads
-can be enabled.
+[`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md). The separate
+external scheduler initiates daily publishing; GitHub Actions is manual-only.
+Changes to this repository do not automatically edit the external scheduler's
+own settings. Its video-ready allowlist must be populated before uploads run.
 
 Validate the current contract with:
 
@@ -143,25 +143,27 @@ npm run youtube:validate
 Run a safe local publishing plan without rendering or uploading:
 
 ```bash
-npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
+npm run youtube:publish -- --dry-run --slot=noon-longform --date=2026-09-19
 ```
 
-The hosted workflow in `.github/workflows/youtube-publishing.yml` renders a
-morning batch, uploads the videos privately with YouTube publish times, and
-lets YouTube release them at noon and 3 PM Pacific once the three YouTube OAuth
-Actions secrets documented in
-[`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md) are configured.
+The manual workflow in `.github/workflows/youtube-publishing.yml` can validate
+or run a batch on demand. The external scheduler should prepare two private
+long-form uploads and set YouTube publish times for noon and 3 PM Pacific.
+Configure credentials in the environment that actually runs each workflow, as
+documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
 
 Each batch enforces the quality contract: two-day orb cooldowns, optional
-multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
-matchups, 500-HP minimum layers, ascending layer health for short-form, and no
-more than three layers in each Short. Shorts require at least 25 seconds of race
-action and long-form videos at least 60 seconds. If a race ends before its
+multi-orb teams, 60-second long-form videos, close deterministic matchups,
+500-HP minimum layers, ascending layer health for short-form, and no more than
+three layers in a Short. Shorts remain supported by the quality rules but are
+not part of the current scheduled batch. If a race ends before its
 action-duration minimum at normal speed, the same single matchup is recorded at
 a deterministic slow-motion rate so its live race action fills the duration.
 Long-form courses expand to 50 ascending layers; every video records exactly one
 matchup, then only a brief winner reveal. A duration or matchup-count check
 rejects the upload if the action is short or a second matchup appears.
+If the planner cannot find a battle that passes the close-match gate, that slot
+stops; it never promotes a non-close fallback to an upload.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Each description asks “Who will break the
