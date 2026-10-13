@@ -6,10 +6,13 @@ Orb Foundry's approved YouTube publishing contract is stored in
 ## Current contract
 
 - Timezone: `America/Los_Angeles` (Pacific time, including daylight-saving changes).
-- `12:00 PM`: one long-form video.
-- `3:00 PM`: a second long-form video.
-- Shorts remain supported by the quality checks, but neither daily slot
-  schedules one.
+- `12:00 PM`: one Short and one long-form video.
+- `3:00 PM`: one Short and one long-form video.
+- On Fridays, the 3:00 PM long-form slot is a full Orb Race tournament instead
+  of a single matchup; the noon long-form remains a regular race.
+- Each day has a deterministic 25% chance that one of its two Shorts is an Orb
+  Foundry video. At most one Short per day uses Orb Foundry; otherwise both are
+  Orb Race.
 - Delivery mode: daily batch initiated by the separately configured scheduler.
 - Upload mode: private uploads with YouTube `publishAt` scheduling, so the
   scheduler can prepare the videos before the Pacific release times.
@@ -18,9 +21,16 @@ Orb Foundry's approved YouTube publishing contract is stored in
   (for example, `Splodey VS Jackpot`, never `SPLODEY VS JACKPOT`).
 - Description: `Who will break the {layerHealth} HP layer first, {left} or
   {right}?`, followed by `#physics #shorts #simulation #satisfying`.
+- Orb Foundry Shorts and Friday tournaments use source-appropriate descriptions
+  followed by the same required hashtags because they do not represent a single
+  Orb Race layer matchup.
 - Group matchups use the group label in the title instead of expanding every orb name.
-- Supported content sources will be Orb Race and Orb Foundry, selected through the
-  explicit `videoReady` allowlist.
+- Orb Race and Orb Foundry each use their own explicit `videoReady` allowlist.
+- Orb Foundry Shorts use a black theme, no team outlines, a large square arena,
+  and the square social-video layout.
+- The Orb Foundry allowlist excludes Fairy, Commander, Jackpot, Absorber,
+  Grappler, Monster, Train, Snowball (`frost-ball`), Yingyang (`ying-yang`),
+  Flash, Poison, and Charger.
 - Announcer coverage is required for every battle recording. A battle is not
   video-ready if its intended announcer sequence is silent.
 - Announcer routing is deterministic and context-aware: ordinary 1v1 and other
@@ -37,11 +47,20 @@ Every unattended video must satisfy the quality contract in
 [`config/youtube-publishing.json`](../config/youtube-publishing.json):
 
 - An orb stays on cooldown for at least two full publishing days. The planner
-  also keeps the two videos on the same day distinct when the roster allows it.
+  also keeps same-day videos distinct when the roster allows it.
 - A battle may be a 1v1 duel or a multi-orb team duel. The selected format and
   every stable orb ID are recorded in the export metadata.
-- Each video contains exactly one matchup. Shorts include at least 25 seconds
-  of live race action; long-form includes at least 60 seconds. The planner
+- A Friday tournament uses 8–64 unique entrants from the Orb Race allowlist;
+  the configured default is 16. It records the entire bracket, not a selected
+  round or one rematch, and must run for at least 120 seconds. Tournament videos
+  use five ascending layers, each at least 500 HP.
+- Orb Foundry Shorts are generated from two unique allowlisted Classic orbs.
+  Their preflight must produce a completed, close battle with at least 25
+  seconds of live action before the browser exporter starts.
+- The two-day no-repeat rotation is tracked separately for the Orb Race and
+  Orb Foundry stable-ID rosters.
+- Each regular battle video contains exactly one matchup. Shorts include at
+  least 25 seconds of live race action; long-form includes at least 60 seconds. The planner
   preflights the chosen matchup and computes a deterministic action playback
   rate so the race itself—not a pause, end screen, or rematch—fills the target.
   Long-form courses expand to 50 ascending layers to provide a longer natural
@@ -71,21 +90,29 @@ Every unattended video must satisfy the quality contract in
 Every upload must pass this checklist in order. A failed item stops the run
 before YouTube receives the video:
 
-1. Select only stable IDs in the `videoReady` allowlist derived from the
-   `OrbBattlegroundsSimulator` channel roster.
-2. Enforce the two-full-day orb cooldown and keep the two same-day videos
-   distinct when the roster allows it.
+1. Select only stable IDs in the relevant `videoReady` allowlist. Orb Race
+   matchups and tournament entrants must use the race roster; Orb Foundry
+   matchups must use the Classic roster with every excluded ID rejected.
+2. Enforce the two-full-day orb cooldown and keep same-day videos distinct
+   within each game mode when the roster allows it. A single daily Foundry
+   chance can replace only one of the two Short slots.
 3. Use either a 1v1 battle or an allowed multi-orb team battle; record every
-   stable orb ID and team label in the export metadata.
-4. Plan exactly one matchup whose live race action fills the duration: at least
-   25 seconds for a Short and 60 seconds for long-form. Preflight its simulation
-   duration and set the deterministic action playback rate; use the 50-layer
-   long-form course where applicable. Do not restart, replay, or rematch the
-   battle, and do not pad action time with a pause or static end screen. Verify
-   the recorded action clock and exactly-one-match counter before upload.
-5. Use no more than three layers for a Short. Every layer must be at least
-   500 HP, and Short layer HP must be ascending. Long-form uses its separate
-   ascending profile.
+   stable orb ID and team label in the export metadata. On tournament Fridays,
+   reserve the approved tournament entrants first and keep other Orb Race
+   videos to 1v1 so the daily roster does not repeat.
+4. For a regular battle video, plan exactly one matchup whose live action fills
+   the duration: at least 25 seconds for a Short and 60 seconds for long-form.
+   Preflight its simulation duration and set the deterministic action playback
+   rate; use the 50-layer long-form course where applicable. Do not restart,
+   replay, or rematch the battle, and do not pad action time with a pause or
+   static end screen. Verify the recorded action clock and exactly-one-match
+   counter before upload. Friday tournaments are the explicit full-bracket
+   exception and must pass step 9.
+5. Use no more than three layers for an Orb Race Short. Every Orb Race layer
+   must be at least 500 HP, and Short layer HP must be ascending. Long-form
+   uses its separate ascending profile. Orb Foundry Shorts instead use their
+   explicit black/outline-free/large-square style and a preflighted Classic
+   battle.
 6. Run the deterministic preflight simulation and reject the matchup unless it
    finishes within the configured close-battle progress and layer-lead limits.
 7. Load announcer assets before recording and verify that the exported recording
@@ -99,8 +126,12 @@ before YouTube receives the video:
    duration, layer profile, and announcer requirements must already match the
    contract. If preflight fails, do not render or upload that slot.
 9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
-   and validate the final artifact again. Reject any artifact whose title,
-   description, duration, layers, or announcer proof no longer matches the plan.
+   and validate the final artifact again. For a tournament, confirm the
+   complete bracket has exactly `entrants - 1` recorded matches, a champion,
+   whole-tournament scope, at least 120 seconds, and announcer coverage for
+   every match. For an Orb Foundry Short, verify Classic mode, both orb IDs,
+   black theme, no outlines, square layout, and the large square arena. Reject
+   any artifact whose metadata or announcer proof no longer matches the plan.
    Titles must use readable casing for orb/group names, and descriptions must
    contain the actual first-layer HP and both displayed matchup names before
    the required hashtags.
@@ -128,8 +159,9 @@ is not in that allowlist must not be selected for a YouTube batch.
 
 The daily scheduler is configured separately from this repository. The GitHub
 workflow `.github/workflows/youtube-publishing.yml` is manual-only; it does not
-run on a cron schedule. Keep the external scheduler aligned with the two slots
-in `config/youtube-publishing.json`. A repo update does not change that
+run on a cron schedule. Keep the external scheduler aligned with all four slots
+in `config/youtube-publishing.json`, including Friday's tournament variant and
+the daily Foundry decision. A repo update does not change that
 external bot's own schedule or credentials.
 
 Create a Google Cloud OAuth client and enable the YouTube Data API v3. For
@@ -154,11 +186,11 @@ private repository's `YOUTUBE_REFRESH_TOKEN` Actions secret. The external
 scheduler also needs equivalent credentials in its own secret store. OAuth
 credentials and refresh tokens must never be committed to the repository.
 
-The publisher uses the YouTube Data API's resumable upload flow. It renders a
-deterministic, quality-gated Orb Race matchup from the active allowlist,
-transcodes it to MP4, checks for the run tag before uploading, and stores
-generated media only under ignored `artifacts/` output. Each daily batch prepares
-both long-form videos, uploads them as private, and sets their Pacific
+The publisher uses the YouTube Data API's resumable upload flow. It renders
+quality-gated Orb Race matchups, optional Orb Foundry Shorts, and Friday's full
+Orb Race tournament; transcodes them to MP4; checks for the run tag before
+uploading; and stores generated media only under ignored `artifacts/` output.
+Each daily batch prepares four private uploads and sets their Pacific
 `publishAt` times. YouTube then makes each video public without a second runner
 invocation.
 
@@ -167,7 +199,7 @@ default to `dry_run=true`; set it to false only after the OAuth secrets and
 Google Cloud project are ready. The local equivalent is:
 
 ```bash
-npm run youtube:publish -- --dry-run --slot=noon-longform --date=2026-09-19
+npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
 ```
 
 To preview the complete daily batch, use:
@@ -177,7 +209,7 @@ npm run youtube:publish -- --batch --dry-run --date=2026-09-19
 ```
 
 For a manual recovery run, dispatch the workflow with `slot_id=batch` and
-`dry_run=false` to render and upload both daily long-form videos. The same run
+`dry_run=false` to render and upload all four daily videos. The same run
 tags protect against duplicate uploads.
 
 The publisher does not bypass [YouTube's API project restrictions](https://developers.google.com/youtube/v3/docs/videos#video-upload). Private scheduled

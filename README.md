@@ -143,32 +143,39 @@ npm run youtube:validate
 Run a safe local publishing plan without rendering or uploading:
 
 ```bash
-npm run youtube:publish -- --dry-run --slot=noon-longform --date=2026-09-19
+npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
 ```
 
 The manual workflow in `.github/workflows/youtube-publishing.yml` can validate
-or run a batch on demand. The external scheduler should prepare two private
-long-form uploads and set YouTube publish times for noon and 3 PM Pacific.
+or run a batch on demand. The external scheduler should prepare four private
+uploads: one Short and one long-form at noon, and one Short and one long-form
+at 3 PM Pacific. Friday's 3 PM long-form is a 16-entrant whole-tournament
+recording; one Short per day has a 25% chance to use the approved Orb Foundry
+black, outline-free large-square format.
 Configure credentials in the environment that actually runs each workflow, as
 documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
 
 Each batch enforces the quality contract: two-day orb cooldowns, optional
-multi-orb teams, 60-second long-form videos, close deterministic matchups,
-500-HP minimum layers, ascending layer health for short-form, and no more than
-three layers in a Short. Shorts remain supported by the quality rules but are
-not part of the current scheduled batch. If a race ends before its
+multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
+matchups, 500-HP minimum layers, ascending layer health for short-form, and no
+more than three layers in an Orb Race Short. If a race ends before its
 action-duration minimum at normal speed, the same single matchup is recorded at
 a deterministic slow-motion rate so its live race action fills the duration.
-Long-form courses expand to 50 ascending layers; every video records exactly one
-matchup, then only a brief winner reveal. A duration or matchup-count check
-rejects the upload if the action is short or a second matchup appears.
+Long-form courses expand to 50 ascending layers; every regular battle video
+records exactly one matchup, then only a brief winner reveal. Friday's tournament
+records the entire bracket for at least two minutes and validates every match
+ID, champion, and announcer coverage. Orb Foundry Shorts preflight a single close
+Classic battle and verify their black square visual settings before upload. A
+duration or matchup-count check rejects a regular battle if the action is short
+or a second matchup appears.
 If the planner cannot find a battle that passes the close-match gate, that slot
 stops; it never promotes a non-close fallback to an upload.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
-(for example, `Splodey VS Jackpot`). Each description asks “Who will break the
-{layerHealth} HP layer first, {left} or {right}?” and then includes the required
-`#physics #shorts #simulation #satisfying` hashtags.
+(for example, `Splodey VS Jackpot`). Orb Race matchup descriptions ask “Who
+will break the {layerHealth} HP layer first, {left} or {right}?” Orb Foundry
+Shorts and tournament videos use source-appropriate prompts; all include the
+required `#physics #shorts #simulation #satisfying` hashtags.
 
 Every battle recording also requires announcer coverage. Cue selection uses the
 battle's semantic context—mode, matchup shape, phase, and actual split state—so

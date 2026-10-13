@@ -9,9 +9,19 @@
     },
     "schedule": [
         {
+            "id": "noon-short",
+            "contentType": "short",
+            "localTime": "12:00"
+        },
+        {
             "id": "noon-longform",
             "contentType": "longform",
             "localTime": "12:00"
+        },
+        {
+            "id": "afternoon-short",
+            "contentType": "short",
+            "localTime": "15:00"
         },
         {
             "id": "afternoon-longform",
@@ -33,6 +43,29 @@
         "minimumDurationSeconds": {
             "short": 25,
             "longform": 60
+        },
+        "orbFoundryShort": {
+            "dailyProbability": 0.25,
+            "maximumPerDay": 1,
+            "initialHealth": 100,
+            "minimumWinnerHealthFraction": 0.75,
+            "maximumSimulationSeconds": 120,
+            "format": "square",
+            "theme": "black",
+            "teamOutlines": false,
+            "arenaSize": "large",
+            "arenaShape": "square"
+        },
+        "fridayTournament": {
+            "enabled": true,
+            "dayOfWeek": 5,
+            "slotId": "afternoon-longform",
+            "entrants": 16,
+            "minimumEntrants": 8,
+            "maximumEntrants": 64,
+            "minimumDurationSeconds": 120,
+            "recordingScope": "whole-tournament",
+            "layerStrengths": [750, 1000, 1500, 2500, 5000]
         },
         "longformLayerCount": 50,
         "layerStrengths": {
@@ -187,7 +220,44 @@
             ]
         },
         "orbFoundry": {
-            "orbs": [],
+            "orbs": [
+                "sword",
+                "duplicator",
+                "orbital",
+                "unarmed",
+                "slammy",
+                "vampire",
+                "turret",
+                "reactor",
+                "sniper",
+                "draftmaster",
+                "blue-sun",
+                "black-hole",
+                "tripwire",
+                "hydrogen-bomb",
+                "necromancer",
+                "spikey",
+                "snake",
+                "virus",
+                "shrapnel",
+                "cobwebs",
+                "apple",
+                "batman",
+                "trapper",
+                "hive-ball",
+                "zeus",
+                "glass-ball",
+                "pistol",
+                "shotgun",
+                "rifle",
+                "sawball",
+                "cutter",
+                "trident",
+                "lazer",
+                "parasites",
+                "boxer",
+                "artist"
+            ],
             "groups": []
         }
     }

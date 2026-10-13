@@ -13,7 +13,9 @@ on:
         options:
           - auto
           - batch
+          - noon-short
           - noon-longform
+          - afternoon-short
           - afternoon-longform
       run_date:
         description: "Optional local date override (YYYY-MM-DD)"

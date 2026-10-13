@@ -11,6 +11,7 @@ import {
   ORB_RACE_DEFAULT_LAYERS,
   ORB_RACE_LONGFORM_DEFAULT_LAYERS,
 } from "../src/orb-race.js";
+import { CLASSIC_ORBS } from "../src/classic-orbs.js";
 import { CLASS_DEFS, selectFighterClasses } from "../src/simulation.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,6 +61,48 @@ export async function exportSocialVideo(options = {}) {
   let settings;
 
   if (gameplayMode === "orb-race") {
+    if (options.tournament) {
+      const tournament = options.tournament;
+      const entrants = [...new Set((tournament.entrants || []).filter((id) => ORB_RACERS[id]))];
+      const layerStrengths = Array.isArray(tournament.layerStrengths) ? [...tournament.layerStrengths] : [];
+      if (entrants.length !== Number(tournament.size) || entrants.length < 8 || entrants.length > 64
+        || !layerStrengths.length) {
+        throw new Error("Orb Race tournament export requires its complete approved roster and layer profile.");
+      }
+      orbNames = entrants.map((id) => ORB_RACERS[id].name);
+      settings = {
+        count: entrants.length,
+        gameplayMode,
+        raceOrbs: entrants,
+        raceTeams: [[entrants[0]], [entrants[1]]],
+        raceLayerCount: layerStrengths.length,
+        raceLayerStrengths: layerStrengths,
+        raceShowTargetMessage: true,
+        raceTargetAnnouncement: true,
+        raceMatchupAnnouncement: true,
+        raceScalingDamage: true,
+        raceTournament: tournament,
+        seed: Number(tournament.seed) || seed,
+        theme: options.theme || process.env.BATTLE_THEME || "cream-foundry",
+        hazardPreset: "none",
+        arenaModifier: options.arenaModifier || process.env.BATTLE_ARENA_MODIFIER || "standard",
+        social: {
+          enabled: true,
+          format: "race-landscape",
+          fps,
+          highlightMode: false,
+          minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
+          actionPlaybackRate: 1,
+          requireAnnouncer: options.requireAnnouncer === true,
+        },
+        features: {
+          introCards: true,
+          replay: false,
+          soundAnnouncer: true,
+          videoRecording: true,
+        },
+      };
+    } else {
     const raceTeams = normalizeExportRaceTeams(options);
     const raceOrbs = [...new Set(raceTeams.flat())];
     if (raceOrbs.length < 2 || raceOrbs.some((id) => !ORB_RACERS[id])) {
@@ -98,21 +141,35 @@ export async function exportSocialVideo(options = {}) {
       },
       features: {
         introCards: true,
+        replay: false,
         soundAnnouncer: true,
         videoRecording: true,
       },
     };
+    }
   } else {
-    const classes = options.classes || Object.keys(CLASS_DEFS);
-    selectedClasses = options.selectedClasses || selectFighterClasses(classes, 2, seed);
-    orbNames = selectedClasses.map((type) => CLASS_DEFS[type].name);
+    const configuredTeams = Array.isArray(options.classicTeams) && options.classicTeams.length === 2
+      ? options.classicTeams.map((team) => [...team])
+      : null;
+    const classes = options.classes || (configuredTeams ? [...new Set(configuredTeams.flat())] : Object.keys(CLASS_DEFS));
+    selectedClasses = options.selectedClasses
+      || (configuredTeams ? configuredTeams.flat() : selectFighterClasses(classes, 2, seed));
+    const classicTeams = configuredTeams || selectedClasses.map((id) => [id]);
+    selectedClasses = classicTeams.flat();
+    orbNames = selectedClasses.map((type) => CLASSIC_ORBS[type]?.name || CLASS_DEFS[type]?.name || type);
     settings = {
       count: 2,
       classes,
+      classicTeams,
+      classicOrbOptions: options.classicOrbOptions || {},
+      classicBlackTheme: options.classicBlackTheme === true,
+      classicTeamColors: options.classicTeamColors !== false,
       seed,
       theme: options.theme || process.env.BATTLE_THEME || "cream-foundry",
       hazardPreset: options.hazardPreset || process.env.BATTLE_HAZARDS || "none",
       arenaModifier: options.arenaModifier || process.env.BATTLE_ARENA_MODIFIER || "standard",
+      arenaSize: options.arenaSize || "standard",
+      arenaShape: options.arenaShape || "square",
       social: {
         enabled: true,
         format,
@@ -123,6 +180,7 @@ export async function exportSocialVideo(options = {}) {
       },
       features: {
         introCards: true,
+        replay: false,
         soundAnnouncer: true,
         videoRecording: true,
       },
@@ -146,7 +204,7 @@ export async function exportSocialVideo(options = {}) {
     await page.waitForExpression("window.__ORB_FOUNDRY__ && document.readyState === 'complete'", 30_000);
     await page.evaluate(`window.__ORB_FOUNDRY__.record(${JSON.stringify(settings)})`, { awaitPromise: true, userGesture: true });
 
-    const timeoutMs = Number(process.env.BATTLE_EXPORT_TIMEOUT_MS) || 420_000;
+    const timeoutMs = Number(options.timeoutMs) || Number(process.env.BATTLE_EXPORT_TIMEOUT_MS) || 420_000;
     await page.waitForExpression("window.__ORB_FOUNDRY__.getState().recorder === 'preview'", timeoutMs);
     const state = await page.evaluate("window.__ORB_FOUNDRY__.getState()", { returnByValue: true });
     const minimumDurationSeconds = Number(settings.social.minimumDurationSeconds) || 0;
@@ -173,12 +231,18 @@ export async function exportSocialVideo(options = {}) {
     const metadata = {
       createdAt: new Date().toISOString(),
       contentType: options.contentType || (format === "race-landscape" ? "longform" : "short"),
+      contentSource: options.contentSource || (gameplayMode === "orb-race" ? "orb-race" : "orb-foundry"),
+      videoKind: options.videoKind || (options.tournament ? "tournament" : "match"),
       gameplayMode,
       seed,
       classes: selectedClasses,
       raceOrbs: gameplayMode === "orb-race" ? settings.raceOrbs : [],
       raceTeams: gameplayMode === "orb-race" ? settings.raceTeams : [],
       raceLayerStrengths: gameplayMode === "orb-race" ? settings.raceLayerStrengths : [],
+      classicTeams: gameplayMode === "classic" ? settings.classicTeams : [],
+      classicOrbOptions: gameplayMode === "classic" ? settings.classicOrbOptions : {},
+      orbFoundryOrbs: gameplayMode === "classic" && options.contentSource === "orb-foundry" ? selectedClasses : [],
+      format,
       minimumDurationSeconds: Number(settings.social.minimumDurationSeconds) || 0,
       actionPlaybackRate: Number(settings.social.actionPlaybackRate) || 1,
       orbNames,
