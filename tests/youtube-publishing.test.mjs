@@ -31,7 +31,8 @@ import {
     selectYouTubeFoundryMatchup,
     selectYouTubeMatchup,
 } from "../scripts/youtube-publish.mjs";
-import { ORB_RACERS } from "../src/orb-race.js";
+import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
+import { createSimulation, stepSimulation } from "../src/simulation.js";
 
 test("YouTube publishing contract loads four daily slots and the approved video rosters", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
@@ -576,11 +577,54 @@ test("Friday planning keeps a valid fallback when the leftover duel pool is not 
     for (const { slot, matchup } of plans) {
         const plan = buildYouTubePublishPlan({ dateKey, slot, config, matchup });
         assert.equal(validateYouTubeGenerationSpec({ plan, config }), true, slot.id);
+        if (matchup.videoKind !== "tournament") {
+            const target = plan.minimumDurationSeconds * 1.05;
+            assert.equal(plan.battleQuality.durationReady, true, slot.id);
+            assert.ok(plan.battleQuality.plannedActionDurationSeconds + 0.05 >= target, slot.id);
+        }
         if (matchup.battleQuality.fallback) {
             assert.equal(plan.battleQuality.fallback, true, slot.id);
             assert.ok(plan.battleQuality.plannedActionDurationSeconds >= plan.minimumDurationSeconds, slot.id);
         }
     }
+});
+
+test("YouTube preflight uses the exporter's regular speed, then extends a short race", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const matchup = selectYouTubeMatchup({
+        dateKey: "2026-10-16",
+        slotId: "noon-short",
+        config,
+        rosterIds: ["professor", "draftmaster"],
+        formatId: "duel",
+        maxAttempts: 1,
+    });
+    assert.equal(matchup.battleQuality.finished, true);
+    assert.equal(matchup.battleQuality.durationReady, true);
+    assert.ok(matchup.raceOrbs.includes("professor"));
+    const layers = matchup.battleQuality.layerStrengths;
+    const exportedOptions = normalizeRaceTeamOptions(undefined, matchup.raceTeams, { scalingDamage: true });
+    const sim = createSimulation({
+        gameplayMode: "orb-race",
+        raceTeams: matchup.raceTeams,
+        raceOrbs: matchup.raceOrbs,
+        raceTeamOptions: exportedOptions,
+        raceLayerCount: layers.length,
+        raceLayerStrengths: layers,
+        raceScalingDamage: true,
+        seed: matchup.seed,
+        social: { enabled: true, format: "portrait" },
+        features: { replay: false },
+    });
+    const step = 1 / 120;
+    const maxSteps = Math.ceil(180 / step);
+    for (let index = 0; index < maxSteps && !sim.finished; index += 1) stepSimulation(sim, step);
+    const professor = sim.fighters.find((fighter) => fighter.raceOrbId === "professor");
+    assert.equal(professor.raceSpeedMode, "regular");
+    assert.equal(Number(sim.time.toFixed(3)), matchup.battleQuality.simulatedSeconds);
+    assert.ok(matchup.battleQuality.simulatedSeconds < 25, "regular Professor should finish before the Short minimum");
+    assert.ok(matchup.battleQuality.actionPlaybackRate < 1);
+    assert.ok(matchup.battleQuality.plannedActionDurationSeconds + 0.05 >= 25 * 1.05);
 });
 
 test("one slot that cannot be planned does not discard the rest of the batch", async () => {

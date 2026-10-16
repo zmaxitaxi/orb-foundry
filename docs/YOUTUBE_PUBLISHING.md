@@ -106,8 +106,11 @@ before YouTube receives the video:
    videos to 1v1 so the daily roster does not repeat.
 4. For a regular battle video, plan exactly one matchup whose live action fills
    the duration: at least 25 seconds for a Short and 60 seconds for long-form.
-   Preflight its simulation duration and set the deterministic action playback
-   rate; use the 50-layer long-form course where applicable. Do not restart,
+   Preflight the same normalized race options the exporter records, including
+   regular speed when a setup omits it, then set the deterministic action
+   playback rate so planned action is at least 5% longer than the minimum. Do
+   not promote a finished battle that still cannot meet that duration. Use the
+   50-layer long-form course where applicable. Do not restart,
    replay, or rematch the battle, and do not pad action time with a pause or
    static end screen. Verify the recorded action clock and exactly-one-match
    counter before upload. Friday tournaments are the explicit full-bracket
@@ -134,8 +137,10 @@ before YouTube receives the video:
 9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
    and validate the final artifact again. For a tournament, confirm the
    complete bracket has exactly `entrants - 1` recorded matches, a champion,
-   whole-tournament scope, at least 120 seconds, and announcer coverage for
-   every match. For an Orb Foundry Short, verify Classic mode, both orb IDs,
+   whole-tournament scope, at least 120 seconds, and one announcer sequence
+   plus spoken cues for every match. Continuous bracket recordings keep that
+   announcer proof across match resets, including camera-pan matches. For an
+   Orb Foundry Short, verify Classic mode, both orb IDs,
    black theme, no outlines, square layout, and the large square arena. Reject
    any artifact whose metadata or announcer proof no longer matches the plan.
    Titles must use readable casing for orb/group names, and descriptions must

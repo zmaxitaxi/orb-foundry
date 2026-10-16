@@ -45,6 +45,7 @@ import {
   PRESENTATION_TIMING,
   advancePresentationTimeline,
   createPresentationTimeline,
+  tournamentMatchAnnouncerShouldPlay,
 } from "../src/presentation-timeline.js";
 import {
   RECORDER_STATES,
@@ -1733,9 +1734,47 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /raceVisible:\s*false/, "supplied transition frames must keep the bracket visible instead of leaking gameplay underneath");
   assert.match(socialRendererSource, /this\.format === \"race-landscape\"|race-landscape/, "camera-pan rendering must remain long-form scoped");
   assert.match(mainSource, /tournamentAnnouncerPending/, "tournament announcers should defer until the zoom phase is complete");
+  assert.match(mainSource, /tournamentMatchAnnouncerShouldPlay/, "camera-pan tournament matches should still announce when battle starts");
+  assert.match(
+    mainSource,
+    /preserveAnnouncerPlayback:\s*continuingTournamentRecording/,
+    "continuous tournament recordings must keep announcer proof across match resets",
+  );
   assert.match(socialRendererSource, /raceTournamentFinishBorderVisible/, "tournament finish border visibility should be explicit");
   assert.match(socialRendererSource, /#OrbBattleGroundSimulator/, "Orb Race finish copy should include the requested hashtag");
   assert.match(socialRendererSource, /drawRaceLongformSideCopy\(ctx, layout, track, trackIndex\)/, "long-form copy should render through the side-margin path");
+}
+
+{
+  assert.equal(tournamentMatchAnnouncerShouldPlay({
+    phase: "matchup-hold",
+    matchKey: "tournament:m1",
+    announcedMatchKey: null,
+  }), false, "the matchup announcer waits until the battle phase");
+  assert.equal(tournamentMatchAnnouncerShouldPlay({
+    phase: "battle",
+    matchKey: "tournament:m1",
+    announcedMatchKey: null,
+  }), true, "the first battle announces even if the intro timeline never fired");
+  assert.equal(tournamentMatchAnnouncerShouldPlay({
+    phase: "battle",
+    matchKey: "tournament:m2",
+    announcedMatchKey: "tournament:m1",
+  }), true, "each later tournament match gets its own announcer sequence");
+  assert.equal(tournamentMatchAnnouncerShouldPlay({
+    phase: "battle",
+    matchKey: "tournament:m2",
+    announcedMatchKey: "tournament:m2",
+  }), false, "a match announces only once");
+  const audio = new CombatAudio({ fetcher: async () => { throw new Error("unused"); } });
+  audio.announcerPlayback.sequences = 4;
+  audio.announcerPlayback.spokenCues.push({ requestedCue: "intro-race-speed", resolvedCue: "intro-race-speed" });
+  audio.reset({ preserveAnnouncerPlayback: true });
+  assert.equal(audio.announcerRecordingSnapshot().sequences, 4);
+  assert.equal(audio.announcerRecordingSnapshot().spokenCueCount, 1);
+  audio.reset();
+  assert.equal(audio.announcerRecordingSnapshot().sequences, 0);
+  assert.equal(audio.announcerRecordingSnapshot().spokenCueCount, 0);
 }
 
 {

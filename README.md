@@ -164,14 +164,18 @@ a deterministic slow-motion rate so its live race action fills the duration.
 Long-form courses expand to 50 ascending layers; every regular battle video
 records exactly one matchup, then only a brief winner reveal. Friday's tournament
 records the entire bracket for at least two minutes and validates every match
-ID, champion, and announcer coverage. Orb Foundry Shorts preflight a single close
+ID, champion, and one announcer sequence per match. Continuous tournament
+recordings keep that announcer proof when the next match starts. Orb Foundry Shorts preflight a single close
 Classic battle and verify their black square visual settings before upload. A
 duration or matchup-count check rejects a regular battle if the action is short
 or a second matchup appears.
 If the capped search cannot find a battle inside the close-match gate, that
 slot keeps the closest finished candidate as a bounded fallback and still
-uploads it. Unfinished and runaway candidates are not promoted. A slot that
-still cannot be planned does not cancel the other slots in the batch.
+uploads it. Unfinished and runaway candidates are not promoted. The preflight
+uses the same normalized race options the exporter records, so a fast battle
+is slowed to the action minimum instead of being planned against a slower
+default. A finished battle that still cannot meet that duration is rejected.
+A slot that still cannot be planned does not cancel the other slots in the batch.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Orb Race matchup descriptions ask “Who

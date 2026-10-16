@@ -3,7 +3,7 @@ import { readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLASSIC_ORBS } from "../src/classic-orbs.js";
-import { ORB_RACERS } from "../src/orb-race.js";
+import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
 import { socialActionPlaybackRateForDuration } from "../src/social.js";
 import { exportSocialVideo } from "./export-random-battle.mjs";
@@ -157,6 +157,11 @@ export function selectYouTubeMatchup({
     // close-battle gate is still a usable plan; unfinished and runaway
     // candidates are not promoted.
     if (best?.battleQuality?.finished) {
+        if (best.battleQuality.durationReady === false) {
+            throw new Error(
+                `No duration-ready YouTube matchup found for ${dateKey}/${slotId}; best planned action was ${best.battleQuality.plannedActionDurationSeconds}s.`,
+            );
+        }
         if (!best.battleQuality.accepted) {
             best.battleQuality.accepted = true;
             best.battleQuality.fallback = true;
@@ -553,18 +558,22 @@ function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, q
     const minimumActionDurationSeconds = Math.max(0, Number(quality.minimumDurationSeconds?.[contentType]) || 0);
     const targetActionDurationSeconds = minimumActionDurationSeconds * 1.05;
     const actionPlaybackRate = socialActionPlaybackRateForDuration(sim.time, targetActionDurationSeconds);
+    const plannedActionDurationSeconds = Number((sim.time / actionPlaybackRate).toFixed(3));
+    const durationReady = !(targetActionDurationSeconds > 0)
+        || plannedActionDurationSeconds + 0.05 >= targetActionDurationSeconds;
     const maxProgressMargin = Number(quality.closeBattle.maxProgressMargin);
     const maxLayerLead = Number(quality.closeBattle.maxLayerLead);
     const finished = sim.finished && !runaway;
     const result = {
-        accepted: finished && progressMargin <= maxProgressMargin && layerLead <= maxLayerLead,
+        accepted: finished && durationReady && progressMargin <= maxProgressMargin && layerLead <= maxLayerLead,
         fallback: false,
         runaway,
         finished,
+        durationReady,
         winnerTeamIndex: Number.isInteger(sim.winningRaceTeamIndex) ? sim.winningRaceTeamIndex : null,
         simulatedSeconds: Number(sim.time.toFixed(3)),
         actionPlaybackRate,
-        plannedActionDurationSeconds: Number((sim.time / actionPlaybackRate).toFixed(3)),
+        plannedActionDurationSeconds,
         progress: progress.map((value) => Number(value.toFixed(3))),
         progressMargin: Number(progressMargin.toFixed(3)),
         layerLead,
@@ -659,11 +668,19 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, quality }) {
     };
 }
 
+export function youtubeRaceTeamOptions(raceTeams) {
+    // Match normalizeSettings: an omitted speed becomes regular. createSimulation
+    // otherwise treats a missing Professor option as very-strong-math-slow, so
+    // preflight would plan a longer race than the exporter records.
+    return normalizeRaceTeamOptions(undefined, raceTeams, { scalingDamage: true });
+}
+
 function createYouTubeSimulation({ raceTeams, raceOrbs, layerStrengths, contentType, seed }) {
     return createSimulation({
         gameplayMode: "orb-race",
         raceTeams,
         raceOrbs,
+        raceTeamOptions: youtubeRaceTeamOptions(raceTeams),
         raceLayerCount: layerStrengths.length,
         raceLayerStrengths: layerStrengths,
         raceScalingDamage: true,
@@ -808,6 +825,9 @@ export async function publishDueYouTubeSlots({
                 videoKind: plan.videoKind,
                 raceOrbs: plan.raceOrbs,
                 raceTeams: plan.raceTeams,
+                raceTeamOptions: plan.videoKind === "match" && plan.contentSource === "orb-race"
+                    ? youtubeRaceTeamOptions(plan.raceTeams)
+                    : undefined,
                 raceLayerStrengths: plan.raceLayerStrengths,
                 tournament: plan.videoKind === "tournament" ? plan.tournament : undefined,
                 classes: plan.contentSource === "orb-foundry" ? plan.orbFoundryOrbs : undefined,

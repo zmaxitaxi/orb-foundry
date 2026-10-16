@@ -120,6 +120,7 @@ export async function exportSocialVideo(options = {}) {
       gameplayMode,
       raceOrbs,
       raceTeams,
+      raceTeamOptions: options.raceTeamOptions,
       raceLayerCount: raceLayerStrengths.length,
       raceLayerStrengths,
       raceShowTargetMessage: true,

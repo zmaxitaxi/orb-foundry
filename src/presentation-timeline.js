@@ -35,3 +35,11 @@ export function advancePresentationTimeline(state, elapsed) {
 export function presentationAtTime() {
   return { phase: "battle", phaseProgress: 1, countdown: 0 };
 }
+
+export function tournamentMatchAnnouncerShouldPlay({
+  phase = "",
+  matchKey = "",
+  announcedMatchKey = null,
+} = {}) {
+  return phase === "battle" && Boolean(matchKey) && matchKey !== announcedMatchKey;
+}
