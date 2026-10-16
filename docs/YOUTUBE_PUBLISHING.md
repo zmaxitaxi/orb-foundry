@@ -71,12 +71,16 @@ Every unattended video must satisfy the quality contract in
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
 - Before rendering, the planner runs the deterministic matchup through the same
-  Orb Race simulation and requires a finished battle whose progress margin and
+  Orb Race simulation and prefers a finished battle whose progress margin and
   layer lead fit the configured close-battle thresholds. The search is capped
   at 128 attempts. A candidate whose spawned orbs or projectiles grow past the
   planning budget—Duplicator copies previously exhausted the heap—is abandoned
-  and the next matchup is tried. If no candidate passes, the slot stops before
-  rendering or upload; a merely closest non-close result is never accepted.
+  and the next matchup is tried. If the capped search finds no battle inside
+  those thresholds, it keeps the closest finished candidate and marks that plan
+  as a bounded fallback. The fallback still has to be a finished race with the
+  normal duration, layer, roster, and announcer rules. Unfinished and runaway
+  candidates are not promoted. One slot that still cannot be planned does not
+  cancel the other slots.
 - When the estimated damage strength is very uneven, the shared layer profile is
   scaled upward (within the configured cap) so stronger matchups work through
   more HP. This is a balancing aid, not a replacement for the close-battle gate.
@@ -113,8 +117,10 @@ before YouTube receives the video:
    uses its separate ascending profile. Orb Foundry Shorts instead use their
    explicit black/outline-free/large-square style and a preflighted Classic
    battle.
-6. Run the deterministic preflight simulation and reject the matchup unless it
+6. Run the deterministic preflight simulation and prefer a matchup that
    finishes within the configured close-battle progress and layer-lead limits.
+   If the capped search has no in-limit battle, keep the closest finished
+   candidate as a bounded fallback. Do not promote an unfinished or runaway result.
 7. Load announcer assets before recording and verify that the exported recording
    contains an announcer sequence and at least one spoken announcer cue. Use
    context-aware standard cues for normal battles; use split-wise announcer audio

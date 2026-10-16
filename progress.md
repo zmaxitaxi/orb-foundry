@@ -1,5 +1,10 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## Friday YouTube Planning Fallback (2026-10-16)
+
+- Friday's 16-orb tournament reserves most of the 24-orb daily roster and leaves the other race slots as 1v1s. On 2026-10-16 the noon long-form's closest finished duel missed the close-battle gate, and that throw aborted all four videos before any upload.
+- The capped search now keeps that closest finished battle as a bounded fallback. Duration, layer, roster, announcer, and Friday tournament rules are unchanged. A slot that still cannot be planned no longer cancels the rest of the batch.
+
 ## Single-Match Video Duration (2026-09-24)
 
 - Replaced the rematch-based minimum-duration behavior for YouTube races. Each

@@ -168,8 +168,10 @@ ID, champion, and announcer coverage. Orb Foundry Shorts preflight a single clos
 Classic battle and verify their black square visual settings before upload. A
 duration or matchup-count check rejects a regular battle if the action is short
 or a second matchup appears.
-If the planner cannot find a battle that passes the close-match gate, that slot
-stops; it never promotes a non-close fallback to an upload.
+If the capped search cannot find a battle inside the close-match gate, that
+slot keeps the closest finished candidate as a bounded fallback and still
+uploads it. Unfinished and runaway candidates are not promoted. A slot that
+still cannot be planned does not cancel the other slots in the batch.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Orb Race matchup descriptions ask “Who

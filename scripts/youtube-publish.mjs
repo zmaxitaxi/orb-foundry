@@ -153,9 +153,19 @@ export function selectYouTubeMatchup({
         if (!best || matchupScore(match) < matchupScore(best)) best = match;
         if (battleQuality.accepted) return match;
     }
+    // The attempt cap is the bound. A finished battle that misses the
+    // close-battle gate is still a usable plan; unfinished and runaway
+    // candidates are not promoted.
+    if (best?.battleQuality?.finished) {
+        if (!best.battleQuality.accepted) {
+            best.battleQuality.accepted = true;
+            best.battleQuality.fallback = true;
+        }
+        return best;
+    }
     if (best) {
         throw new Error(
-            `No close YouTube matchup found for ${dateKey}/${slotId}; best progress margin was ${best.battleQuality.progressMargin}.`,
+            `No finished YouTube matchup found for ${dateKey}/${slotId}; best progress margin was ${best.battleQuality.progressMargin}.`,
         );
     }
     throw new Error(`Unable to build a YouTube matchup for ${dateKey}/${slotId}.`);
@@ -206,24 +216,32 @@ export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATC
         ? config.schedule.find(({ id }) => id === tournamentConfig.slotId)
         : null;
     if (tournamentSlot) {
-        const size = Number(tournamentConfig.entrants);
-        if (dailyRoster.length < size) {
-            throw new Error(`The Friday tournament needs ${size} approved Orb Race entrants in its daily roster.`);
+        try {
+            const size = Number(tournamentConfig.entrants);
+            if (dailyRoster.length < size) {
+                throw new Error(`The Friday tournament needs ${size} approved Orb Race entrants in its daily roster.`);
+            }
+            const seed = seedForYouTubeRun(dateKey, `${tournamentSlot.id}:tournament-v1`);
+            const entrants = availableRosterIds(dailyRoster, seed, usedRaceIds).slice(0, size);
+            entrants.forEach((id) => usedRaceIds.add(id));
+            matchupsBySlot.set(tournamentSlot.id, {
+                slot: tournamentSlot,
+                matchup: {
+                    contentSource: "orb-race",
+                    videoKind: "tournament",
+                    tournamentEntrants: entrants,
+                    raceOrbs: [...entrants],
+                    seed,
+                    battleQuality: { accepted: true, finished: true, fallback: false },
+                },
+            });
+        } catch (error) {
+            matchupsBySlot.set(tournamentSlot.id, {
+                slot: tournamentSlot,
+                matchup: null,
+                planningError: error.message,
+            });
         }
-        const seed = seedForYouTubeRun(dateKey, `${tournamentSlot.id}:tournament-v1`);
-        const entrants = availableRosterIds(dailyRoster, seed, usedRaceIds).slice(0, size);
-        entrants.forEach((id) => usedRaceIds.add(id));
-        matchupsBySlot.set(tournamentSlot.id, {
-            slot: tournamentSlot,
-            matchup: {
-                contentSource: "orb-race",
-                videoKind: "tournament",
-                tournamentEntrants: entrants,
-                raceOrbs: [...entrants],
-                seed,
-                battleQuality: { accepted: true, finished: true, fallback: false },
-            },
-        });
     }
     const foundrySlotId = selectedOrbFoundrySlotForDate({ dateKey, config });
     const planningOrder = [...config.schedule].sort((left, right) => (
@@ -232,27 +250,35 @@ export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATC
     ));
     for (const slot of planningOrder) {
         if (matchupsBySlot.has(slot.id)) continue;
-        if (slot.id === foundrySlotId) {
-            const matchup = selectYouTubeFoundryMatchup({
+        try {
+            if (slot.id === foundrySlotId) {
+                const matchup = selectYouTubeFoundryMatchup({
+                    dateKey,
+                    slotId: slot.id,
+                    config,
+                    rosterIds: foundryRoster,
+                });
+                matchupsBySlot.set(slot.id, { slot, matchup });
+                continue;
+            }
+            const matchup = selectYouTubeMatchup({
                 dateKey,
                 slotId: slot.id,
                 config,
-                rosterIds: foundryRoster,
+                blockedIds: usedRaceIds,
+                rosterIds: dailyRoster,
+                formatId: tournamentSlot ? "duel" : null,
+                maxAttempts,
             });
+            matchup.raceOrbs.forEach((id) => usedRaceIds.add(id));
             matchupsBySlot.set(slot.id, { slot, matchup });
-            continue;
+        } catch (error) {
+            matchupsBySlot.set(slot.id, {
+                slot,
+                matchup: null,
+                planningError: error.message,
+            });
         }
-        const matchup = selectYouTubeMatchup({
-            dateKey,
-            slotId: slot.id,
-            config,
-            blockedIds: usedRaceIds,
-            rosterIds: dailyRoster,
-            formatId: tournamentSlot ? "duel" : null,
-            maxAttempts,
-        });
-        matchup.raceOrbs.forEach((id) => usedRaceIds.add(id));
-        matchupsBySlot.set(slot.id, { slot, matchup });
     }
     const plans = config.schedule.map(({ id }) => matchupsBySlot.get(id));
     if (DAILY_YOUTUBE_PLAN_CACHE.size >= 8) {
@@ -742,25 +768,29 @@ export async function publishDueYouTubeSlots({
         };
     }
 
-    const matchupsBySlotId = new Map(buildDailyYouTubePlans({ dateKey: resolvedDateKey, config })
-        .map(({ slot, matchup }) => [slot.id, matchup]));
+    const plansBySlotId = new Map(buildDailyYouTubePlans({ dateKey: resolvedDateKey, config })
+        .map((entry) => [entry.slot.id, entry]));
     const client = dryRun ? null : await createYouTubeApiClient({ env, fetchImpl });
     const items = [];
     const failures = [];
     for (const slot of slots) {
-        const plan = buildYouTubePublishPlan({
-            dateKey: resolvedDateKey,
-            slot,
-            config,
-            matchup: matchupsBySlotId.get(slot.id),
-        });
-        if (dryRun) {
-            logger.log(JSON.stringify({ ...plan, action: "dry-run" }, null, 2));
-            items.push({ ...plan, status: "planned" });
-            continue;
-        }
-
         try {
+            const planned = plansBySlotId.get(slot.id);
+            if (!planned?.matchup) {
+                throw new Error(planned?.planningError || `YouTube slot ${slot.id} could not be planned.`);
+            }
+            const plan = buildYouTubePublishPlan({
+                dateKey: resolvedDateKey,
+                slot,
+                config,
+                matchup: planned.matchup,
+            });
+            if (dryRun) {
+                logger.log(JSON.stringify({ ...plan, action: "dry-run" }, null, 2));
+                items.push({ ...plan, status: "planned" });
+                continue;
+            }
+
             const existing = await client.findVideoByRunTag(plan.runTag);
             if (existing) {
                 logger.log(`Skipping ${plan.runTag}; already uploaded as ${existing.id}.`);
@@ -822,8 +852,8 @@ export async function publishDueYouTubeSlots({
             });
             logger.log(`Uploaded ${plan.title}: https://youtu.be/${upload.id}`);
         } catch (error) {
-            failures.push({ slotId: plan.slotId, message: error.message });
-            logger.error(`YouTube slot ${plan.slotId} failed: ${error.stack || error.message}`);
+            failures.push({ slotId: slot.id, message: error.message });
+            logger.error(`YouTube slot ${slot.id} failed: ${error.stack || error.message}`);
         }
     }
 
