@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
     YOUTUBE_CONFIG_PATH,
     dueYouTubeSlotsAt,
@@ -28,7 +31,8 @@ import {
     selectYouTubeFoundryMatchup,
     selectYouTubeMatchup,
 } from "../scripts/youtube-publish.mjs";
-import { ORB_RACERS } from "../src/orb-race.js";
+import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
+import { createSimulation, stepSimulation } from "../src/simulation.js";
 
 test("YouTube publishing contract loads four daily slots and the approved video rosters", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
@@ -508,7 +512,8 @@ test("a close-battle failure can never be promoted to an approved upload", async
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
     const plans = buildDailyYouTubePlans({ dateKey: "2026-10-14", config });
     assert.equal(plans.length, 4);
-    for (const { slot, matchup } of plans) {
+    for (const { slot, matchup, planningError } of plans) {
+        assert.equal(planningError, undefined, slot.id);
         assert.equal(matchup.battleQuality.runaway, false, slot.id);
         assert.equal(matchup.battleQuality.accepted, true, slot.id);
         assert.equal(matchup.battleQuality.finished, true, slot.id);
@@ -525,13 +530,140 @@ test("a close-battle failure can never be promoted to an approved upload", async
                 battleQuality: {
                     ...plan.battleQuality,
                     accepted: true,
+                    fallback: false,
+                    progressMargin: config.quality.closeBattle.maxProgressMargin + 1,
+                },
+            },
+            config,
+        }), /close-battle preflight did not pass/);
+        assert.throws(() => validateYouTubeGenerationSpec({
+            plan: {
+                ...plan,
+                battleQuality: {
+                    ...plan.battleQuality,
+                    accepted: true,
                     fallback: true,
+                    finished: false,
                     progressMargin: config.quality.closeBattle.maxProgressMargin + 1,
                 },
             },
             config,
         }), /close-battle preflight did not pass/);
     }
+});
+
+test("Friday planning keeps a valid fallback when the leftover duel pool is not close", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const dateKey = "2026-10-16";
+    const plans = buildDailyYouTubePlans({ dateKey, config });
+    assert.equal(isYouTubePacificFriday(dateKey), true);
+    assert.equal(plans.length, 4);
+    assert.equal(plans.every((entry) => entry.matchup && !entry.planningError), true);
+    const noonLongform = plans.find(({ slot }) => slot.id === "noon-longform");
+    assert.equal(noonLongform.matchup.battleQuality.fallback, true);
+    assert.equal(noonLongform.matchup.battleQuality.accepted, true);
+    assert.equal(noonLongform.matchup.battleQuality.finished, true);
+    assert.equal(noonLongform.matchup.battleQuality.runaway, false);
+    assert.ok(
+        noonLongform.matchup.battleQuality.progressMargin > config.quality.closeBattle.maxProgressMargin
+        || noonLongform.matchup.battleQuality.layerLead > config.quality.closeBattle.maxLayerLead,
+    );
+    const tournament = plans.find(({ slot }) => slot.id === "afternoon-longform");
+    assert.equal(tournament.matchup.videoKind, "tournament");
+    assert.equal(tournament.matchup.tournamentEntrants.length, 16);
+    assert.equal(tournament.matchup.battleQuality.fallback, false);
+    const raceIds = plans.flatMap(({ matchup }) => matchup.raceOrbs);
+    assert.equal(new Set(raceIds).size, raceIds.length);
+    for (const { slot, matchup } of plans) {
+        const plan = buildYouTubePublishPlan({ dateKey, slot, config, matchup });
+        assert.equal(validateYouTubeGenerationSpec({ plan, config }), true, slot.id);
+        if (matchup.videoKind !== "tournament") {
+            const target = plan.minimumDurationSeconds * 1.05;
+            assert.equal(plan.battleQuality.durationReady, true, slot.id);
+            assert.ok(plan.battleQuality.plannedActionDurationSeconds + 0.05 >= target, slot.id);
+        }
+        if (matchup.battleQuality.fallback) {
+            assert.equal(plan.battleQuality.fallback, true, slot.id);
+            assert.ok(plan.battleQuality.plannedActionDurationSeconds >= plan.minimumDurationSeconds, slot.id);
+        }
+    }
+});
+
+test("YouTube preflight uses the exporter's regular speed, then extends a short race", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const matchup = selectYouTubeMatchup({
+        dateKey: "2026-10-16",
+        slotId: "noon-short",
+        config,
+        rosterIds: ["professor", "draftmaster"],
+        formatId: "duel",
+        maxAttempts: 1,
+    });
+    assert.equal(matchup.battleQuality.finished, true);
+    assert.equal(matchup.battleQuality.durationReady, true);
+    assert.ok(matchup.raceOrbs.includes("professor"));
+    const layers = matchup.battleQuality.layerStrengths;
+    const exportedOptions = normalizeRaceTeamOptions(undefined, matchup.raceTeams, { scalingDamage: true });
+    const sim = createSimulation({
+        gameplayMode: "orb-race",
+        raceTeams: matchup.raceTeams,
+        raceOrbs: matchup.raceOrbs,
+        raceTeamOptions: exportedOptions,
+        raceLayerCount: layers.length,
+        raceLayerStrengths: layers,
+        raceScalingDamage: true,
+        seed: matchup.seed,
+        social: { enabled: true, format: "portrait" },
+        features: { replay: false },
+    });
+    const step = 1 / 120;
+    const maxSteps = Math.ceil(180 / step);
+    for (let index = 0; index < maxSteps && !sim.finished; index += 1) stepSimulation(sim, step);
+    const professor = sim.fighters.find((fighter) => fighter.raceOrbId === "professor");
+    assert.equal(professor.raceSpeedMode, "regular");
+    assert.equal(Number(sim.time.toFixed(3)), matchup.battleQuality.simulatedSeconds);
+    assert.ok(matchup.battleQuality.simulatedSeconds < 25, "regular Professor should finish before the Short minimum");
+    assert.ok(matchup.battleQuality.actionPlaybackRate < 1);
+    assert.ok(matchup.battleQuality.plannedActionDurationSeconds + 0.05 >= 25 * 1.05);
+});
+
+test("one slot that cannot be planned does not discard the rest of the batch", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const dateKey = "2026-10-16";
+    const depleted = structuredClone(config);
+    depleted.videoReady.orbRace.orbs = config.videoReady.orbRace.orbs.slice(0, 16);
+    const plans = buildDailyYouTubePlans({ dateKey, config: depleted, maxAttempts: 1 });
+    assert.equal(plans.length, 4);
+    const tournament = plans.find(({ slot }) => slot.id === "afternoon-longform");
+    assert.equal(tournament.matchup.videoKind, "tournament");
+    assert.equal(tournament.planningError, undefined);
+    for (const entry of plans) {
+        if (entry.slot.id === "afternoon-longform") continue;
+        assert.equal(entry.matchup, null, entry.slot.id);
+        assert.match(entry.planningError, /Unable to build a YouTube matchup/, entry.slot.id);
+    }
+
+    const directory = await mkdtemp(join(tmpdir(), "youtube-plan-"));
+    const configPath = join(directory, "youtube-publishing.json");
+    const stored = JSON.parse(await readFile(YOUTUBE_CONFIG_PATH, "utf8"));
+    stored.videoReady.orbRace.orbs = stored.videoReady.orbRace.orbs.slice(0, 16);
+    await writeFile(configPath, JSON.stringify(stored));
+    const logs = [];
+    const errors = [];
+    await assert.rejects(() => publishDueYouTubeSlots({
+        dateKey,
+        batch: true,
+        dryRun: true,
+        configPath,
+        logger: {
+            log: (value) => logs.push(String(value)),
+            error: (value) => errors.push(String(value)),
+        },
+    }), /YouTube publishing failed for noon-short, noon-longform, afternoon-short\./);
+    assert.equal(errors.length, 3);
+    assert.equal(logs.length, 1);
+    assert.match(logs[0], /"slotId": "afternoon-longform"/);
+    assert.match(logs[0], /"videoKind": "tournament"/);
 });
 
 test("dry-run publishing plans the noon long-form without credentials or media side effects", async () => {

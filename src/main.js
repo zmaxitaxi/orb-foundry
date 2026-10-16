@@ -62,7 +62,8 @@ import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById }
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
-} from "./presentation-timeline.js?v=20260625-orb-polish2";
+  tournamentMatchAnnouncerShouldPlay,
+} from "./presentation-timeline.js?v=20261016-youtube-duration-announcer1";
 import {
   tournamentBracketLayout,
   tournamentCameraTransform,
@@ -2138,17 +2139,23 @@ function updateSocialPresentation(elapsed, now) {
     }
   }
   if (
-    socialPresentation.tournamentAnnouncerPending
+    socialPresentation.started
     && settings.gameplayMode === ORB_RACE_MODE
     && settings.raceTournament
-    && sim.raceTournament?.presentation?.phase === "battle"
+    && sim.raceTournament
   ) {
     const matchKey = tournamentMatchAnnouncementKey();
-    if (socialPresentation.tournamentAnnouncerMatchKey !== matchKey) {
+    if (tournamentMatchAnnouncerShouldPlay({
+      phase: sim.raceTournament.presentation?.phase,
+      matchKey,
+      announcedMatchKey: socialPresentation.tournamentAnnouncerMatchKey,
+    })) {
       playRaceMatchupAnnouncement(now);
       socialPresentation.tournamentAnnouncerMatchKey = matchKey;
     }
-    socialPresentation.tournamentAnnouncerPending = false;
+    if (sim.raceTournament.presentation?.phase === "battle") {
+      socialPresentation.tournamentAnnouncerPending = false;
+    }
   }
   if (now >= socialPresentation.highlightUntil) socialPresentation.highlight = null;
   if (socialPresentation.impactFrame && now >= socialPresentation.impactFrame.endsAt) {
@@ -2603,7 +2610,10 @@ function startSimulation({
   }
   document.body.dataset.gameplayMode = settings.gameplayMode;
   document.body.dataset.classicTheme = settings.classicBlackTheme ? "black" : "light";
-  audio.reset();
+  const continuingTournamentRecording = socialRecorder.machine.state === RECORDER_STATES.RECORDING
+    && settings.gameplayMode === ORB_RACE_MODE
+    && Boolean(settings.raceTournament);
+  audio.reset({ preserveAnnouncerPlayback: continuingTournamentRecording });
   const continuousTransition = transition?.mode === "pan-to-next";
   if (!continuousTransition) tournamentZoomCueKey = null;
   paused = false;

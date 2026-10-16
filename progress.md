@@ -1,5 +1,15 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## YouTube Export Duration And Tournament Announcer (2026-10-16)
+
+- Noon Short preflight omitted race speed options, so Professor ran at the simulation's very-strong-math-slow default (27.117s) and the playback rate stayed 1. The exporter normalizes an omitted speed to regular, so the same Professor vs Draftmaster duel finished in 12.375s of simulation and recorded about 13.6s. Preflight now uses those normalized options and slows any race whose real duration is under the action target.
+- Friday whole-tournament exports reset announcer playback on every match and never fired a matchup cue for camera-pan continuations, so the finished recording reported zero sequences. Each battle now announces once, and a continuous tournament recording keeps the sequence and spoken-cue counts across those resets.
+
+## Friday YouTube Planning Fallback (2026-10-16)
+
+- Friday's 16-orb tournament reserves most of the 24-orb daily roster and leaves the other race slots as 1v1s. On 2026-10-16 the noon long-form's closest finished duel missed the close-battle gate, and that throw aborted all four videos before any upload.
+- The capped search now keeps that closest finished battle as a bounded fallback. Duration, layer, roster, announcer, and Friday tournament rules are unchanged. A slot that still cannot be planned no longer cancels the rest of the batch.
+
 ## Single-Match Video Duration (2026-09-24)
 
 - Replaced the rematch-based minimum-duration behavior for YouTube races. Each

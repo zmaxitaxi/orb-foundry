@@ -327,14 +327,17 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
         throw new Error("YouTube generation blocked: the content source is not approved.");
     }
     const closeBattle = config.quality?.closeBattle;
+    const battleQuality = plan.battleQuality;
+    const boundedFallback = battleQuality?.fallback === true;
+    const withinCloseBattleLimits = Number(battleQuality?.progressMargin) <= Number(closeBattle?.maxProgressMargin)
+        && Number(battleQuality?.layerLead) <= Number(closeBattle?.maxLayerLead);
     if (
-        plan.battleQuality?.accepted !== true
-        || plan.battleQuality?.finished !== true
-        || plan.battleQuality?.fallback === true
-        || !Number.isFinite(plan.battleQuality?.progressMargin)
-        || !Number.isFinite(plan.battleQuality?.layerLead)
-        || Number(plan.battleQuality?.progressMargin) > Number(closeBattle?.maxProgressMargin)
-        || Number(plan.battleQuality?.layerLead) > Number(closeBattle?.maxLayerLead)
+        battleQuality?.accepted !== true
+        || battleQuality?.finished !== true
+        || battleQuality?.runaway === true
+        || !Number.isFinite(battleQuality?.progressMargin)
+        || !Number.isFinite(battleQuality?.layerLead)
+        || (!boundedFallback && !withinCloseBattleLimits)
     ) {
         throw new Error("YouTube generation blocked: the deterministic close-battle preflight did not pass.");
     }

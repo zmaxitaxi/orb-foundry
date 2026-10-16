@@ -71,12 +71,16 @@ Every unattended video must satisfy the quality contract in
   and long-form. Shorts use no more than three layers. 500 is a floor, not a
   required first value.
 - Before rendering, the planner runs the deterministic matchup through the same
-  Orb Race simulation and requires a finished battle whose progress margin and
+  Orb Race simulation and prefers a finished battle whose progress margin and
   layer lead fit the configured close-battle thresholds. The search is capped
   at 128 attempts. A candidate whose spawned orbs or projectiles grow past the
   planning budget—Duplicator copies previously exhausted the heap—is abandoned
-  and the next matchup is tried. If no candidate passes, the slot stops before
-  rendering or upload; a merely closest non-close result is never accepted.
+  and the next matchup is tried. If the capped search finds no battle inside
+  those thresholds, it keeps the closest finished candidate and marks that plan
+  as a bounded fallback. The fallback still has to be a finished race with the
+  normal duration, layer, roster, and announcer rules. Unfinished and runaway
+  candidates are not promoted. One slot that still cannot be planned does not
+  cancel the other slots.
 - When the estimated damage strength is very uneven, the shared layer profile is
   scaled upward (within the configured cap) so stronger matchups work through
   more HP. This is a balancing aid, not a replacement for the close-battle gate.
@@ -102,8 +106,11 @@ before YouTube receives the video:
    videos to 1v1 so the daily roster does not repeat.
 4. For a regular battle video, plan exactly one matchup whose live action fills
    the duration: at least 25 seconds for a Short and 60 seconds for long-form.
-   Preflight its simulation duration and set the deterministic action playback
-   rate; use the 50-layer long-form course where applicable. Do not restart,
+   Preflight the same normalized race options the exporter records, including
+   regular speed when a setup omits it, then set the deterministic action
+   playback rate so planned action is at least 5% longer than the minimum. Do
+   not promote a finished battle that still cannot meet that duration. Use the
+   50-layer long-form course where applicable. Do not restart,
    replay, or rematch the battle, and do not pad action time with a pause or
    static end screen. Verify the recorded action clock and exactly-one-match
    counter before upload. Friday tournaments are the explicit full-bracket
@@ -113,8 +120,10 @@ before YouTube receives the video:
    uses its separate ascending profile. Orb Foundry Shorts instead use their
    explicit black/outline-free/large-square style and a preflighted Classic
    battle.
-6. Run the deterministic preflight simulation and reject the matchup unless it
+6. Run the deterministic preflight simulation and prefer a matchup that
    finishes within the configured close-battle progress and layer-lead limits.
+   If the capped search has no in-limit battle, keep the closest finished
+   candidate as a bounded fallback. Do not promote an unfinished or runaway result.
 7. Load announcer assets before recording and verify that the exported recording
    contains an announcer sequence and at least one spoken announcer cue. Use
    context-aware standard cues for normal battles; use split-wise announcer audio
@@ -128,8 +137,10 @@ before YouTube receives the video:
 9. Transcode the accepted recording to MP4, preserve the metadata and run tag,
    and validate the final artifact again. For a tournament, confirm the
    complete bracket has exactly `entrants - 1` recorded matches, a champion,
-   whole-tournament scope, at least 120 seconds, and announcer coverage for
-   every match. For an Orb Foundry Short, verify Classic mode, both orb IDs,
+   whole-tournament scope, at least 120 seconds, and one announcer sequence
+   plus spoken cues for every match. Continuous bracket recordings keep that
+   announcer proof across match resets, including camera-pan matches. For an
+   Orb Foundry Short, verify Classic mode, both orb IDs,
    black theme, no outlines, square layout, and the large square arena. Reject
    any artifact whose metadata or announcer proof no longer matches the plan.
    Titles must use readable casing for orb/group names, and descriptions must
