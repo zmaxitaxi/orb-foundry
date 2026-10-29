@@ -1687,28 +1687,101 @@ function raceTeamAnnouncerCues(team) {
   });
 }
 
+const ASSET_LOAD_CONCURRENCY = 3;
+
+function assetResponseShouldRetry(response) {
+  if (!response || response.ok === true) return true;
+  const status = Number(response.status);
+  if (!Number.isFinite(status) || status === 0) return true;
+  return status === 408 || status === 429 || status >= 500;
+}
+
+// Headless Chromium rejects decodeAudioData when hundreds of announcer files
+// are fetched and decoded at once. Keep only a few decodes in flight, then
+// retry the cues that failed after that pass has gone idle.
+export async function loadAudioAssetMap({
+  fetcher,
+  decode,
+  manifest = {},
+  baseUrl = "",
+  cacheKey = "",
+  concurrency = ASSET_LOAD_CONCURRENCY,
+  attempts = 1,
+  retryDelayMs = 0,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+} = {}) {
+  if (typeof fetcher !== "function" || typeof decode !== "function") {
+    return { buffers: new Map(), failures: Object.keys(manifest || {}), permanentFailures: Object.keys(manifest || {}) };
+  }
+  const buffers = new Map();
+  const permanentFailures = [];
+  const cacheSuffix = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : "";
+  const attemptLimit = Math.max(1, Number(attempts) || 1);
+  const workerCount = Math.max(1, Number(concurrency) || 1);
+  let pending = Object.entries(manifest || {});
+
+  async function loadOne(cue, filename) {
+    const url = `${baseUrl}${filename}${cacheSuffix}`;
+    let response = null;
+    try {
+      response = await fetcher(url);
+      if (!response?.ok) throw new Error(`Unable to load ${filename}`);
+      const bytes = await response.arrayBuffer();
+      const buffer = await decode(bytes?.slice ? bytes.slice(0) : bytes);
+      if (!buffer) throw new Error(`Unable to decode ${filename}`);
+      buffers.set(cue, buffer);
+      return "loaded";
+    } catch {
+      return response && response.ok !== true && !assetResponseShouldRetry(response) ? "permanent" : "retry";
+    }
+  }
+
+  for (let attempt = 0; attempt < attemptLimit && pending.length; attempt += 1) {
+    if (attempt > 0) await sleep(Math.max(0, Number(retryDelayMs) || 0) * attempt);
+    const queue = pending;
+    const retryable = [];
+    const workers = Math.min(workerCount, queue.length);
+    await Promise.all(Array.from({ length: workers }, async () => {
+      while (queue.length) {
+        const next = queue.shift();
+        if (!next) return;
+        const outcome = await loadOne(next[0], next[1]);
+        if (outcome === "retry") retryable.push(next);
+        else if (outcome === "permanent") permanentFailures.push(next[0]);
+      }
+    }));
+    pending = retryable;
+  }
+
+  return {
+    buffers,
+    failures: [...permanentFailures, ...pending.map(([cue]) => cue)],
+    permanentFailures,
+  };
+}
+
 export async function loadAnnouncerAssets({
   fetcher,
   decode,
   manifest = ANNOUNCER_ASSETS,
   baseUrl = "./assets/audio/announcer/",
   cacheKey = ANNOUNCER_ASSET_VERSION,
+  concurrency = ASSET_LOAD_CONCURRENCY,
+  attempts = 1,
+  retryDelayMs = 0,
+  sleep,
 } = {}) {
-  if (typeof fetcher !== "function" || typeof decode !== "function") return { buffers: new Map(), failures: Object.keys(manifest) };
-  const buffers = new Map();
-  const failures = [];
-  const cacheSuffix = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : "";
-  await Promise.all(Object.entries(manifest).map(async ([cue, filename]) => {
-    try {
-      const response = await fetcher(`${baseUrl}${filename}${cacheSuffix}`);
-      if (!response?.ok) throw new Error(`Unable to load ${filename}`);
-      const buffer = await decode(await response.arrayBuffer());
-      buffers.set(cue, buffer);
-    } catch {
-      failures.push(cue);
-    }
-  }));
-  return { buffers, failures };
+  return loadAudioAssetMap({
+    fetcher,
+    decode,
+    manifest,
+    baseUrl,
+    cacheKey,
+    concurrency,
+    attempts,
+    retryDelayMs,
+    sleep,
+  });
 }
 
 export async function loadSampleAssets({
@@ -1717,22 +1790,22 @@ export async function loadSampleAssets({
   manifest = SAMPLE_ASSETS,
   baseUrl = "./assets/audio/effects/",
   cacheKey = SAMPLE_ASSET_VERSION,
+  concurrency = ASSET_LOAD_CONCURRENCY,
+  attempts = 1,
+  retryDelayMs = 0,
+  sleep,
 } = {}) {
-  if (typeof fetcher !== "function" || typeof decode !== "function") return { buffers: new Map(), failures: Object.keys(manifest) };
-  const buffers = new Map();
-  const failures = [];
-  const cacheSuffix = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : "";
-  await Promise.all(Object.entries(manifest).map(async ([sample, filename]) => {
-    try {
-      const response = await fetcher(`${baseUrl}${filename}${cacheSuffix}`);
-      if (!response?.ok) throw new Error(`Unable to load ${filename}`);
-      const buffer = await decode(await response.arrayBuffer());
-      buffers.set(sample, buffer);
-    } catch {
-      failures.push(sample);
-    }
-  }));
-  return { buffers, failures };
+  return loadAudioAssetMap({
+    fetcher,
+    decode,
+    manifest,
+    baseUrl,
+    cacheKey,
+    concurrency,
+    attempts,
+    retryDelayMs,
+    sleep,
+  });
 }
 
 function hashValue(value) {
@@ -1752,7 +1825,18 @@ function hashValue(value) {
 }
 
 export class CombatAudio {
-  constructor({ fetcher = globalThis.fetch?.bind(globalThis), announcerBaseUrl, sampleBaseUrl } = {}) {
+  constructor({
+    fetcher = globalThis.fetch?.bind(globalThis),
+    announcerBaseUrl,
+    sampleBaseUrl,
+    announcerManifest = null,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    announcerLoadConcurrency = ASSET_LOAD_CONCURRENCY,
+    announcerLoadAttempts = 4,
+    announcerRetryDelayMs = 50,
+    announcerEnsureAttempts = 4,
+    announcerPlaybackRetries = 6,
+  } = {}) {
     this.context = null;
     this.enabled = true;
     this.lastEventId = 0;
@@ -1765,9 +1849,14 @@ export class CombatAudio {
     this.noiseBuffer = null;
     this.announcerBuffers = new Map();
     this.announcerFailures = [];
+    this.announcerPermanentFailures = new Set();
     this.announcerLoadPromise = null;
+    this.announcerLoading = null;
+    this.announcerLoadAttempted = false;
     this.announcerAssetsReady = false;
     this.announcerPlayback = emptyAnnouncerPlayback();
+    this.announcerRetryGeneration = 0;
+    this.announcerRetryChain = Promise.resolve();
     this.sampleBuffers = new Map();
     this.sampleFailures = [];
     this.sampleLoadPromise = null;
@@ -1776,7 +1865,14 @@ export class CombatAudio {
     this.hydrogenSirenRequested = false;
     this.fetcher = fetcher;
     this.announcerBaseUrl = announcerBaseUrl || "./assets/audio/announcer/";
+    this.announcerManifest = announcerManifest;
     this.sampleBaseUrl = sampleBaseUrl || "./assets/audio/effects/";
+    this.sleep = sleep;
+    this.announcerLoadConcurrency = announcerLoadConcurrency;
+    this.announcerLoadAttempts = announcerLoadAttempts;
+    this.announcerRetryDelayMs = announcerRetryDelayMs;
+    this.announcerEnsureAttempts = announcerEnsureAttempts;
+    this.announcerPlaybackRetries = announcerPlaybackRetries;
     this.lastPlayed = new Map();
     this.voiceStarts = [];
     this.duckUntil = 0;
@@ -1786,19 +1882,89 @@ export class CombatAudio {
     this.categoriesEnabled = { effects: true, ambience: true, music: true, announcer: true };
   }
 
-  async unlock() {
+  async unlock({ announcerAttempts = this.announcerLoadAttempts } = {}) {
     if (!this.context) this.createGraph();
     if (!this.context) return false;
-    if (this.context.state === "suspended") await this.context.resume();
+    await this.resumeRunning();
     if (!this.ambienceNodes.length) this.startAmbience();
-    if (!this.announcerLoadPromise) this.loadAnnouncer();
+    await this.loadAnnouncer({ attempts: announcerAttempts });
     if (!this.sampleLoadPromise) this.loadSamples();
-    await Promise.all([
-      this.announcerLoadPromise.catch(() => 0),
-      this.sampleLoadPromise.catch(() => 0),
-    ]);
+    if (this.sampleLoadPromise) await Promise.resolve(this.sampleLoadPromise).catch(() => 0);
     if (this.hydrogenSirenRequested) this.playHydrogenSiren({ type: "race-hydrogen-bomb-countdown-start", id: 0 });
     return this.context.state === "running";
+  }
+
+  async resumeRunning({ attempts = 6, delayMs = this.announcerRetryDelayMs } = {}) {
+    if (!this.context) return false;
+    const limit = Math.max(1, Number(attempts) || 1);
+    for (let attempt = 0; attempt < limit; attempt += 1) {
+      if (this.context.state === "running") return true;
+      try {
+        if (typeof this.context.resume === "function") await this.context.resume();
+      } catch {
+        // Headless Chromium can reject resume until its audio service is ready.
+      }
+      if (this.context.state === "running") return true;
+      await this.waitForContextState(delayMs * (attempt + 1));
+    }
+    return this.context.state === "running";
+  }
+
+  waitForContextState(delayMs) {
+    const timeoutMs = Math.max(0, Number(delayMs) || 0);
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        this.context?.removeEventListener?.("statechange", onState);
+        resolve();
+      };
+      const onState = () => {
+        if (this.context?.state === "running") finish();
+      };
+      this.context?.addEventListener?.("statechange", onState);
+      Promise.resolve(this.sleep(timeoutMs)).then(finish);
+    });
+  }
+
+  announcerAssetManifest() {
+    return this.announcerManifest || ANNOUNCER_ASSETS;
+  }
+
+  retryableAnnouncerFailures() {
+    const source = this.announcerAssetManifest();
+    return this.announcerFailures.filter((cue) => !this.announcerPermanentFailures.has(cue) && source[cue]);
+  }
+
+  hasAnnouncerCue(cue) {
+    if (artistAnnouncerCueDisabled(cue)) return true;
+    if (this.announcerBuffers.has(cue)) return true;
+    const fallback = ANNOUNCER_FALLBACKS[cue];
+    return Boolean(fallback && this.announcerBuffers.has(fallback));
+  }
+
+  announcerReadyFor(cues = []) {
+    return this.context?.state === "running"
+      && this.announcerAssetsReady === true
+      && this.announcerBuffers.size > 0
+      && cues.every((cue) => this.hasAnnouncerCue(cue));
+  }
+
+  async ensureAnnouncerCues(cues = []) {
+    const required = [...new Set((Array.isArray(cues) ? cues : [cues]).filter((cue) => (
+      typeof cue === "string" && cue && !artistAnnouncerCueDisabled(cue)
+    )))];
+    for (let attempt = 0; attempt < this.announcerEnsureAttempts; attempt += 1) {
+      await this.unlock({ announcerAttempts: this.announcerLoadAttempts });
+      if (this.announcerReadyFor(required)) return true;
+      if (attempt + 1 < this.announcerEnsureAttempts) await this.sleep(this.announcerRetryDelayMs * (attempt + 1));
+    }
+    return this.announcerReadyFor(required);
+  }
+
+  whenAnnouncerSettled() {
+    return Promise.resolve(this.announcerRetryChain).catch(() => {});
   }
 
   createGraph() {
@@ -1833,19 +1999,61 @@ export class CombatAudio {
     }
   }
 
-  async loadAnnouncer() {
-    if (!this.context || this.announcerLoadPromise) return this.announcerLoadPromise;
-    this.announcerLoadPromise = loadAnnouncerAssets({
+  async loadAnnouncer({ attempts = this.announcerLoadAttempts } = {}) {
+    if (!this.context) return 0;
+    if (this.announcerLoading) return this.announcerLoading;
+    this.announcerLoading = this.loadAnnouncerPass(attempts);
+    try {
+      return await this.announcerLoading;
+    } finally {
+      this.announcerLoading = null;
+    }
+  }
+
+  async loadAnnouncerPass(attempts) {
+    if (this.announcerLoadPromise) {
+      try {
+        await this.announcerLoadPromise;
+      } catch {
+        // A rejected pass must not block the next retry.
+      }
+    }
+    const source = this.announcerAssetManifest();
+    const retryable = this.announcerLoadAttempted
+      ? this.retryableAnnouncerFailures()
+      : Object.keys(source);
+    if (this.announcerLoadAttempted && retryable.length === 0) {
+      this.announcerAssetsReady = true;
+      return this.announcerBuffers.size;
+    }
+    const manifest = Object.fromEntries(retryable.filter((cue) => source[cue]).map((cue) => [cue, source[cue]]));
+    this.announcerLoadAttempted = true;
+    if (!Object.keys(manifest).length) {
+      this.announcerAssetsReady = true;
+      return this.announcerBuffers.size;
+    }
+    const loadPromise = loadAnnouncerAssets({
       fetcher: this.fetcher,
       baseUrl: this.announcerBaseUrl,
-      decode: (data) => this.context.decodeAudioData(data.slice(0)),
-    }).then(({ buffers, failures }) => {
-      this.announcerBuffers = buffers;
-      this.announcerFailures = failures;
+      manifest,
+      attempts,
+      concurrency: this.announcerLoadConcurrency,
+      retryDelayMs: this.announcerRetryDelayMs,
+      sleep: this.sleep,
+      decode: (data) => this.context.decodeAudioData(data?.slice ? data.slice(0) : data),
+    }).then(({ buffers, failures, permanentFailures }) => {
+      for (const [cue, buffer] of buffers) this.announcerBuffers.set(cue, buffer);
+      for (const cue of permanentFailures || []) this.announcerPermanentFailures.add(cue);
+      const missing = new Set((failures || []).filter((cue) => !this.announcerBuffers.has(cue)));
+      for (const cue of this.announcerPermanentFailures) {
+        if (!this.announcerBuffers.has(cue)) missing.add(cue);
+      }
+      this.announcerFailures = [...missing];
       this.announcerAssetsReady = true;
-      return buffers.size;
+      return this.announcerBuffers.size;
     });
-    return this.announcerLoadPromise;
+    this.announcerLoadPromise = loadPromise;
+    return loadPromise;
   }
 
   async loadSamples() {
@@ -1853,7 +2061,11 @@ export class CombatAudio {
     this.sampleLoadPromise = loadSampleAssets({
       fetcher: this.fetcher,
       baseUrl: this.sampleBaseUrl,
-      decode: (data) => this.context.decodeAudioData(data.slice(0)),
+      attempts: 3,
+      concurrency: this.announcerLoadConcurrency,
+      retryDelayMs: this.announcerRetryDelayMs,
+      sleep: this.sleep,
+      decode: (data) => this.context.decodeAudioData(data?.slice ? data.slice(0) : data),
     }).then(({ buffers, failures }) => {
       this.sampleBuffers = buffers;
       this.sampleFailures = failures;
@@ -1880,6 +2092,7 @@ export class CombatAudio {
   }
 
   reset({ preserveAnnouncerPlayback = false } = {}) {
+    this.announcerRetryGeneration += 1;
     this.hydrogenSirenRequested = false;
     this.stopHydrogenSiren();
     this.lastEventId = 0;
@@ -2161,15 +2374,19 @@ export class CombatAudio {
   playAnnouncer(cue, delay = 0) {
     if (artistAnnouncerCueDisabled(cue)) return false;
     this.announcerPlayback.requestedCues.push(cue);
+    if (!this.enabled || !this.categoriesEnabled.announcer) return false;
+    if (this.speakAnnouncer(cue, delay)) return true;
+    if (!this.context) return false;
+    this.scheduleAnnouncerRetry(cue, delay);
+    return false;
+  }
+
+  speakAnnouncer(cue, delay = 0) {
     if (!this.enabled || !this.context || this.context.state !== "running" || !this.categoriesEnabled.announcer) return false;
-    const fallbackCue = ANNOUNCER_FALLBACKS[cue];
+    const fallbackCue = ANNOUNCER_FALLBACKS[cue] || null;
     const primaryBuffer = this.announcerBuffers.get(cue);
-    const buffer = primaryBuffer || this.announcerBuffers.get(fallbackCue);
-    if (!buffer) {
-      this.announcerPlayback.fallbackCues.push(cue);
-      this.playAnnouncerFallback(cue, delay);
-      return false;
-    }
+    const buffer = primaryBuffer || (fallbackCue ? this.announcerBuffers.get(fallbackCue) : null);
+    if (!buffer) return false;
     this.announcerPlayback.spokenCues.push({
       requestedCue: cue,
       resolvedCue: primaryBuffer ? cue : fallbackCue,
@@ -2184,6 +2401,33 @@ export class CombatAudio {
     this.duckFor(Math.max(0.45, delay + buffer.duration + 0.08));
     source.start(startAt);
     return true;
+  }
+
+  scheduleAnnouncerRetry(cue, delay) {
+    const generation = this.announcerRetryGeneration;
+    const job = async () => {
+      if (generation !== this.announcerRetryGeneration) return;
+      let remainingDelay = Math.max(0, Number(delay) || 0);
+      const retries = Math.max(1, Number(this.announcerPlaybackRetries) || 1);
+      for (let attempt = 0; attempt < retries; attempt += 1) {
+        if (generation !== this.announcerRetryGeneration) return;
+        await this.resumeRunning({ attempts: 2, delayMs: this.announcerRetryDelayMs });
+        if (generation !== this.announcerRetryGeneration) return;
+        if (!this.hasAnnouncerCue(cue)) {
+          await this.loadAnnouncer({ attempts: Math.min(2, this.announcerLoadAttempts) }).catch(() => 0);
+        }
+        if (generation !== this.announcerRetryGeneration) return;
+        if (this.speakAnnouncer(cue, remainingDelay)) return;
+        remainingDelay = 0;
+        await this.sleep(this.announcerRetryDelayMs * (attempt + 1));
+      }
+      if (generation !== this.announcerRetryGeneration) return;
+      this.announcerPlayback.fallbackCues.push(cue);
+      if (this.enabled && this.context?.state === "running" && this.categoriesEnabled.announcer) {
+        this.playAnnouncerFallback(cue, 0);
+      }
+    };
+    this.announcerRetryChain = Promise.resolve(this.announcerRetryChain).catch(() => {}).then(job);
   }
 
   playAnnouncerFallback(cue, delay = 0) {

@@ -8,8 +8,12 @@ import {
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
+  announcerIntroSequence,
+  classicTeamAnnouncerIntroSequence,
   raceTargetAnnouncerCueFor,
-} from "./audio.js?v=20261008-purple-sun-title1";
+  raceTeamAnnouncerIntroSequence,
+  worldCupAnnouncerIntroSequence,
+} from "./audio.js?v=20261029-announcer-export-retry1";
 import { SocialBattleRenderer } from "./social-renderer.js?v=20261008-purple-sun-title1";
 import {
   RECORDER_STATES,
@@ -2081,29 +2085,90 @@ function tournamentMatchAnnouncementKey() {
   return `${tournament?.tournamentId || "tournament"}:${presentation?.matchId || tournament?.currentMatchId || "match"}`;
 }
 
-function playRaceMatchupAnnouncement(now) {
-  const longFormRace = settings.social.format === "race-landscape";
-  const target = sim.raceLayerStrengths?.at(-1);
-  audio.playRaceMatchup(
-    {
-      orbIds: sim.raceTeams?.[0]?.orbIds || [sim.fighters[0]?.raceOrbId],
-      options: sim.raceTeamOptions?.[0],
-    },
-    {
-      orbIds: sim.raceTeams?.[1]?.orbIds || [sim.fighters[1]?.raceOrbId],
-      options: sim.raceTeamOptions?.[1],
-    },
-    {
-      includePrompt: !longFormRace,
-      includeMatchup: settings.raceMatchupAnnouncement,
-      targetCue: longFormRace && settings.raceTargetAnnouncement
-        ? raceTargetAnnouncerCueFor(target)
-        : null,
-    },
-  );
-  if (longFormRace && settings.raceShowTargetMessage) {
-    socialPresentation.raceTargetPromptUntil = now + 4500;
+function socialAnnouncerSequence() {
+  if (settings.gameplayMode === WORLD_CUP_MODE) {
+    return worldCupAnnouncerIntroSequence(sim.fighters[0]?.countryId, sim.fighters[1]?.countryId) || [];
   }
+  if (settings.gameplayMode === ORB_RACE_MODE) {
+    const longFormRace = settings.social.format === "race-landscape";
+    const target = sim.raceLayerStrengths?.at(-1);
+    return raceTeamAnnouncerIntroSequence(
+      {
+        orbIds: sim.raceTeams?.[0]?.orbIds || [sim.fighters[0]?.raceOrbId],
+        options: sim.raceTeamOptions?.[0],
+      },
+      {
+        orbIds: sim.raceTeams?.[1]?.orbIds || [sim.fighters[1]?.raceOrbId],
+        options: sim.raceTeamOptions?.[1],
+      },
+      {
+        includePrompt: !longFormRace,
+        includeMatchup: settings.raceMatchupAnnouncement,
+        targetCue: longFormRace && settings.raceTargetAnnouncement
+          ? raceTargetAnnouncerCueFor(target)
+          : null,
+      },
+    ) || [];
+  }
+  if (settings.gameplayMode === "classic" && sim.classicTeams?.length === 2) {
+    return classicTeamAnnouncerIntroSequence(
+      {
+        orbIds: sim.classicTeams[0],
+        options: sim.classicTeamOptions?.[0],
+      },
+      {
+        orbIds: sim.classicTeams[1],
+        options: sim.classicTeamOptions?.[1],
+      },
+    ) || [];
+  }
+  return announcerIntroSequence(sim.fighters[0]?.type, sim.fighters[1]?.type) || [];
+}
+
+function playSocialMatchupAnnouncement(now) {
+  if (settings.gameplayMode === WORLD_CUP_MODE) {
+    audio.playWorldCupMatchup(sim.fighters[0]?.countryId, sim.fighters[1]?.countryId);
+    return;
+  }
+  if (settings.gameplayMode === ORB_RACE_MODE) {
+    const longFormRace = settings.social.format === "race-landscape";
+    const target = sim.raceLayerStrengths?.at(-1);
+    audio.playRaceMatchup(
+      {
+        orbIds: sim.raceTeams?.[0]?.orbIds || [sim.fighters[0]?.raceOrbId],
+        options: sim.raceTeamOptions?.[0],
+      },
+      {
+        orbIds: sim.raceTeams?.[1]?.orbIds || [sim.fighters[1]?.raceOrbId],
+        options: sim.raceTeamOptions?.[1],
+      },
+      {
+        includePrompt: !longFormRace,
+        includeMatchup: settings.raceMatchupAnnouncement,
+        targetCue: longFormRace && settings.raceTargetAnnouncement
+          ? raceTargetAnnouncerCueFor(target)
+          : null,
+      },
+    );
+    if (longFormRace && settings.raceShowTargetMessage) {
+      socialPresentation.raceTargetPromptUntil = now + 4500;
+    }
+    return;
+  }
+  if (settings.gameplayMode === "classic" && sim.classicTeams?.length === 2) {
+    audio.playClassicMatchup(
+      {
+        orbIds: sim.classicTeams[0],
+        options: sim.classicTeamOptions?.[0],
+      },
+      {
+        orbIds: sim.classicTeams[1],
+        options: sim.classicTeamOptions?.[1],
+      },
+    );
+    return;
+  }
+  audio.playMatchup(sim.fighters[0]?.type, sim.fighters[1]?.type);
 }
 
 function updateSocialPresentation(elapsed, now) {
@@ -2112,30 +2177,19 @@ function updateSocialPresentation(elapsed, now) {
     const advanced = advancePresentationTimeline(socialPresentation, elapsed);
     Object.assign(socialPresentation, advanced.state);
     for (const cue of advanced.cues) {
-      if (cue === "matchup" && settings.gameplayMode === WORLD_CUP_MODE) {
-        audio.playWorldCupMatchup(sim.fighters[0]?.countryId, sim.fighters[1]?.countryId);
-      } else if (cue === "matchup" && settings.gameplayMode === ORB_RACE_MODE) {
-        const tournamentRace = Boolean(settings.raceTournament && sim.raceTournament);
-        const battleStarted = sim.raceTournament?.presentation?.phase === "battle";
-        if (tournamentRace && !battleStarted) {
-          socialPresentation.tournamentAnnouncerPending = true;
-        } else {
-          playRaceMatchupAnnouncement(now);
-          if (tournamentRace) socialPresentation.tournamentAnnouncerMatchKey = tournamentMatchAnnouncementKey();
-        }
-      } else if (cue === "matchup" && settings.gameplayMode === "classic" && sim.classicTeams?.length === 2) {
-        audio.playClassicMatchup(
-          {
-            orbIds: sim.classicTeams[0],
-            options: sim.classicTeamOptions?.[0],
-          },
-          {
-            orbIds: sim.classicTeams[1],
-            options: sim.classicTeamOptions?.[1],
-          },
-        );
-      } else if (cue === "matchup") audio.playMatchup(sim.fighters[0]?.type, sim.fighters[1]?.type);
-      else audio.playAnnouncer(cue);
+      if (cue !== "matchup") {
+        audio.playAnnouncer(cue);
+        continue;
+      }
+      const tournamentRace = settings.gameplayMode === ORB_RACE_MODE
+        && Boolean(settings.raceTournament && sim.raceTournament);
+      const battleStarted = sim.raceTournament?.presentation?.phase === "battle";
+      if (tournamentRace && !battleStarted) {
+        socialPresentation.tournamentAnnouncerPending = true;
+      } else {
+        playSocialMatchupAnnouncement(now);
+        if (tournamentRace) socialPresentation.tournamentAnnouncerMatchKey = tournamentMatchAnnouncementKey();
+      }
     }
   }
   if (
@@ -2150,7 +2204,7 @@ function updateSocialPresentation(elapsed, now) {
       matchKey,
       announcedMatchKey: socialPresentation.tournamentAnnouncerMatchKey,
     })) {
-      playRaceMatchupAnnouncement(now);
+      playSocialMatchupAnnouncement(now);
       socialPresentation.tournamentAnnouncerMatchKey = matchKey;
     }
     if (sim.raceTournament.presentation?.phase === "battle") {
@@ -2252,17 +2306,17 @@ function socialSimulationRate(now) {
 
 async function startSocialRecording({ transitionOverride = null } = {}) {
   const requireAnnouncer = settings.social.requireAnnouncer === true;
-  const audioReady = requireAnnouncer
-    ? await audio.unlock()
-    : await Promise.race([
+  if (requireAnnouncer) {
+    const ready = await audio.ensureAnnouncerCues(socialAnnouncerSequence());
+    const announcer = audio.announcerRecordingSnapshot();
+    if (!ready || announcer.assetsReady !== true || announcer.loadedCueCount < 1) {
+      throw new Error("Required announcer assets could not be loaded before recording.");
+    }
+  } else {
+    await Promise.race([
       audio.unlock().catch(() => false),
       new Promise((resolve) => setTimeout(resolve, 700)),
     ]);
-  if (requireAnnouncer) {
-    const announcer = audio.announcerRecordingSnapshot();
-    if (!audioReady || announcer.assetsReady !== true || announcer.loadedCueCount < 1) {
-      throw new Error("Required announcer assets could not be loaded before recording.");
-    }
   }
   socialRenderer.setFormat(settings.social.format);
   drawSocialBattle(performance.now(), false);

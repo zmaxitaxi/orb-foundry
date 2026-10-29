@@ -1740,6 +1740,16 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
     /preserveAnnouncerPlayback:\s*continuingTournamentRecording/,
     "continuous tournament recordings must keep announcer proof across match resets",
   );
+  assert.match(
+    mainSource,
+    /ensureAnnouncerCues\(socialAnnouncerSequence\(\)\)/,
+    "required announcer exports must wait for the battle's cue buffers",
+  );
+  assert.match(
+    mainSource,
+    /Required announcer assets could not be loaded before recording\./,
+    "a required announcer that never becomes ready must still fail the recording",
+  );
   assert.match(socialRendererSource, /raceTournamentFinishBorderVisible/, "tournament finish border visibility should be explicit");
   assert.match(socialRendererSource, /#OrbBattleGroundSimulator/, "Orb Race finish copy should include the requested hashtag");
   assert.match(socialRendererSource, /drawRaceLongformSideCopy\(ctx, layout, track, trackIndex\)/, "long-form copy should render through the side-margin path");
@@ -6181,6 +6191,150 @@ function run(sim, seconds = 120) {
   });
   assert.deepEqual(fetched, ["/announcer/wise/pick-your-winner.wav?v=fresh-voice"]);
   assert.equal(loaded.buffers.size, 1);
+}
+
+{
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const manifest = { a: "a.mp3", b: "b.mp3", c: "c.mp3", d: "d.mp3" };
+  const loaded = await loadAnnouncerAssets({
+    manifest,
+    concurrency: 2,
+    fetcher: async () => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 15));
+      inFlight -= 1;
+      return { ok: true, arrayBuffer: async () => new ArrayBuffer(1) };
+    },
+    decode: async () => ({ duration: 0.2 }),
+  });
+  assert.equal(maxInFlight, 2, "announcer fetches and decodes must stay within the concurrency cap");
+  assert.equal(loaded.buffers.size, 4);
+  assert.deepEqual(loaded.failures, []);
+}
+
+{
+  let decodeCalls = 0;
+  const loaded = await loadAnnouncerAssets({
+    manifest: { fight: "wise/fight.wav" },
+    attempts: 3,
+    retryDelayMs: 0,
+    sleep: async () => {},
+    fetcher: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) }),
+    decode: async () => {
+      decodeCalls += 1;
+      if (decodeCalls < 3) throw new Error("decoder busy");
+      return { duration: 0.4 };
+    },
+  });
+  assert.equal(decodeCalls, 3, "a transient decode failure should be retried after the in-flight pass");
+  assert.equal(loaded.buffers.get("fight").duration, 0.4);
+  assert.deepEqual(loaded.failures, []);
+}
+
+{
+  let fetches = 0;
+  const missing = await loadAnnouncerAssets({
+    manifest: { fight: "wise/fight.wav" },
+    attempts: 4,
+    fetcher: async () => {
+      fetches += 1;
+      return { ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) };
+    },
+    decode: async () => {
+      throw new Error("decode should not run for a missing file");
+    },
+  });
+  assert.equal(fetches, 1, "a permanent 404 should not be retried");
+  assert.deepEqual(missing.failures, ["fight"]);
+}
+
+{
+  const sleep = async () => {};
+  const manifest = { fight: "wise/fight.wav" };
+  let decodes = 0;
+  const context = {
+    state: "suspended",
+    currentTime: 1,
+    startedAt: [],
+    async resume() {
+      context.state = "running";
+    },
+    decodeAudioData() {
+      decodes += 1;
+      if (decodes < 2) throw new Error("decoder busy");
+      return { duration: 0.4 };
+    },
+    createBufferSource() {
+      const source = {
+        connect() {},
+        start(when) { context.startedAt.push(when); },
+      };
+      return source;
+    },
+    createGain() {
+      return { gain: { value: 1 }, connect() {} };
+    },
+  };
+  const audio = new CombatAudio({
+    fetcher: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(8) }),
+    announcerManifest: manifest,
+    sleep,
+    announcerLoadAttempts: 3,
+    announcerEnsureAttempts: 2,
+    announcerRetryDelayMs: 0,
+    announcerPlaybackRetries: 2,
+  });
+  audio.context = context;
+  audio.ambienceNodes = [{}];
+  audio.sampleLoadPromise = Promise.resolve(0);
+  audio.categoryGains.announcer = { gain: { value: 1 } };
+  assert.equal(await audio.ensureAnnouncerCues(["fight"]), true);
+  assert.equal(audio.announcerRecordingSnapshot().assetsReady, true);
+  assert.equal(audio.announcerRecordingSnapshot().loadedCueCount, 1);
+  assert.ok(decodes >= 2, "the required cue should be decoded again after a transient failure");
+
+  context.state = "suspended";
+  let resumes = 0;
+  context.resume = async () => {
+    resumes += 1;
+    if (resumes >= 2) context.state = "running";
+  };
+  assert.equal(audio.playAnnouncer("fight", 0.2), false);
+  assert.equal(audio.announcerRecordingSnapshot().spokenCueCount, 0);
+  await audio.whenAnnouncerSettled();
+  assert.equal(audio.announcerRecordingSnapshot().spokenCueCount, 1);
+  assert.equal(audio.announcerRecordingSnapshot().spokenCues[0].resolvedCue, "fight");
+  assert.deepEqual(context.startedAt, [1.2]);
+
+  const silent = new CombatAudio({
+    fetcher: async () => ({ ok: false, status: 404, arrayBuffer: async () => new ArrayBuffer(0) }),
+    announcerManifest: manifest,
+    sleep,
+    announcerLoadAttempts: 1,
+    announcerEnsureAttempts: 2,
+    announcerRetryDelayMs: 0,
+    announcerPlaybackRetries: 2,
+  });
+  silent.context = {
+    state: "running",
+    currentTime: 0,
+    async resume() {},
+    decodeAudioData() {
+      throw new Error("missing file");
+    },
+  };
+  silent.ambienceNodes = [{}];
+  silent.sampleLoadPromise = Promise.resolve(0);
+  silent.categoryGains.announcer = { gain: { value: 1 } };
+  silent.fallbackCalls = 0;
+  silent.playAnnouncerFallback = () => { silent.fallbackCalls += 1; };
+  assert.equal(await silent.ensureAnnouncerCues(["fight"]), false);
+  silent.playAnnouncer("fight");
+  await silent.whenAnnouncerSettled();
+  assert.equal(silent.announcerRecordingSnapshot().spokenCueCount, 0);
+  assert.equal(silent.fallbackCalls, 1, "a cue that never loads still must not count as spoken");
 }
 
 {

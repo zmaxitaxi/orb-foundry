@@ -150,8 +150,9 @@ The manual workflow in `.github/workflows/youtube-publishing.yml` can validate
 or run a batch on demand. The external scheduler should prepare four private
 uploads: one Short and one long-form at noon, and one Short and one long-form
 at 3 PM Pacific. Friday's 3 PM long-form is a 16-entrant whole-tournament
-recording; one Short per day has a 25% chance to use the approved Orb Foundry
-black, outline-free large-square format.
+recording titled `{N} Entrant Orb Tournament`; one Short per day has a 50%
+chance to use the approved Orb Foundry black, outline-free large-square format.
+Long-form slots stay Orb Race.
 Configure credentials in the environment that actually runs each workflow, as
 documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
 
@@ -190,7 +191,9 @@ for genuinely split/team presentations, and specialized cues fall back to a
 generic announcer when their context or asset is unavailable. Selection is
 deterministic rather than random. The publisher now blocks an upload unless
 announcer assets were loaded and the recording proves an announcer sequence with
-at least one spoken cue. Generation is preflighted from those same requirements
+at least one spoken cue. Headless export retries transient announcer fetch,
+decode, and AudioContext resume failures, and waits until that battle's cues
+are buffered before recording. Generation is preflighted from those same requirements
 before the browser recorder starts, and the final artifact is checked again;
 anything that does not fit is never uploaded.
 

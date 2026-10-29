@@ -1,5 +1,11 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## Headless Announcer Export And YouTube Copy (2026-10-29)
+
+- Headless export loaded all 297 announcer files at once and treated any single decoded cue as ready. Under load, `decodeAudioData` and `AudioContext.resume()` flake, so a recording could start with the battle's cues missing or with the context suspended at the matchup instant. That produced "Required announcer assets could not be loaded before recording" or a finished video with no spoken cue. Loads now stay at a few decodes at a time, retry transient failures after the pass goes idle, resume the context until it is running, and refuse to record until the cues for that battle are buffered. A cue requested while the context is suspended is spoken once it resumes instead of being dropped. `requireAnnouncer` still fails closed when the cues never load.
+- Friday tournament YouTube titles are now `{N} Entrant Orb Tournament` (for example, `16 Entrant Orb Tournament`). The championship description and hashtags are unchanged.
+- Orb Foundry Shorts are a deterministic 50% daily chance, still at most one Short per day. Both long-form slots, including Friday's tournament, stay Orb Race.
+
 ## YouTube Export Duration And Tournament Announcer (2026-10-16)
 
 - Noon Short preflight omitted race speed options, so Professor ran at the simulation's very-strong-math-slow default (27.117s) and the playback rate stayed 1. The exporter normalizes an omitted speed to regular, so the same Professor vs Draftmaster duel finished in 12.375s of simulation and recorded about 13.6s. Preflight now uses those normalized options and slows any race whose real duration is under the action target.

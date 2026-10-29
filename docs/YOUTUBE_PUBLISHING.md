@@ -10,15 +10,17 @@ Orb Foundry's approved YouTube publishing contract is stored in
 - `3:00 PM`: one Short and one long-form video.
 - On Fridays, the 3:00 PM long-form slot is a full Orb Race tournament instead
   of a single matchup; the noon long-form remains a regular race.
-- Each day has a deterministic 25% chance that one of its two Shorts is an Orb
+- Each day has a deterministic 50% chance that one of its two Shorts is an Orb
   Foundry video. At most one Short per day uses Orb Foundry; otherwise both are
-  Orb Race.
+  Orb Race. Both long-form slots, including Friday's tournament, stay Orb Race.
 - Delivery mode: daily batch initiated by the separately configured scheduler.
 - Upload mode: private uploads with YouTube `publishAt` scheduling, so the
   scheduler can prepare the videos before the Pacific release times.
 - Video approval: not required.
 - Title: `{left} VS {right}`, with readable title casing for orb and group names
-  (for example, `Splodey VS Jackpot`, never `SPLODEY VS JACKPOT`).
+  (for example, `Splodey VS Jackpot`, never `SPLODEY VS JACKPOT`). Friday
+  tournaments use `{N} Entrant Orb Tournament` instead, for example
+  `16 Entrant Orb Tournament`.
 - Description: `Who will break the {layerHealth} HP layer first, {left} or
   {right}?`, followed by `#physics #shorts #simulation #satisfying`.
 - Orb Foundry Shorts and Friday tournaments use source-appropriate descriptions
@@ -125,7 +127,9 @@ before YouTube receives the video:
    If the capped search has no in-limit battle, keep the closest finished
    candidate as a bounded fallback. Do not promote an unfinished or runaway result.
 7. Load announcer assets before recording and verify that the exported recording
-   contains an announcer sequence and at least one spoken announcer cue. Use
+   contains an announcer sequence and at least one spoken announcer cue. Retry
+   transient fetch, decode, and AudioContext resume failures, and do not start
+   the recorder until the cues for that battle are buffered. Use
    context-aware standard cues for normal battles; use split-wise announcer audio
    only when the presentation is actually split. If a specialized cue is
    unavailable, use a valid generic spoken fallback. Procedural-only or silent
