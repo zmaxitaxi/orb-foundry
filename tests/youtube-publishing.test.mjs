@@ -59,7 +59,7 @@ test("YouTube publishing contract loads four daily slots and the approved video 
     assert.equal(config.videoReady.orbFoundry.orbs.length, 36);
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("frost-ball"));
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("ying-yang"));
-    assert.equal(config.quality.orbFoundryShort.dailyProbability, 0.25);
+    assert.equal(config.quality.orbFoundryShort.dailyProbability, 0.5);
     assert.equal(config.quality.orbFoundryShort.maximumPerDay, 1);
     assert.equal(config.quality.fridayTournament.minimumDurationSeconds, 120);
     assert.equal(config.quality.fridayTournament.recordingScope, "whole-tournament");
@@ -89,7 +89,7 @@ test("YouTube metadata uses the approved VS title and hashtags", () => {
         description: "Who will win the Orb Foundry battle, Glass Ball or Black Hole?\n\n#physics #shorts #simulation #satisfying",
     });
     assert.deepEqual(youtubeTournamentMetadata({ entrants: 16 }), {
-        title: "Orb Race Tournament VS 16 Entrants",
+        title: "16 Entrant Orb Tournament",
         description: "Who will claim the championship? 16 approved Orb Race entrants compete in the full tournament.\n\n#physics #shorts #simulation #satisfying",
     });
 });
@@ -179,7 +179,7 @@ test("YouTube plans use a deterministic allowlisted matchup and exact metadata c
     );
 });
 
-test("Orb Foundry short selection honors the 25% daily chance and two-day roster cooldown", async () => {
+test("Orb Foundry short selection honors the 50% daily chance and two-day roster cooldown", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
     let foundryDays = 0;
     for (let day = 0; day < 365; day += 1) {
@@ -187,10 +187,22 @@ test("Orb Foundry short selection honors the 25% daily chance and two-day roster
         const selectedSlot = selectedOrbFoundrySlotForDate({ dateKey, config });
         if (selectedSlot) {
             foundryDays += 1;
-            assert.ok(config.schedule.some((slot) => slot.id === selectedSlot && slot.contentType === "short"));
+            const slot = config.schedule.find((candidate) => candidate.id === selectedSlot);
+            assert.equal(slot?.contentType, "short", "Orb Foundry can replace only a Short");
         }
+        assert.ok(
+            config.schedule.filter((slot) => slot.contentType !== "short").every((slot) => slot.id !== selectedSlot),
+            "long-form slots, including Friday's tournament, stay Orb Race",
+        );
     }
-    assert.ok(foundryDays >= 75 && foundryDays <= 110, `expected about 25% Foundry days, got ${foundryDays}/365`);
+    assert.ok(foundryDays >= 155 && foundryDays <= 210, `expected about 50% Foundry days, got ${foundryDays}/365`);
+    assert.throws(() => validateYouTubePublishingConfig({
+        ...config,
+        quality: {
+            ...config.quality,
+            orbFoundryShort: { ...config.quality.orbFoundryShort, dailyProbability: 0.25 },
+        },
+    }), /50% daily chance/);
 
     const dateKey = "2026-10-14";
     const currentRoster = new Set(dailyOrbFoundryRosterForDate({ dateKey, config }));
@@ -266,7 +278,7 @@ test("Friday long-form plan records a complete approved tournament", async () =>
     assert.equal(plan.raceLayerStrengths.length, 5);
     assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
-    assert.equal(plan.title, "Orb Race Tournament VS 16 Entrants");
+    assert.equal(plan.title, "16 Entrant Orb Tournament");
     assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
     assert.throws(() => validateYouTubeGenerationSpec({
         plan: { ...plan, dateKey: "2026-10-17" },
@@ -476,13 +488,20 @@ test("Friday tournament upload gate requires every match, the champion, and anno
 
 test("daily plans are distinct and the rotating roster enforces the two-day cooldown", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
-    const currentDate = "2026-10-14";
+    const currentDate = "2026-10-18";
     const current = buildDailyYouTubePlans({ dateKey: currentDate, config });
-    const currentIds = current.flatMap(({ matchup }) => matchup.raceOrbs);
+    const foundryPlans = current.filter(({ matchup }) => matchup.contentSource === "orb-foundry");
+    const racePlans = current.filter(({ matchup }) => matchup.contentSource !== "orb-foundry");
+    const currentIds = racePlans.flatMap(({ matchup }) => matchup.raceOrbs);
     const currentRoster = new Set(dailyYouTubeRosterForDate({ dateKey: currentDate, config }));
-    const recentRosters = ["2026-10-13", "2026-10-12"].map((dateKey) => (
+    const recentRosters = ["2026-10-17", "2026-10-16"].map((dateKey) => (
         new Set(dailyYouTubeRosterForDate({ dateKey, config }))
     ));
+    const foundryRoster = new Set(dailyOrbFoundryRosterForDate({ dateKey: currentDate, config }));
+    assert.ok(foundryPlans.length <= 1, "at most one Orb Foundry Short is planned per day");
+    assert.ok(foundryPlans.every(({ slot }) => slot.contentType === "short"));
+    assert.ok(current.filter(({ slot }) => slot.contentType === "longform").every(({ matchup }) => matchup.contentSource !== "orb-foundry"));
+    assert.ok(foundryPlans.every(({ matchup }) => matchup.orbFoundryOrbs.every((id) => foundryRoster.has(id))));
     assert.equal(new Set(currentIds).size, currentIds.length);
     assert.ok(currentIds.every((id) => currentRoster.has(id)));
     assert.ok(currentIds.every((id) => recentRosters.every((roster) => !roster.has(id))));
@@ -492,7 +511,7 @@ test("daily plans are distinct and the rotating roster enforces the two-day cool
         "afternoon-short",
         "afternoon-longform",
     ]);
-    assert.ok(current.some(({ matchup }) => matchup.raceTeams.some((team) => team.length > 1)));
+    assert.ok(racePlans.some(({ matchup }) => matchup.raceTeams.some((team) => team.length > 1)));
     assert.equal(config.delivery.visibility, "private");
     assert.equal(config.delivery.scheduleOnYouTube, true);
 });
@@ -524,6 +543,21 @@ test("a close-battle failure can never be promoted to an approved upload", async
             matchup,
         });
         assert.equal(validateYouTubeGenerationSpec({ plan, config }), true, slot.id);
+        if (matchup.contentSource === "orb-foundry") {
+            assert.equal(slot.contentType, "short", slot.id);
+            assert.throws(() => validateYouTubeGenerationSpec({
+                plan: {
+                    ...plan,
+                    battleQuality: {
+                        ...plan.battleQuality,
+                        accepted: true,
+                        winnerHealthFraction: 1,
+                    },
+                },
+                config,
+            }), /Orb Foundry matchup must be close/, slot.id);
+            continue;
+        }
         assert.throws(() => validateYouTubeGenerationSpec({
             plan: {
                 ...plan,
@@ -572,12 +606,17 @@ test("Friday planning keeps a valid fallback when the leftover duel pool is not 
     assert.equal(tournament.matchup.videoKind, "tournament");
     assert.equal(tournament.matchup.tournamentEntrants.length, 16);
     assert.equal(tournament.matchup.battleQuality.fallback, false);
-    const raceIds = plans.flatMap(({ matchup }) => matchup.raceOrbs);
+    const raceIds = plans.flatMap(({ matchup }) => matchup.contentSource === "orb-foundry" ? [] : matchup.raceOrbs);
     assert.equal(new Set(raceIds).size, raceIds.length);
+    assert.ok(plans.filter(({ slot }) => slot.contentType === "longform").every(({ matchup }) => matchup.contentSource !== "orb-foundry"));
+    assert.ok(plans.filter(({ matchup }) => matchup.contentSource === "orb-foundry").length <= 1);
     for (const { slot, matchup } of plans) {
         const plan = buildYouTubePublishPlan({ dateKey, slot, config, matchup });
         assert.equal(validateYouTubeGenerationSpec({ plan, config }), true, slot.id);
-        if (matchup.videoKind !== "tournament") {
+        if (matchup.contentSource === "orb-foundry") {
+            assert.equal(slot.contentType, "short", slot.id);
+            assert.ok(plan.battleQuality.plannedActionDurationSeconds + 0.05 >= plan.minimumDurationSeconds * 1.05, slot.id);
+        } else if (matchup.videoKind !== "tournament") {
             const target = plan.minimumDurationSeconds * 1.05;
             assert.equal(plan.battleQuality.durationReady, true, slot.id);
             assert.ok(plan.battleQuality.plannedActionDurationSeconds + 0.05 >= target, slot.id);
@@ -636,9 +675,13 @@ test("one slot that cannot be planned does not discard the rest of the batch", a
     assert.equal(plans.length, 4);
     const tournament = plans.find(({ slot }) => slot.id === "afternoon-longform");
     assert.equal(tournament.matchup.videoKind, "tournament");
+    assert.equal(tournament.matchup.contentSource, "orb-race");
     assert.equal(tournament.planningError, undefined);
+    const foundryEntries = plans.filter((entry) => entry.matchup?.contentSource === "orb-foundry");
+    assert.ok(foundryEntries.length <= 1);
+    assert.ok(foundryEntries.every((entry) => entry.slot.contentType === "short" && entry.planningError === undefined));
     for (const entry of plans) {
-        if (entry.slot.id === "afternoon-longform") continue;
+        if (entry.slot.id === "afternoon-longform" || entry.matchup?.contentSource === "orb-foundry") continue;
         assert.equal(entry.matchup, null, entry.slot.id);
         assert.match(entry.planningError, /Unable to build a YouTube matchup/, entry.slot.id);
     }
@@ -650,6 +693,7 @@ test("one slot that cannot be planned does not discard the rest of the batch", a
     await writeFile(configPath, JSON.stringify(stored));
     const logs = [];
     const errors = [];
+    const failedSlotIds = plans.filter((entry) => !entry.matchup).map((entry) => entry.slot.id);
     await assert.rejects(() => publishDueYouTubeSlots({
         dateKey,
         batch: true,
@@ -659,11 +703,17 @@ test("one slot that cannot be planned does not discard the rest of the batch", a
             log: (value) => logs.push(String(value)),
             error: (value) => errors.push(String(value)),
         },
-    }), /YouTube publishing failed for noon-short, noon-longform, afternoon-short\./);
-    assert.equal(errors.length, 3);
-    assert.equal(logs.length, 1);
-    assert.match(logs[0], /"slotId": "afternoon-longform"/);
-    assert.match(logs[0], /"videoKind": "tournament"/);
+    }), (error) => {
+        assert.equal(error.message, `YouTube publishing failed for ${failedSlotIds.join(", ")}.`);
+        assert.ok(failedSlotIds.length >= 1);
+        assert.ok(!failedSlotIds.includes("afternoon-longform"));
+        return true;
+    });
+    const logged = logs.map((line) => JSON.parse(line));
+    assert.equal(errors.length + logged.length, 4);
+    assert.ok(logged.some((entry) => entry.slotId === "afternoon-longform" && entry.videoKind === "tournament"));
+    assert.ok(logged.filter((entry) => entry.contentSource === "orb-foundry").length <= 1);
+    assert.ok(logged.filter((entry) => entry.contentType === "longform").every((entry) => entry.contentSource !== "orb-foundry"));
 });
 
 test("dry-run publishing plans the noon long-form without credentials or media side effects", async () => {

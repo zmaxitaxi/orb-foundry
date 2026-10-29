@@ -45,7 +45,7 @@
             "longform": 60
         },
         "orbFoundryShort": {
-            "dailyProbability": 0.25,
+            "dailyProbability": 0.5,
             "maximumPerDay": 1,
             "initialHealth": 100,
             "minimumWinnerHealthFraction": 0.75,

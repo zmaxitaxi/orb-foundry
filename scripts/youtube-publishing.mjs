@@ -198,13 +198,13 @@ function validateYouTubeQuality(quality) {
         if (!(Number(format.weight) > 0)) throw new Error(`YouTube battle format ${format.id} must have a positive weight.`);
     }
     const foundry = quality.orbFoundryShort;
-    if (!foundry || Number(foundry.dailyProbability) !== 0.25 || Number(foundry.maximumPerDay) !== 1
+    if (!foundry || Number(foundry.dailyProbability) !== 0.5 || Number(foundry.maximumPerDay) !== 1
         || Number(foundry.initialHealth) < 1
         || !(Number(foundry.minimumWinnerHealthFraction) > 0 && Number(foundry.minimumWinnerHealthFraction) < 1)
         || !(Number(foundry.maximumSimulationSeconds) >= Number(durationSeconds.short) * 1.05)
         || foundry.format !== "square" || foundry.theme !== "black" || foundry.teamOutlines !== false
         || foundry.arenaSize !== "large" || foundry.arenaShape !== "square") {
-        throw new Error("YouTube Orb Foundry Shorts must use the approved 25% daily chance and black, outline-free large-square format.");
+        throw new Error("YouTube Orb Foundry Shorts must use the approved 50% daily chance and black, outline-free large-square format.");
     }
     const tournament = quality.fridayTournament;
     if (!tournament || tournament.enabled !== true || Number(tournament.dayOfWeek) !== 5
@@ -606,11 +606,9 @@ export function youtubeFoundryMetadata({ left, right, config = null } = {}) {
 export function youtubeTournamentMetadata({ entrants, config = null } = {}) {
     const size = Math.floor(Number(entrants));
     if (!Number.isInteger(size) || size < 1) throw new Error("YouTube tournament metadata requires a positive entrant count.");
-    const left = "Orb Race Tournament";
-    const right = `${size} Entrants`;
     const hashtags = (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS).join(" ");
     return {
-        title: youtubeTitle(left, right, config),
+        title: `${size} Entrant Orb Tournament`,
         description: `Who will claim the championship? ${size} approved Orb Race entrants compete in the full tournament.\n\n${hashtags}`,
     };
 }
