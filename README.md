@@ -150,9 +150,12 @@ The manual workflow in `.github/workflows/youtube-publishing.yml` can validate
 or run a batch on demand. The external scheduler should prepare four private
 uploads: one Short and one long-form at noon, and one Short and one long-form
 at 3 PM Pacific. Friday's 3 PM long-form is a 16-entrant whole-tournament
-recording titled `{N} Entrant Orb Tournament`; one Short per day has a 50%
-chance to use the approved Orb Foundry black, outline-free large-square format.
-Long-form slots stay Orb Race.
+recording titled `Who is the Best Orb?`. Saturday's 3 PM long-form is the Orb
+Race matchup Everyone VS Infinity, with every allowlisted race orb except
+Infinity on the left and every layer at the top long-form HP. One Short per
+day has a 50% chance to use the approved Orb Foundry black, outline-free
+large-square format. Classic / Orb Foundry is Shorts-only; long-form slots
+stay Orb Race.
 Configure credentials in the environment that actually runs each workflow, as
 documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
 
