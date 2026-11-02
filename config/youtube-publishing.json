@@ -45,6 +45,7 @@
             "longform": 60
         },
         "orbFoundryShort": {
+            "shortsOnly": true,
             "dailyProbability": 0.5,
             "maximumPerDay": 1,
             "initialHealth": 100,
@@ -66,6 +67,14 @@
             "minimumDurationSeconds": 120,
             "recordingScope": "whole-tournament",
             "layerStrengths": [750, 1000, 1500, 2500, 5000]
+        },
+        "saturdayEveryoneVsInfinity": {
+            "enabled": true,
+            "dayOfWeek": 6,
+            "slotId": "afternoon-longform",
+            "rightOrb": "infinity",
+            "everyoneLabel": "EVERYONE",
+            "layerProfile": "longform-top"
         },
         "longformLayerCount": 50,
         "layerStrengths": {

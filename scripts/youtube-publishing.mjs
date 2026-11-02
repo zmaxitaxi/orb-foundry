@@ -7,6 +7,7 @@ import {
     ORB_RACE_MAX_LAYER_COUNT,
     ORB_RACE_MAX_LAYER_STRENGTH,
     ORB_RACER_IDS,
+    ORB_RACERS,
 } from "../src/orb-race.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -22,6 +23,12 @@ export const YOUTUBE_DESCRIPTION_TEMPLATE = "Who will break the {layerHealth} HP
 export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
 export const YOUTUBE_MINIMUM_LAYER_HEALTH = 500;
 export const YOUTUBE_MAXIMUM_SHORT_LAYERS = 3;
+export const YOUTUBE_OAUTH_SCOPES = Object.freeze([
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    // thumbnails.set is not included in youtube.upload or youtube.readonly.
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+]);
 export const YOUTUBE_ORB_FOUNDRY_EXCLUDED_IDS = Object.freeze([
     "fairy",
     "commander",
@@ -198,13 +205,14 @@ function validateYouTubeQuality(quality) {
         if (!(Number(format.weight) > 0)) throw new Error(`YouTube battle format ${format.id} must have a positive weight.`);
     }
     const foundry = quality.orbFoundryShort;
-    if (!foundry || Number(foundry.dailyProbability) !== 0.5 || Number(foundry.maximumPerDay) !== 1
+    if (!foundry || foundry.shortsOnly !== true
+        || Number(foundry.dailyProbability) !== 0.5 || Number(foundry.maximumPerDay) !== 1
         || Number(foundry.initialHealth) < 1
         || !(Number(foundry.minimumWinnerHealthFraction) > 0 && Number(foundry.minimumWinnerHealthFraction) < 1)
         || !(Number(foundry.maximumSimulationSeconds) >= Number(durationSeconds.short) * 1.05)
         || foundry.format !== "square" || foundry.theme !== "black" || foundry.teamOutlines !== false
         || foundry.arenaSize !== "large" || foundry.arenaShape !== "square") {
-        throw new Error("YouTube Orb Foundry Shorts must use the approved 50% daily chance and black, outline-free large-square format.");
+        throw new Error("YouTube Orb Foundry is Shorts-only and must use the approved 50% daily chance and black, outline-free large-square format.");
     }
     const tournament = quality.fridayTournament;
     if (!tournament || tournament.enabled !== true || Number(tournament.dayOfWeek) !== 5
@@ -224,6 +232,31 @@ function validateYouTubeQuality(quality) {
         }
         previousTournamentLayer = health;
     }
+    const saturday = quality.saturdayEveryoneVsInfinity;
+    if (!saturday || saturday.enabled !== true || Number(saturday.dayOfWeek) !== 6
+        || saturday.slotId !== "afternoon-longform"
+        || saturday.rightOrb !== "infinity"
+        || saturday.everyoneLabel !== "EVERYONE"
+        || saturday.layerProfile !== "longform-top") {
+        throw new Error("YouTube Saturday afternoon long-form must be the Everyone VS Infinity special on the max long-form layer profile.");
+    }
+    if (Number(quality.fridayTournament?.dayOfWeek) === Number(saturday.dayOfWeek)
+        && quality.fridayTournament?.slotId === saturday.slotId) {
+        throw new Error("Friday tournament and Saturday Everyone VS Infinity cannot share a weekday slot.");
+    }
+}
+
+export function youtubeMaxLongformLayerStrengths(quality) {
+    const template = quality?.layerStrengths?.longform;
+    const count = Number(quality?.longformLayerCount);
+    if (!Array.isArray(template) || template.length < 2 || !Number.isInteger(count) || count < template.length) {
+        throw new Error("YouTube max long-form layers require the configured long-form profile.");
+    }
+    const top = Math.max(...template.map((value) => Number(value)));
+    if (!Number.isInteger(top) || top > ORB_RACE_MAX_LAYER_STRENGTH) {
+        throw new Error("YouTube max long-form layer health must be an integer inside the race layer limit.");
+    }
+    return Array.from({ length: count }, () => top);
 }
 
 export function validateYouTubeGenerationSpec({ plan, config }) {
@@ -236,6 +269,9 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     const slot = config.schedule?.find(({ id }) => id === plan.slotId);
     if (!slot || slot.contentType !== plan.contentType) {
         throw new Error("YouTube generation blocked: the plan content type does not match its schedule slot.");
+    }
+    if (plan.contentSource === "orb-foundry" && plan.contentType !== "short") {
+        throw new Error("YouTube generation blocked: Orb Foundry is Shorts-only and cannot be planned or uploaded as long-form.");
     }
     const tournamentConfig = config.quality.fridayTournament;
     const isTournament = plan.videoKind === "tournament";
@@ -325,6 +361,10 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
 
     if (plan.contentSource !== "orb-race") {
         throw new Error("YouTube generation blocked: the content source is not approved.");
+    }
+    if (plan.matchupKind === "everyone-vs-infinity") {
+        validateSaturdayEveryonePlan(plan, config, slot);
+        return true;
     }
     const closeBattle = config.quality?.closeBattle;
     const battleQuality = plan.battleQuality;
@@ -508,6 +548,69 @@ export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
     return true;
 }
 
+function validateSaturdayEveryonePlan(plan, config, slot) {
+    const special = config.quality.saturdayEveryoneVsInfinity;
+    const rightId = special.rightOrb;
+    const leftIds = config.videoReady.orbRace.orbs.filter((id) => id !== rightId);
+    const layers = youtubeMaxLongformLayerStrengths(config.quality);
+    const rightLabel = ORB_RACERS[rightId]?.name;
+    if (plan.videoKind !== "match"
+        || plan.contentType !== "longform"
+        || slot.id !== special.slotId
+        || !isPacificSaturday(plan.dateKey)
+        || plan.format !== "race-landscape"
+        || plan.left !== special.everyoneLabel
+        || plan.right !== rightLabel
+        || JSON.stringify(plan.raceTeams) !== JSON.stringify([leftIds, [rightId]])
+        || JSON.stringify(plan.raceOrbs) !== JSON.stringify([...leftIds, rightId])
+        || JSON.stringify(plan.leftIds) !== JSON.stringify(leftIds)
+        || JSON.stringify(plan.rightIds) !== JSON.stringify([rightId])) {
+        throw new Error("YouTube generation blocked: Saturday afternoon long-form must be Everyone versus Infinity, with Infinity excluded from Everyone.");
+    }
+    if (!Array.isArray(plan.raceLayerStrengths)
+        || JSON.stringify(plan.raceLayerStrengths) !== JSON.stringify(layers)
+        || JSON.stringify(plan.battleQuality?.layerStrengths) !== JSON.stringify(layers)) {
+        throw new Error("YouTube generation blocked: Saturday Everyone VS Infinity must use the max long-form layer profile.");
+    }
+    validateAscendingLayerProfile(plan.raceLayerStrengths, config.quality.minimumLayerHealth, "Saturday special");
+    const battleQuality = plan.battleQuality;
+    if (battleQuality?.accepted !== true || battleQuality?.finished !== true
+        || battleQuality?.runaway === true || battleQuality?.fallback === true
+        || battleQuality?.closeBattleWaived !== true
+        || battleQuality?.durationReady !== true) {
+        throw new Error("YouTube generation blocked: Saturday Everyone VS Infinity must be a finished race with the close-battle gate waived.");
+    }
+    const actionPlaybackRate = Number(plan.actionPlaybackRate);
+    const simulatedSeconds = Number(battleQuality.simulatedSeconds);
+    const plannedActionDurationSeconds = Number(battleQuality.plannedActionDurationSeconds);
+    const expectedActionDurationSeconds = simulatedSeconds / actionPlaybackRate;
+    const expectedDuration = Number(plan.minimumDurationSeconds);
+    if (expectedDuration !== Number(config.quality.minimumDurationSeconds.longform)
+        || !Number.isFinite(actionPlaybackRate) || actionPlaybackRate <= 0 || actionPlaybackRate > 1
+        || Number(battleQuality.actionPlaybackRate) !== actionPlaybackRate
+        || !Number.isFinite(expectedActionDurationSeconds)
+        || expectedActionDurationSeconds + 0.05 < expectedDuration * 1.05
+        || !Number.isFinite(plannedActionDurationSeconds)
+        || Math.abs(plannedActionDurationSeconds - expectedActionDurationSeconds) > 0.01) {
+        throw new Error("YouTube generation blocked: the Saturday special action-duration plan is invalid.");
+    }
+    const expectedMetadata = youtubeMetadata({
+        left: plan.left,
+        right: plan.right,
+        layerHealth: layers[0],
+        config,
+    });
+    if (plan.title !== expectedMetadata.title || plan.description !== expectedMetadata.description) {
+        throw new Error("YouTube generation blocked: Saturday Everyone VS Infinity title or description does not match the long-form contract.");
+    }
+    validatePlanAnnouncerRequirements(plan, config);
+}
+
+function isPacificSaturday(dateKey) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))
+        && new Date(`${dateKey}T12:00:00.000Z`).getUTCDay() === 6;
+}
+
 function validatePlanAnnouncerRequirements(plan, config) {
     if (JSON.stringify(plan.announcerRequirements) !== JSON.stringify(config.quality.announcer)) {
         throw new Error("YouTube generation blocked: announcer requirements are not enabled on the approved plan.");
@@ -608,7 +711,7 @@ export function youtubeTournamentMetadata({ entrants, config = null } = {}) {
     if (!Number.isInteger(size) || size < 1) throw new Error("YouTube tournament metadata requires a positive entrant count.");
     const hashtags = (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS).join(" ");
     return {
-        title: `${size} Entrant Orb Tournament`,
+        title: "Who is the Best Orb?",
         description: `Who will claim the championship? ${size} approved Orb Race entrants compete in the full tournament.\n\n${hashtags}`,
     };
 }

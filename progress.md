@@ -1,5 +1,12 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## YouTube Channel Rules (2026-11-02)
+
+- Classic / Orb Foundry stays Shorts-only. The channel phrase "Orb Fighter" refers to that existing path. Long-form slots remain Orb Race.
+- Saturday's 3:00 PM long-form is Everyone VS Infinity: every allowlisted Orb Race orb except Infinity versus Infinity, on `longformLayerCount` layers each set to the top `layerStrengths.longform` HP. The close-battle margin and same-day roster lock are waived for that slot only. The other Saturday videos keep the normal planner.
+- Friday tournament titles are exactly `Who is the Best Orb?`.
+- Friday tournaments render a square entrant-grid PNG and call `thumbnails.set` after upload. Existing upload/read-only refresh tokens lack `youtube.force-ssl`, so thumbnail attachment waits on a new OAuth token and does not block the private scheduled upload.
+
 ## Headless Announcer Export And YouTube Copy (2026-10-29)
 
 - Headless export loaded all 297 announcer files at once and treated any single decoded cue as ready. Under load, `decodeAudioData` and `AudioContext.resume()` flake, so a recording could start with the battle's cues missing or with the context suspended at the matchup instant. That produced "Required announcer assets could not be loaded before recording" or a finished video with no spoken cue. Loads now stay at a few decodes at a time, retry transient failures after the pass goes idle, resume the context until it is running, and refuse to record until the cues for that battle are buffered. A cue requested while the context is suspended is spoken once it resumes instead of being dropped. `requireAnnouncer` still fails closed when the cues never load.

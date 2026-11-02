@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { readFile, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { readFile, stat, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLASSIC_ORBS } from "../src/classic-orbs.js";
-import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
+import { ORB_RACERS, normalizeRaceTeamOptions, raceTeamDisplayName } from "../src/orb-race.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
 import { socialActionPlaybackRateForDuration } from "../src/social.js";
 import { exportSocialVideo } from "./export-random-battle.mjs";
@@ -17,15 +17,18 @@ import {
     youtubeDescription,
     youtubeFoundryMetadata,
     youtubeMetadata,
+    youtubeMaxLongformLayerStrengths,
     youtubeRunTag,
     youtubeTournamentMetadata,
     validateYouTubeGenerationSpec,
     validateYouTubeExportArtifact,
 } from "./youtube-publishing.mjs";
+import { renderTournamentOrbThumbnail } from "./youtube-thumbnail.mjs";
 
 const ROOT = resolve(new URL("..", import.meta.url).pathname);
 const DEFAULT_OUTPUT_ROOT = join(ROOT, "artifacts", "youtube");
 const YOUTUBE_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/videos";
+const YOUTUBE_THUMBNAIL_UPLOAD_URL = "https://www.googleapis.com/upload/youtube/v3/thumbnails/set";
 const YOUTUBE_API_URL = "https://www.googleapis.com/youtube/v3";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const RETRIABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
@@ -207,6 +210,11 @@ export function isYouTubePacificFriday(dateKey) {
         && new Date(`${dateKey}T12:00:00.000Z`).getUTCDay() === 5;
 }
 
+export function isYouTubePacificSaturday(dateKey) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))
+        && new Date(`${dateKey}T12:00:00.000Z`).getUTCDay() === 6;
+}
+
 export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATCHUP_ATTEMPTS }) {
     const cacheKey = JSON.stringify([dateKey, maxAttempts, config]);
     if (DAILY_YOUTUBE_PLAN_CACHE.has(cacheKey)) {
@@ -248,6 +256,31 @@ export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATC
             });
         }
     }
+    const saturdayConfig = config.quality.saturdayEveryoneVsInfinity;
+    const saturdaySlot = saturdayConfig?.enabled && isYouTubePacificSaturday(dateKey)
+        ? config.schedule.find(({ id }) => id === saturdayConfig.slotId)
+        : null;
+    if (saturdaySlot && tournamentSlot && saturdaySlot.id === tournamentSlot.id) {
+        throw new Error("Friday tournament and Saturday Everyone VS Infinity cannot share a slot on the same date.");
+    }
+    if (saturdaySlot) {
+        try {
+            matchupsBySlot.set(saturdaySlot.id, {
+                slot: saturdaySlot,
+                matchup: selectYouTubeEveryoneVsInfinityMatchup({
+                    dateKey,
+                    slotId: saturdaySlot.id,
+                    config,
+                }),
+            });
+        } catch (error) {
+            matchupsBySlot.set(saturdaySlot.id, {
+                slot: saturdaySlot,
+                matchup: null,
+                planningError: error.message,
+            });
+        }
+    }
     const foundrySlotId = selectedOrbFoundrySlotForDate({ dateKey, config });
     const planningOrder = [...config.schedule].sort((left, right) => (
         matchupPlanningPriority(left, foundrySlotId) - matchupPlanningPriority(right, foundrySlotId)
@@ -257,6 +290,9 @@ export function buildDailyYouTubePlans({ dateKey, config, maxAttempts = MAX_MATC
         if (matchupsBySlot.has(slot.id)) continue;
         try {
             if (slot.id === foundrySlotId) {
+                if (slot.contentType !== "short") {
+                    throw new Error("Orb Foundry is Shorts-only and cannot fill a long-form YouTube slot.");
+                }
                 const matchup = selectYouTubeFoundryMatchup({
                     dateKey,
                     slotId: slot.id,
@@ -343,6 +379,60 @@ export function selectYouTubeFoundryMatchup({
     throw new Error(`Unable to build a close, duration-ready Orb Foundry matchup for ${dateKey}/${slotId}.`);
 }
 
+export function selectYouTubeEveryoneVsInfinityMatchup({ dateKey, slotId, config }) {
+    const special = config.quality.saturdayEveryoneVsInfinity;
+    const rightId = special.rightOrb;
+    const leftIds = config.videoReady.orbRace.orbs.filter((id) => ORB_RACERS[id] && id !== rightId);
+    const leftLabel = raceTeamDisplayName(leftIds);
+    if (leftIds.length < 2 || leftIds.includes(rightId) || leftLabel !== special.everyoneLabel) {
+        throw new Error("Saturday Everyone VS Infinity needs every eligible Orb Race orb except Infinity on the left.");
+    }
+    const raceTeams = [leftIds, [rightId]];
+    const layerStrengths = youtubeMaxLongformLayerStrengths(config.quality);
+    const seed = seedForYouTubeRun(dateKey, `${slotId}:everyone-vs-infinity-v1`);
+    const preview = createYouTubeSimulation({
+        raceTeams,
+        raceOrbs: raceTeams.flat(),
+        layerStrengths,
+        contentType: "longform",
+        seed,
+    });
+    const estimatedDamagePerSecond = preview.raceTeams.map((team) => Math.max(0, Number(team.raceDamagePerSecond) || 0));
+    const battleQuality = evaluateYouTubeBattle({
+        raceTeams,
+        layerStrengths,
+        contentType: "longform",
+        seed,
+        quality: config.quality,
+        estimatedDamagePerSecond,
+        fixedLayerStrengths: layerStrengths,
+    });
+    if (battleQuality.runaway || !battleQuality.finished || battleQuality.durationReady !== true) {
+        throw new Error(
+            `Saturday Everyone VS Infinity did not finish a duration-ready race for ${dateKey}/${slotId}.`,
+        );
+    }
+    battleQuality.accepted = true;
+    battleQuality.fallback = false;
+    battleQuality.closeBattleWaived = true;
+    return {
+        contentSource: "orb-race",
+        videoKind: "match",
+        matchupKind: "everyone-vs-infinity",
+        seed,
+        formatId: "everyone-vs-infinity",
+        raceTeams,
+        raceOrbs: raceTeams.flat(),
+        leftIds: [...leftIds],
+        rightIds: [rightId],
+        leftId: leftIds[0],
+        rightId,
+        left: leftLabel,
+        right: raceTeamDisplayName([rightId]),
+        battleQuality,
+    };
+}
+
 export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null, maxAttempts = MAX_MATCHUP_ATTEMPTS }) {
     const selectedMatchup = matchup || buildDailyYouTubePlans({ dateKey, config, maxAttempts })
         .find(({ slot: candidate }) => candidate.id === slot.id)?.matchup;
@@ -404,6 +494,9 @@ export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null,
     }
 
     if (selectedMatchup.contentSource === "orb-foundry") {
+        if (slot.contentType !== "short") {
+            throw new Error("Orb Foundry is Shorts-only and cannot be planned or uploaded as long-form.");
+        }
         const metadata = youtubeFoundryMetadata({
             left: selectedMatchup.left,
             right: selectedMatchup.right,
@@ -477,6 +570,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null,
         left: selectedMatchup.left,
         right: selectedMatchup.right,
         battleQuality: selectedMatchup.battleQuality,
+        ...(selectedMatchup.matchupKind ? { matchupKind: selectedMatchup.matchupKind } : {}),
         title: metadata.title,
         description: metadata.description,
         tags: ["physics", "shorts", "simulation", "satisfying", "orb", "orb-foundry", runTag],
@@ -522,18 +616,30 @@ function teamLabel(ids) {
     return ids.map((id) => ORB_RACERS[id].name).join(" + ");
 }
 
-function evaluateYouTubeBattle({ raceTeams, layerStrengths, contentType, seed, quality, estimatedDamagePerSecond }) {
+function evaluateYouTubeBattle({
+    raceTeams,
+    layerStrengths,
+    contentType,
+    seed,
+    quality,
+    estimatedDamagePerSecond,
+    fixedLayerStrengths = null,
+}) {
     const damagePerSecond = estimatedDamagePerSecond;
     const positiveDamage = damagePerSecond.filter((value) => value > 0);
     const strengthRatio = positiveDamage.length === 2
         ? Math.max(...positiveDamage) / Math.max(1, Math.min(...positiveDamage))
         : 1;
     const maxLayerScale = Math.max(1, Number(quality.strongerTeamLayerScaleMax) || 1);
-    const layerScale = Math.min(maxLayerScale, 1 + Math.log2(Math.max(1, strengthRatio)) * 0.15);
-    const adjustedLayerStrengths = layerStrengths.map((value) => Math.max(
-        Number(quality.minimumLayerHealth) || 500,
-        Math.round(Number(value) * layerScale),
-    ));
+    const layerScale = fixedLayerStrengths
+        ? 1
+        : Math.min(maxLayerScale, 1 + Math.log2(Math.max(1, strengthRatio)) * 0.15);
+    const adjustedLayerStrengths = fixedLayerStrengths
+        ? fixedLayerStrengths.map((value) => Number(value))
+        : layerStrengths.map((value) => Math.max(
+            Number(quality.minimumLayerHealth) || 500,
+            Math.round(Number(value) * layerScale),
+        ));
     const sim = createYouTubeSimulation({
         raceTeams,
         raceOrbs: raceTeams.flat(),
@@ -854,6 +960,12 @@ export async function publishDueYouTubeSlots({
             const transcoded = await transcodeBattleVideo(exportResult.metadataPath, {
                 latestPath: join(outputRoot, "latest.json"),
             });
+            const thumbnailPath = plan.videoKind === "tournament"
+                ? join(dirname(transcoded.mp4Path), `${plan.runTag}-thumbnail.png`)
+                : null;
+            if (thumbnailPath) {
+                await writeFile(thumbnailPath, renderTournamentOrbThumbnail({ orbIds: plan.tournament.entrants }));
+            }
             const upload = await client.uploadVideo({
                 filePath: transcoded.mp4Path,
                 title: plan.title,
@@ -862,6 +974,18 @@ export async function publishDueYouTubeSlots({
                 privacyStatus: config.delivery.visibility,
                 publishAt: config.delivery.scheduleOnYouTube ? plan.scheduledPublishAt : null,
             });
+            let thumbnailStatus = null;
+            if (thumbnailPath) {
+                try {
+                    await client.setThumbnail({ videoId: upload.id, filePath: thumbnailPath });
+                    thumbnailStatus = "set";
+                } catch (error) {
+                    thumbnailStatus = error?.code === "youtube-thumbnail-scope" ? "missing-oauth-scope" : "failed";
+                    logger.error(
+                        `YouTube thumbnail for ${plan.runTag} was written to ${thumbnailPath} but was not applied (${thumbnailStatus}): ${error.message}`,
+                    );
+                }
+            }
             items.push({
                 ...plan,
                 status: "uploaded",
@@ -869,6 +993,7 @@ export async function publishDueYouTubeSlots({
                 videoUrl: `https://youtu.be/${upload.id}`,
                 metadataPath: exportResult.metadataPath,
                 videoPath: transcoded.mp4Path,
+                ...(thumbnailPath ? { thumbnailPath, thumbnailStatus } : {}),
             });
             logger.log(`Uploaded ${plan.title}: https://youtu.be/${upload.id}`);
         } catch (error) {
@@ -998,6 +1123,40 @@ export class YouTubeApiClient {
             return readResponseJson(response);
         }
         throw new Error("YouTube upload ended without a completed video response.");
+    }
+
+    async setThumbnail({ videoId, filePath }) {
+        if (!videoId) throw new Error("YouTube thumbnail upload requires a video id.");
+        const file = await readFile(filePath);
+        if (file.length > 2 * 1024 * 1024) {
+            throw new Error("YouTube thumbnail exceeds the 2MB upload limit.");
+        }
+        const response = await this.fetchWithRetry(
+            `${YOUTUBE_THUMBNAIL_UPLOAD_URL}?${new URLSearchParams({
+                videoId: String(videoId),
+                uploadType: "media",
+            })}`,
+            {
+                method: "POST",
+                headers: {
+                    ...this.authHeaders(),
+                    "content-type": "image/png",
+                    "content-length": String(file.length),
+                },
+                body: file,
+            },
+        );
+        const payload = await readResponseJson(response);
+        if (!response.ok) {
+            const reason = payload.error?.errors?.map((entry) => entry.reason).filter(Boolean).join(" ") || "";
+            const message = payload.error?.message || payload.error_description || payload.raw || "unknown error";
+            const error = new Error(`YouTube thumbnail upload failed (${response.status}): ${message}`);
+            if (response.status === 403 && /insufficient/i.test(`${reason} ${message}`)) {
+                error.code = "youtube-thumbnail-scope";
+            }
+            throw error;
+        }
+        return payload;
     }
 
     authHeaders() {

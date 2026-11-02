@@ -13,8 +13,10 @@ import {
     youtubeDescription,
     youtubeFoundryMetadata,
     youtubeMetadata,
+    youtubeMaxLongformLayerStrengths,
     youtubeTitle,
     youtubeTournamentMetadata,
+    YOUTUBE_OAUTH_SCOPES,
     validateYouTubePublishingConfig,
     validateYouTubeGenerationSpec,
     validateYouTubeExportArtifact,
@@ -26,11 +28,20 @@ import {
     dailyYouTubeRosterForDate,
     dailyOrbFoundryRosterForDate,
     isYouTubePacificFriday,
+    isYouTubePacificSaturday,
     publishDueYouTubeSlots,
+    selectYouTubeEveryoneVsInfinityMatchup,
     selectedOrbFoundrySlotForDate,
     selectYouTubeFoundryMatchup,
     selectYouTubeMatchup,
+    YouTubeApiClient,
 } from "../scripts/youtube-publish.mjs";
+import {
+    decodeThumbnailPng,
+    renderTournamentOrbThumbnail,
+    thumbnailPixel,
+    tournamentThumbnailLayout,
+} from "../scripts/youtube-thumbnail.mjs";
 import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
 
@@ -59,10 +70,27 @@ test("YouTube publishing contract loads four daily slots and the approved video 
     assert.equal(config.videoReady.orbFoundry.orbs.length, 36);
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("frost-ball"));
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("ying-yang"));
+    assert.equal(config.quality.orbFoundryShort.shortsOnly, true);
     assert.equal(config.quality.orbFoundryShort.dailyProbability, 0.5);
     assert.equal(config.quality.orbFoundryShort.maximumPerDay, 1);
     assert.equal(config.quality.fridayTournament.minimumDurationSeconds, 120);
     assert.equal(config.quality.fridayTournament.recordingScope, "whole-tournament");
+    assert.equal(config.quality.saturdayEveryoneVsInfinity.dayOfWeek, 6);
+    assert.equal(config.quality.saturdayEveryoneVsInfinity.slotId, "afternoon-longform");
+    assert.equal(config.quality.saturdayEveryoneVsInfinity.rightOrb, "infinity");
+    assert.equal(config.quality.saturdayEveryoneVsInfinity.layerProfile, "longform-top");
+    assert.deepEqual(YOUTUBE_OAUTH_SCOPES, [
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube.force-ssl",
+    ]);
+    assert.throws(() => validateYouTubePublishingConfig({
+        ...config,
+        quality: {
+            ...config.quality,
+            orbFoundryShort: { ...config.quality.orbFoundryShort, shortsOnly: false },
+        },
+    }), /Shorts-only/);
     assert.throws(() => validateYouTubePublishingConfig({
         ...config,
         schedule: [...config.schedule, { id: "extra-short", contentType: "short", localTime: "18:00" }],
@@ -89,7 +117,7 @@ test("YouTube metadata uses the approved VS title and hashtags", () => {
         description: "Who will win the Orb Foundry battle, Glass Ball or Black Hole?\n\n#physics #shorts #simulation #satisfying",
     });
     assert.deepEqual(youtubeTournamentMetadata({ entrants: 16 }), {
-        title: "16 Entrant Orb Tournament",
+        title: "Who is the Best Orb?",
         description: "Who will claim the championship? 16 approved Orb Race entrants compete in the full tournament.\n\n#physics #shorts #simulation #satisfying",
     });
 });
@@ -278,7 +306,7 @@ test("Friday long-form plan records a complete approved tournament", async () =>
     assert.equal(plan.raceLayerStrengths.length, 5);
     assert.ok(plan.raceLayerStrengths.every((health) => health >= 500));
     assert.deepEqual(plan.raceLayerStrengths, [...plan.raceLayerStrengths].sort((a, b) => a - b));
-    assert.equal(plan.title, "16 Entrant Orb Tournament");
+    assert.equal(plan.title, "Who is the Best Orb?");
     assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
     assert.throws(() => validateYouTubeGenerationSpec({
         plan: { ...plan, dateKey: "2026-10-17" },
@@ -500,6 +528,7 @@ test("daily plans are distinct and the rotating roster enforces the two-day cool
     const foundryRoster = new Set(dailyOrbFoundryRosterForDate({ dateKey: currentDate, config }));
     assert.ok(foundryPlans.length <= 1, "at most one Orb Foundry Short is planned per day");
     assert.ok(foundryPlans.every(({ slot }) => slot.contentType === "short"));
+    assert.ok(current.every(({ matchup }) => matchup.matchupKind !== "everyone-vs-infinity"));
     assert.ok(current.filter(({ slot }) => slot.contentType === "longform").every(({ matchup }) => matchup.contentSource !== "orb-foundry"));
     assert.ok(foundryPlans.every(({ matchup }) => matchup.orbFoundryOrbs.every((id) => foundryRoster.has(id))));
     assert.equal(new Set(currentIds).size, currentIds.length);
@@ -754,3 +783,179 @@ test("dry-run publishing plans the 3 PM long-form without credentials or media s
         { slotId: "afternoon-longform", contentType: "longform", minimumDurationSeconds: 60 },
     ]);
 });
+
+test("Orb Foundry cannot be planned as long-form", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: {
+            slotId: "noon-longform",
+            contentType: "longform",
+            contentSource: "orb-foundry",
+        },
+        config,
+    }), /Shorts-only/);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: {
+            slotId: "afternoon-longform",
+            contentType: "longform",
+            contentSource: "orb-foundry",
+        },
+        config,
+    }), /Shorts-only/);
+});
+
+test("Saturday afternoon long-form is Everyone VS Infinity on the max long-form profile", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const dateKey = "2026-10-17";
+    const slot = config.schedule.find(({ id }) => id === "afternoon-longform");
+    const top = Math.max(...config.quality.layerStrengths.longform);
+    const first = selectYouTubeEveryoneVsInfinityMatchup({ dateKey, slotId: slot.id, config });
+    const second = selectYouTubeEveryoneVsInfinityMatchup({ dateKey, slotId: slot.id, config });
+    assert.deepEqual(first, second);
+    const plan = buildYouTubePublishPlan({ dateKey, slot, config, matchup: first });
+    const everyone = config.videoReady.orbRace.orbs.filter((id) => id !== "infinity");
+    assert.equal(isYouTubePacificSaturday(dateKey), true);
+    assert.equal(plan.matchupKind, "everyone-vs-infinity");
+    assert.equal(plan.contentSource, "orb-race");
+    assert.equal(plan.contentType, "longform");
+    assert.equal(plan.videoKind, "match");
+    assert.equal(plan.format, "race-landscape");
+    assert.equal(plan.minimumDurationSeconds, 60);
+    assert.deepEqual(plan.raceTeams, [everyone, ["infinity"]]);
+    assert.ok(!plan.raceTeams[0].includes("infinity"));
+    assert.equal(plan.left, "EVERYONE");
+    assert.equal(plan.right, "INFINITY");
+    assert.equal(plan.title, "Everyone VS Infinity");
+    assert.equal(
+        plan.description,
+        `Who will break the ${top} HP layer first, Everyone or Infinity?\n\n#physics #shorts #simulation #satisfying`,
+    );
+    assert.deepEqual(plan.raceLayerStrengths, youtubeMaxLongformLayerStrengths(config.quality));
+    assert.equal(plan.raceLayerStrengths.length, config.quality.longformLayerCount);
+    assert.ok(plan.raceLayerStrengths.every((health) => health === top));
+    assert.equal(plan.battleQuality.closeBattleWaived, true);
+    assert.equal(plan.battleQuality.finished, true);
+    assert.equal(plan.battleQuality.fallback, false);
+    assert.ok(plan.battleQuality.plannedActionDurationSeconds + 0.05 >= 63);
+    assert.ok(
+        plan.battleQuality.progressMargin > config.quality.closeBattle.maxProgressMargin
+        || plan.battleQuality.layerLead > config.quality.closeBattle.maxLayerLead,
+    );
+    assert.equal(validateYouTubeGenerationSpec({ plan, config }), true);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: { ...plan, dateKey: "2026-10-16" },
+        config,
+    }), /Saturday afternoon long-form must be Everyone versus Infinity/);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: {
+            ...plan,
+            raceTeams: [[...everyone, "infinity"], ["infinity"]],
+            raceOrbs: [...everyone, "infinity", "infinity"],
+        },
+        config,
+    }), /Infinity excluded/);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: { ...plan, raceLayerStrengths: config.quality.layerStrengths.short },
+        config,
+    }), /max long-form layer profile/);
+
+    const plans = buildDailyYouTubePlans({ dateKey, config });
+    assert.deepEqual(plans.map(({ slot: plannedSlot }) => plannedSlot.id), [
+        "noon-short",
+        "noon-longform",
+        "afternoon-short",
+        "afternoon-longform",
+    ]);
+    const special = plans.find(({ slot: plannedSlot }) => plannedSlot.id === "afternoon-longform");
+    assert.equal(special.matchup.matchupKind, "everyone-vs-infinity");
+    assert.equal(special.planningError, undefined);
+    const others = plans.filter(({ slot: plannedSlot }) => plannedSlot.id !== "afternoon-longform");
+    assert.ok(others.every((entry) => entry.matchup && !entry.planningError));
+    assert.ok(others.every((entry) => entry.matchup.matchupKind !== "everyone-vs-infinity"));
+    assert.ok(others.filter(({ slot: plannedSlot }) => plannedSlot.contentType === "longform").every((entry) => (
+        entry.matchup.contentSource !== "orb-foundry"
+        && entry.matchup.videoKind !== "tournament"
+        && entry.matchup.matchupKind !== "everyone-vs-infinity"
+    )));
+    assert.ok(plans.filter(({ matchup }) => matchup.contentSource === "orb-foundry").every(({ slot: plannedSlot }) => (
+        plannedSlot.contentType === "short"
+    )));
+    const otherRaceIds = others.flatMap(({ matchup }) => (
+        matchup.contentSource === "orb-foundry" ? [] : matchup.raceOrbs
+    ));
+    assert.equal(new Set(otherRaceIds).size, otherRaceIds.length);
+    const noon = plans.find(({ slot: plannedSlot }) => plannedSlot.id === "noon-longform");
+    assert.notEqual(noon.matchup.formatId, "everyone-vs-infinity");
+    assert.ok(noon.matchup.battleQuality.layerStrengths[0] < top);
+});
+
+test("tournament thumbnail draws every entrant in a square grid", async () => {
+    const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
+    const entrants = config.videoReady.orbRace.orbs.slice(0, 16);
+    const png = renderTournamentOrbThumbnail({ orbIds: entrants });
+    assert.ok(png.length < 2 * 1024 * 1024);
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    const decoded = decodeThumbnailPng(png);
+    assert.equal(decoded.width, 1280);
+    assert.equal(decoded.height, 1280);
+    const layout = tournamentThumbnailLayout({ count: entrants.length, size: 1280 });
+    assert.equal(layout.columns, 4);
+    assert.equal(layout.rows, 4);
+    for (const [index, id] of entrants.entries()) {
+        const cell = layout.cells[index];
+        const pixel = thumbnailPixel(decoded, cell.cx + cell.radius * 0.55, cell.cy);
+        assert.deepEqual(pixel.slice(0, 3), hexColor(ORB_RACERS[id].color), id);
+    }
+    assert.deepEqual(thumbnailPixel(decoded, 2, 2), [236, 239, 243, 255]);
+    assert.equal(tournamentThumbnailLayout({ count: 8 }).columns, 3);
+    assert.throws(() => renderTournamentOrbThumbnail({ orbIds: ["not-an-orb"] }), /unknown orb/);
+    const repeated = renderTournamentOrbThumbnail({ orbIds: entrants });
+    assert.deepEqual(repeated, png);
+});
+
+test("YouTube thumbnail upload calls thumbnails.set and identifies a missing scope", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "youtube-thumb-"));
+    const filePath = join(directory, "thumbnail.png");
+    const png = renderTournamentOrbThumbnail({ orbIds: ["duplicator", "speed", "orbital", "infinity"] });
+    await writeFile(filePath, png);
+    const calls = [];
+    const client = new YouTubeApiClient({
+        accessToken: "token",
+        fetchImpl: async (url, options) => {
+            calls.push({ url: String(url), options });
+            return {
+                ok: false,
+                status: 403,
+                headers: { get: () => null },
+                text: async () => JSON.stringify({
+                    error: {
+                        message: "Insufficient Permission",
+                        errors: [{ reason: "insufficientPermissions" }],
+                    },
+                }),
+            };
+        },
+    });
+    await assert.rejects(() => client.setThumbnail({ videoId: "abc123", filePath }), (error) => {
+        assert.equal(error.code, "youtube-thumbnail-scope");
+        assert.match(error.message, /Insufficient Permission/);
+        return true;
+    });
+    assert.equal(calls.length, 1);
+    const url = new URL(calls[0].url);
+    assert.equal(url.origin + url.pathname, "https://www.googleapis.com/upload/youtube/v3/thumbnails/set");
+    assert.equal(url.searchParams.get("videoId"), "abc123");
+    assert.equal(url.searchParams.get("uploadType"), "media");
+    assert.equal(calls[0].options.method, "POST");
+    assert.equal(calls[0].options.headers.authorization, "Bearer token");
+    assert.equal(calls[0].options.headers["content-type"], "image/png");
+    assert.equal(calls[0].options.headers["content-length"], String(png.length));
+});
+
+function hexColor(value) {
+    return [
+        Number.parseInt(value.slice(1, 3), 16),
+        Number.parseInt(value.slice(3, 5), 16),
+        Number.parseInt(value.slice(5, 7), 16),
+    ];
+}

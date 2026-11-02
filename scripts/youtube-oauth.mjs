@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
+import { YOUTUBE_OAUTH_SCOPES } from "./youtube-publishing.mjs";
 
 const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID;
 const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || "";
 const REDIRECT_URI = process.env.YOUTUBE_REDIRECT_URI || "http://127.0.0.1:8787/oauth2callback";
-const SCOPE = [
-    "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube.readonly",
-].join(" ");
+const SCOPE = YOUTUBE_OAUTH_SCOPES.join(" ");
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
