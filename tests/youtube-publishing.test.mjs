@@ -17,6 +17,8 @@ import {
     youtubeTitle,
     youtubeTournamentMetadata,
     YOUTUBE_OAUTH_SCOPES,
+    YOUTUBE_SHORTS_FORMAT,
+    YOUTUBE_SHORTS_MAX_SECONDS,
     validateYouTubePublishingConfig,
     validateYouTubeGenerationSpec,
     validateYouTubeExportArtifact,
@@ -43,6 +45,7 @@ import {
     tournamentThumbnailLayout,
 } from "../scripts/youtube-thumbnail.mjs";
 import { ORB_RACERS, normalizeRaceTeamOptions } from "../src/orb-race.js";
+import { SOCIAL_FORMATS } from "../src/social.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
 
 test("YouTube publishing contract loads four daily slots and the approved video rosters", async () => {
@@ -71,6 +74,15 @@ test("YouTube publishing contract loads four daily slots and the approved video 
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("frost-ball"));
     assert.ok(!config.videoReady.orbFoundry.orbs.includes("ying-yang"));
     assert.equal(config.quality.orbFoundryShort.shortsOnly, true);
+    assert.equal(config.quality.orbFoundryShort.format, "portrait");
+    assert.equal(YOUTUBE_SHORTS_FORMAT, "portrait");
+    assert.equal(YOUTUBE_SHORTS_MAX_SECONDS, 180);
+    assert.deepEqual(
+        { width: SOCIAL_FORMATS.portrait.width, height: SOCIAL_FORMATS.portrait.height },
+        { width: 1080, height: 1920 },
+    );
+    assert.equal(SOCIAL_FORMATS.portrait.height * 9, SOCIAL_FORMATS.portrait.width * 16);
+    assert.ok(SOCIAL_FORMATS.square.width > SOCIAL_FORMATS.square.height);
     assert.equal(config.quality.orbFoundryShort.dailyProbability, 0.5);
     assert.equal(config.quality.orbFoundryShort.maximumPerDay, 1);
     assert.equal(config.quality.fridayTournament.minimumDurationSeconds, 120);
@@ -91,6 +103,13 @@ test("YouTube publishing contract loads four daily slots and the approved video 
             orbFoundryShort: { ...config.quality.orbFoundryShort, shortsOnly: false },
         },
     }), /Shorts-only/);
+    assert.throws(() => validateYouTubePublishingConfig({
+        ...config,
+        quality: {
+            ...config.quality,
+            orbFoundryShort: { ...config.quality.orbFoundryShort, format: "square" },
+        },
+    }), /portrait Shorts layout/);
     assert.throws(() => validateYouTubePublishingConfig({
         ...config,
         schedule: [...config.schedule, { id: "extra-short", contentType: "short", localTime: "18:00" }],
@@ -255,7 +274,8 @@ test("Orb Foundry matchup plans are close, long enough, allowlisted, and use the
     const plan = buildYouTubePublishPlan({ dateKey, slot, config, matchup });
     assert.equal(plan.contentSource, "orb-foundry");
     assert.equal(plan.videoKind, "match");
-    assert.equal(plan.format, "square");
+    assert.equal(plan.contentType, "short");
+    assert.equal(plan.format, "portrait");
     assert.equal(plan.minimumDurationSeconds, 25);
     assert.equal(plan.battleQuality.accepted, true);
     assert.ok(plan.battleQuality.plannedActionDurationSeconds >= 26.25);
@@ -275,7 +295,11 @@ test("Orb Foundry matchup plans are close, long enough, allowlisted, and use the
     assert.throws(() => validateYouTubeGenerationSpec({
         plan: { ...plan, foundryStyle: { ...plan.foundryStyle, teamOutlines: true } },
         config,
-    }), /black, outline-free, and large-square/);
+    }), /portrait Shorts layout/);
+    assert.throws(() => validateYouTubeGenerationSpec({
+        plan: { ...plan, format: "square" },
+        config,
+    }), /portrait Shorts layout/);
 });
 
 test("Friday long-form plan records a complete approved tournament", async () => {
@@ -392,7 +416,7 @@ test("YouTube upload gate requires spoken announcer proof and the complete artif
     );
 });
 
-test("Orb Foundry upload gate verifies the actual black, outline-free square recording", async () => {
+test("Orb Foundry upload gate verifies a portrait Short with the black, outline-free square arena", async () => {
     const config = await loadYouTubePublishingConfig(YOUTUBE_CONFIG_PATH);
     const dateKey = "2026-10-07";
     const slot = config.schedule.find(({ id }) => id === "afternoon-short");
@@ -422,7 +446,7 @@ test("Orb Foundry upload gate verifies the actual black, outline-free square rec
                 classicTeams: plan.classicTeams,
                 classicBlackTheme: true,
                 classicTeamColors: false,
-                social: { format: "square" },
+                social: { format: "portrait" },
                 arenaSize: "large",
                 arenaShape: "square",
                 hazardPreset: "none",
@@ -437,7 +461,29 @@ test("Orb Foundry upload gate verifies the actual black, outline-free square rec
         },
         plan,
         config,
-    }), /black, outline-free, large-square format/);
+    }), /portrait Short/);
+    assert.throws(() => validateYouTubeExportArtifact({
+        exportResult: {
+            ...artifact,
+            state: {
+                ...artifact.state,
+                settings: { ...artifact.state.settings, social: { format: "square" } },
+            },
+        },
+        plan,
+        config,
+    }), /portrait Short/);
+    assert.throws(() => validateYouTubeExportArtifact({
+        exportResult: {
+            ...artifact,
+            state: {
+                ...artifact.state,
+                recordingResult: { duration: YOUTUBE_SHORTS_MAX_SECONDS + 1 },
+            },
+        },
+        plan,
+        config,
+    }), /3-minute Shorts limit/);
 });
 
 test("Friday tournament upload gate requires every match, the champion, and announcer coverage", async () => {

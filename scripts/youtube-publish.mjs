@@ -508,7 +508,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null,
             contentSource: "orb-foundry",
             videoKind: "match",
             contentType: slot.contentType,
-            format: "square",
+            format: config.quality.orbFoundryShort.format,
             scheduledPublishAt: scheduledPublishAt(dateKey, slot.localTime, config.timeZone),
             minimumDurationSeconds: Number(config.quality.minimumDurationSeconds[slot.contentType]),
             actionPlaybackRate: 1,
@@ -718,7 +718,7 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, quality }) {
             arenaShape: "square",
             hazardPreset: "none",
             seed,
-            social: { enabled: true, format: "square" },
+            social: { enabled: true, format: foundry.format },
             features: { replay: false },
         });
         let runaway = false;

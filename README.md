@@ -154,8 +154,8 @@ recording titled `Who is the Best Orb?`. Saturday's 3 PM long-form is the Orb
 Race matchup Everyone VS Infinity, with every allowlisted race orb except
 Infinity on the left and every layer at the top long-form HP. One Short per
 day has a 50% chance to use the approved Orb Foundry black, outline-free
-large-square format. Classic / Orb Foundry is Shorts-only; long-form slots
-stay Orb Race.
+portrait Short (`1080×1920`) with a large square arena. Classic / Orb Foundry
+is Shorts-only; long-form slots stay Orb Race.
 Configure credentials in the environment that actually runs each workflow, as
 documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
 
@@ -170,7 +170,8 @@ records exactly one matchup, then only a brief winner reveal. Friday's tournamen
 records the entire bracket for at least two minutes and validates every match
 ID, champion, and one announcer sequence per match. Continuous tournament
 recordings keep that announcer proof when the next match starts. Orb Foundry Shorts preflight a single close
-Classic battle and verify their black square visual settings before upload. A
+Classic battle and verify the portrait Shorts frame, black theme, and large
+square arena before upload. A
 duration or matchup-count check rejects a regular battle if the action is short
 or a second matchup appears.
 If the capped search cannot find a battle inside the close-match gate, that

@@ -51,7 +51,7 @@
             "initialHealth": 100,
             "minimumWinnerHealthFraction": 0.75,
             "maximumSimulationSeconds": 120,
-            "format": "square",
+            "format": "portrait",
             "theme": "black",
             "teamOutlines": false,
             "arenaSize": "large",

@@ -23,6 +23,8 @@ export const YOUTUBE_DESCRIPTION_TEMPLATE = "Who will break the {layerHealth} HP
 export const YOUTUBE_DUE_WINDOW_MINUTES = 45;
 export const YOUTUBE_MINIMUM_LAYER_HEALTH = 500;
 export const YOUTUBE_MAXIMUM_SHORT_LAYERS = 3;
+export const YOUTUBE_SHORTS_FORMAT = "portrait";
+export const YOUTUBE_SHORTS_MAX_SECONDS = 180;
 export const YOUTUBE_OAUTH_SCOPES = Object.freeze([
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
@@ -210,9 +212,10 @@ function validateYouTubeQuality(quality) {
         || Number(foundry.initialHealth) < 1
         || !(Number(foundry.minimumWinnerHealthFraction) > 0 && Number(foundry.minimumWinnerHealthFraction) < 1)
         || !(Number(foundry.maximumSimulationSeconds) >= Number(durationSeconds.short) * 1.05)
-        || foundry.format !== "square" || foundry.theme !== "black" || foundry.teamOutlines !== false
+        || Number(foundry.maximumSimulationSeconds) > YOUTUBE_SHORTS_MAX_SECONDS
+        || foundry.format !== YOUTUBE_SHORTS_FORMAT || foundry.theme !== "black" || foundry.teamOutlines !== false
         || foundry.arenaSize !== "large" || foundry.arenaShape !== "square") {
-        throw new Error("YouTube Orb Foundry is Shorts-only and must use the approved 50% daily chance and black, outline-free large-square format.");
+        throw new Error("YouTube Orb Foundry is Shorts-only and must use the portrait Shorts layout, the approved 50% daily chance, and a black, outline-free large square arena.");
     }
     const tournament = quality.fridayTournament;
     if (!tournament || tournament.enabled !== true || Number(tournament.dayOfWeek) !== 5
@@ -335,8 +338,12 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
             || plan.foundryStyle.teamOutlines !== foundry.teamOutlines
             || plan.foundryStyle.arenaSize !== foundry.arenaSize
             || plan.foundryStyle.arenaShape !== foundry.arenaShape
-            || plan.format !== "square") {
-            throw new Error("YouTube generation blocked: Orb Foundry style must be black, outline-free, and large-square.");
+            || plan.format !== YOUTUBE_SHORTS_FORMAT
+            || plan.format !== foundry.format) {
+            throw new Error("YouTube generation blocked: Orb Foundry Shorts must use the portrait Shorts layout with a black, outline-free, large square arena.");
+        }
+        if (Number(plan.battleQuality?.simulatedSeconds) > YOUTUBE_SHORTS_MAX_SECONDS) {
+            throw new Error("YouTube generation blocked: Orb Foundry Shorts must stay within YouTube's 3-minute Shorts limit.");
         }
         const classicHealthValues = orbIds.map((id) => Number(plan.classicOrbOptions?.[id]?.health));
         if (classicHealthValues.some((health) => !Number.isInteger(health) || health < 1)) {
@@ -513,12 +520,13 @@ export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
             || JSON.stringify(exportResult.orbFoundryOrbs) !== JSON.stringify(plan.orbFoundryOrbs)
             || JSON.stringify(setting.classicTeams) !== JSON.stringify(plan.classicTeams)
             || setting.classicBlackTheme !== true || setting.classicTeamColors !== false
-            || setting.social?.format !== "square"
+            || setting.social?.format !== YOUTUBE_SHORTS_FORMAT
             || setting.arenaSize !== "large" || setting.arenaShape !== "square"
             || setting.hazardPreset !== "none"
             || exportResult.state?.classicTournament != null
-            || Number(exportResult.state?.time) + 0.05 < Number(plan.minimumDurationSeconds)) {
-            throw new Error("YouTube upload blocked: Orb Foundry export does not match the required live-action black, outline-free, large-square format.");
+            || Number(exportResult.state?.time) + 0.05 < Number(plan.minimumDurationSeconds)
+            || recordedDuration > YOUTUBE_SHORTS_MAX_SECONDS) {
+            throw new Error("YouTube upload blocked: Orb Foundry export must be a portrait Short with a black, outline-free, large square arena and stay within YouTube's 3-minute Shorts limit.");
         }
         validateRequiredAnnouncer(exportResult.announcer, quality.announcer, 1);
         return true;
