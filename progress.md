@@ -1,5 +1,9 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## Classic Portrait Shorts (2026-11-04)
+
+- Classic / Orb Foundry uploads now use the same `1080×1920` portrait Shorts frame as Orb Race Shorts. The previous square crop is `1080×1020`, wider than tall, so YouTube filed those videos as regular uploads. The arena stays a large square, the theme stays black, and Classic remains Shorts-only. Recordings must stay within YouTube's three-minute Shorts limit.
+
 ## YouTube Channel Rules (2026-11-02)
 
 - Classic / Orb Foundry stays Shorts-only. The channel phrase "Orb Fighter" refers to that existing path. Long-form slots remain Orb Race.

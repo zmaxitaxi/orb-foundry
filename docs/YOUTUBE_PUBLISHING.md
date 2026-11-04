@@ -39,8 +39,14 @@ Orb Foundry's approved YouTube publishing contract is stored in
   Orb Race layer matchup.
 - Group matchups use the group label in the title instead of expanding every orb name.
 - Orb Race and Orb Foundry each use their own explicit `videoReady` allowlist.
-- Orb Foundry Shorts use a black theme, no team outlines, a large square arena,
-  and the square social-video layout.
+- Orb Foundry Shorts use a black theme, no team outlines, and a large square
+  arena inside the same portrait social-video layout as Orb Race Shorts
+  (`1080×1920`). YouTube files an upload as a Short when the picture is
+  vertical or a true 1:1 square and the video is at most three minutes. The
+  old square crop is `1080×1020`, which is wider than it is tall, so those
+  Classic uploads were regular videos. Classic still uses the Shorts
+  description, `#shorts` hashtag, and Gaming category already used for Orb
+  Race Shorts, and it remains Shorts-only.
 - The Orb Foundry allowlist excludes Fairy, Commander, Jackpot, Absorber,
   Grappler, Monster, Train, Snowball (`frost-ball`), Yingyang (`ying-yang`),
   Flash, Poison, and Charger.
@@ -83,7 +89,8 @@ Every unattended video must satisfy the quality contract in
   and may overlap an orb that also appears in Everyone.
 - Orb Foundry Shorts are generated from two unique allowlisted Classic orbs.
   Their preflight must produce a completed, close battle with at least 25
-  seconds of live action before the browser exporter starts.
+  seconds of live action before the browser exporter starts. The planned
+  battle stays at or below YouTube's three-minute Shorts limit.
 - The two-day no-repeat rotation is tracked separately for the Orb Race and
   Orb Foundry stable-ID rosters.
 - Each regular battle video contains exactly one matchup. Shorts include at
@@ -149,9 +156,9 @@ before YouTube receives the video:
    overlap are waived.
 5. Use no more than three layers for an Orb Race Short. Every Orb Race layer
    must be at least 500 HP, and Short layer HP must be ascending. Long-form
-   uses its separate ascending profile. Orb Foundry Shorts instead use their
-   explicit black/outline-free/large-square style and a preflighted Classic
-   battle.
+   uses its separate ascending profile. Orb Foundry Shorts instead use the
+   portrait Shorts frame, a black outline-free theme, a large square arena,
+   and a preflighted Classic battle.
 6. Run the deterministic preflight simulation and prefer a matchup that
    finishes within the configured close-battle progress and layer-lead limits.
    If the capped search has no in-limit battle, keep the closest finished
@@ -175,7 +182,8 @@ before YouTube receives the video:
    plus spoken cues for every match. Continuous bracket recordings keep that
    announcer proof across match resets, including camera-pan matches. For an
    Orb Foundry Short, verify Classic mode, both orb IDs,
-   black theme, no outlines, square layout, and the large square arena. Reject
+   black theme, no outlines, the portrait Shorts layout, the large square
+   arena, and a recording of at most three minutes. Reject
    any artifact whose metadata or announcer proof no longer matches the plan.
    Titles must use readable casing for orb/group names. Friday tournaments must
    be titled `Who is the Best Orb?`. Descriptions must contain the actual
