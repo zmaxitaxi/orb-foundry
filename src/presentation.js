@@ -1,4 +1,4 @@
-import { CLASSIC_ORBS } from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
+import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261108-arena-cut1";
 
 export const THEME_IDS = Object.freeze([
   "cream-foundry",

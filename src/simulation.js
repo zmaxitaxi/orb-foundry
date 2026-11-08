@@ -39,7 +39,7 @@ import {
   raceHasAbility,
   raceTeamDisplayName,
   selectOrbRacers,
-} from "./orb-race.js?v=20261008-purple-sun-title1";
+} from "./orb-race.js?v=20261108-arena-cut1";
 import {
   CLASSIC_ORBS,
   CLASSIC_ORB_IDS,
@@ -56,7 +56,7 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20260812-glass-speed1-snowball1";
+} from "./classic-orbs.js?v=20261108-arena-cut1";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -753,7 +753,8 @@ export const RACE_POISON_DAMAGE_PER_TICK = 1;
 const RACE_POISON_DAMAGE_GAIN = 1;
 const RACE_POISON_TICK_INTERVAL = 0.1;
 const RACE_POISON_EFFECT_SECONDS = 0.9;
-const RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS = 60;
+export const RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS = 60;
+export const RACE_HYDROGEN_FUSE_WARNING_SECONDS = 3;
 const RACE_HYDROGEN_BOMB_FLASH_SECONDS = 4;
 export const RACE_TSAR_BOMB_COUNTDOWN_SECONDS = 90;
 export const RACE_TSAR_BOMB_REACTOR_INTERVAL_SECONDS = 8;
@@ -5196,7 +5197,7 @@ function resolveClassicFighterMinionCollisionDamage(sim) {
   }
 }
 
-function classicOrbiterPosition(fighter, index, time) {
+export function classicOrbiterPosition(fighter, index, time) {
   const ringIndex = Math.floor(Math.max(0, index) / 3);
   const ringStart = ringIndex * 3;
   const ringOrbCount = Math.min(3, Math.max(1, fighter.classicOrbiters - ringStart));
@@ -5334,7 +5335,12 @@ function resolveClassicOrbitalHits(sim) {
     fighter.alive && fighter.type === "orbital" && fighter.classicOrbiters > 0
   ));
   for (const attacker of orbitals) {
-    for (let index = 0; index < attacker.classicOrbiters; index += 1) {
+    const orbiterCount = attacker.classicOrbiters;
+    const satelliteDamage = classicAbilityDefinition(attacker).satelliteDamage;
+    let spent = 0;
+    // Keep the ring in its starting geometry until every satellite has checked
+    // contact for this step. Otherwise one hit moves the remaining hitboxes.
+    for (let index = 0; index < orbiterCount; index += 1) {
       const orbiter = classicOrbiterPosition(attacker, index, sim.time);
       for (const target of classicCombatTargets(sim, attacker)) {
         if (
@@ -5345,17 +5351,16 @@ function resolveClassicOrbitalHits(sim) {
         const lastHitAt = attacker.collisionLastHit[key] ?? -Infinity;
         if (sim.time - lastHitAt < 0.36) continue;
         attacker.collisionLastHit[key] = sim.time;
-        const dealt = damage(sim, target, 1, attacker.id, "orbital satellite", "classic-orbital");
+        const dealt = damage(
+          sim,
+          target,
+          satelliteDamage,
+          attacker.id,
+          "orbital satellite",
+          "classic-orbital",
+        );
         if (dealt <= 0) continue;
-        attacker.classicOrbiters = Math.max(0, attacker.classicOrbiters - 1);
-        const remainingRingCount = Math.ceil(attacker.classicOrbiters / 3);
-        attacker.classicOrbitalRings = (attacker.classicOrbitalRings || [])
-          .slice(0, remainingRingCount)
-          .map((ring, ringIndex) => classicOrbitalRingGeometry(attacker, ringIndex, {
-            ...ring,
-            orbiterCount: Math.min(3, Math.max(0, attacker.classicOrbiters - ringIndex * 3)),
-          }));
-        attacker.classicOrbitalRingCount = remainingRingCount;
+        spent += 1;
         emitEvent(sim, "classic-orbital-hit", {
           fighterId: attacker.id,
           targetId: target.id,
@@ -5365,11 +5370,21 @@ function resolveClassicOrbitalHits(sim) {
           ringOrbIndex: orbiter.ringOrbIndex,
           x: orbiter.x,
           y: orbiter.y,
-          remainingOrbiters: attacker.classicOrbiters,
+          remainingOrbiters: orbiterCount - spent,
         });
         break;
       }
     }
+    if (!spent) continue;
+    attacker.classicOrbiters = orbiterCount - spent;
+    const remainingRingCount = Math.ceil(attacker.classicOrbiters / 3);
+    attacker.classicOrbitalRings = (attacker.classicOrbitalRings || [])
+      .slice(0, remainingRingCount)
+      .map((ring, ringIndex) => classicOrbitalRingGeometry(attacker, ringIndex, {
+        ...ring,
+        orbiterCount: Math.min(3, Math.max(0, attacker.classicOrbiters - ringIndex * 3)),
+      }));
+    attacker.classicOrbitalRingCount = remainingRingCount;
   }
 }
 
@@ -17808,6 +17823,7 @@ function advanceRaceHydrogenBomb(sim, dt) {
     });
   }
 
+  const previousSecond = Math.ceil(RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS - sim.raceHydrogenCountdownElapsed);
   sim.raceHydrogenCountdownElapsed = Math.min(
     RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS,
     sim.raceHydrogenCountdownElapsed + dt,
@@ -17817,8 +17833,16 @@ function advanceRaceHydrogenBomb(sim, dt) {
     racer.raceHydrogenCountdownElapsed = sim.raceHydrogenCountdownElapsed;
     racer.raceHydrogenCountdownProgress = countdownProgress;
   });
-  if (sim.raceHydrogenCountdownElapsed >= RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS) {
+  const remainingSecond = Math.ceil(RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS - sim.raceHydrogenCountdownElapsed);
+  if (remainingSecond === 0) {
     triggerRaceHydrogenBomb(sim, bombers[0]);
+  } else if (remainingSecond <= RACE_HYDROGEN_FUSE_WARNING_SECONDS && remainingSecond < previousSecond) {
+    emitEvent(sim, "race-hydrogen-fuse-second", {
+      fighterId: bombers[0].id,
+      raceOrbId: "hydrogen-bomb",
+      raceTeamIndex: bombers[0].raceTeamIndex,
+      remainingSecond,
+    });
   }
 }
 
@@ -17904,8 +17928,8 @@ function triggerRaceHydrogenBomb(sim, bomber, { preserveRacerIds = [] } = {}) {
   bomber.raceReadyToFinish = true;
   bomber.raceFinished = false;
   bomber.raceVx = 0;
-  // Hold the bomber in place during the full-screen flash. Its visible fall
-  // begins only after the flash ends so the finish-line crossing is readable.
+  // Hold the bomber in place after detonation, then show it fall through the
+  // cleared course so the finish-line crossing is readable.
   bomber.raceVy = 0;
   bomber.raceDuplicateOrbs = [];
 
@@ -24540,7 +24564,9 @@ function applyRaceLayerDamage(sim, racer, layerIndex, amount, impact = {}) {
       emitEvent(sim, "race-layer-break", {
         fighterId: racer.id,
         raceOrbId: racer.raceOrbId,
+        raceTeamIndex: racer.raceTeamIndex,
         layerIndex,
+        layerCount: racer.raceLayerHealth.length,
         damage: applied,
         layerHealth: 0,
         x,
@@ -24556,7 +24582,9 @@ function applyRaceLayerDamage(sim, racer, layerIndex, amount, impact = {}) {
       emitEvent(sim, "race-layer-break", {
         fighterId: racer.id,
         raceOrbId: racer.raceOrbId,
+        raceTeamIndex: racer.raceTeamIndex,
         layerIndex,
+        layerCount: racer.raceLayerHealth.length,
         damage: applied,
         layerHealth: 0,
         x,

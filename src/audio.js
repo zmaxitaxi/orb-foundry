@@ -3,10 +3,10 @@ import {
   raceAbilityIdsFor,
   raceComboAnnouncerCueFor,
   raceTeamDisplayParts,
-} from "./orb-race.js?v=20261008-purple-sun-title1";
+} from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
+} from "./classic-orbs.js?v=20261108-arena-cut1";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -705,6 +705,11 @@ const ORB_SIGNATURES = Object.freeze({
 });
 
 const EVENT_SOUNDS = Object.freeze({
+  "race-hydrogen-fuse-second": {
+    signature: "hydrogen-fuse-tick",
+    rateLimit: 0.12,
+    layers: [[830, 620, 0.095, 0.21, "triangle"], [1660, 1240, 0.055, 0.055, "sine"]],
+  },
   "orb-race-tournament-zoom": {
     signature: "tournament-matchup-zoom",
     category: "effects",
@@ -865,7 +870,7 @@ const SAMPLE_EVENT_SOUNDS = Object.freeze({
   "classic-critical": { sample: "critical-hit", gain: 1.62, rateLimit: 0.045, maxDuration: 1.3, rateRange: [1, 1] },
   "race-speed-impact": { sample: "critical-hit", gain: 1.65, rateLimit: 0.045, maxDuration: 1.3, rateRange: [1, 1] },
   "world-cup-ko": { sample: "world-cup-ko", gain: 1.38, rateLimit: 0.12, maxDuration: 1.28, rateRange: [1, 1] },
-  "race-bounce": { sample: "orb-collision", gain: 0.72, rateLimit: 0.075, maxDuration: 0.54, rateRange: [0.98, 1.02] },
+  "race-bounce": { sample: "orb-collision", gain: 0.52, rateLimit: 0.075, maxDuration: 0.45, rateRange: [0.98, 1.02] },
   // Lazer's interval hit is a real bounce cue. Keep it unsuppressed and allow
   // a burst budget so a level-100 beam can layer one pop per 0.01-second hit.
   "race-laser-tick": { sample: "orb-collision", gain: 0.72, rateLimit: 0, maxDuration: 0.54, rateRange: [0.98, 1.02], allowBurst: true },
@@ -1339,6 +1344,15 @@ function customRaceSampleRouteFor(event = {}) {
   return null;
 }
 
+function contactPanForEvent(event) {
+  if (event.type === "race-layer-break" || event.type === "race-hydrogen-fuse-second") {
+    if (event.raceTeamIndex === 0) return -0.35;
+    if (event.raceTeamIndex === 1) return 0.35;
+  }
+  const x = Number(event.x);
+  return Number.isFinite(x) ? Math.max(-0.72, Math.min(0.72, (x / 960) * 1.44 - 0.72)) : 0;
+}
+
 export function soundPlanForEvent(event = {}) {
   if (event.gameplayMode === "classic") return null;
   if (!classicAudioEventEnabled(event)) return null;
@@ -1350,7 +1364,10 @@ export function soundPlanForEvent(event = {}) {
   if (!base) return null;
   const id = Number(event.id) || 1;
   const hash = hashValue(id);
-  const pitchVariation = 1 + ((hash % 17) - 8) * 0.0045;
+  const fusePitch = event.type === "race-hydrogen-fuse-second"
+    ? 2 ** ((3 - Math.max(1, Math.min(3, Number(event.remainingSecond) || 3))) / 6)
+    : 1;
+  const pitchVariation = (1 + ((hash % 17) - 8) * 0.0045) * fusePitch;
   const volumeVariation = 1 + (((hash >>> 8) % 9) - 4) * 0.018;
   const fighterType = base.fighterType || event.fighterType || event.sourceType || "";
   const signature = ORB_SIGNATURES[fighterType];
@@ -1385,12 +1402,11 @@ export function soundPlanForEvent(event = {}) {
     offset: ((hash >>> (10 + index * 3)) % 260) / 1000,
     delay: index * 0.004,
   }));
-  const eventX = Number(event.x);
   return {
     category: base.category || "effects",
     signature: includeOrbSignature ? `${base.signature}+${signature.name}` : base.signature,
     fighterType: fighterType || null,
-    pan: Number.isFinite(eventX) ? Math.max(-0.72, Math.min(0.72, (eventX / 960) * 1.44 - 0.72)) : 0,
+    pan: contactPanForEvent(event),
     layers,
     noises,
     noise: noises[0] || null,
@@ -1453,14 +1469,17 @@ export function samplePlanForEvent(event = {}) {
   const hash = hashValue(`${base.sample}:${id}`);
   const [minRate, maxRate] = base.rateRange || [1, 1];
   const rateMix = (hash % 1000) / 999;
-  const eventX = Number(event.x);
+  const layerProgress = event.type === "race-layer-break" && event.layerCount > 1
+    ? Math.max(0, Math.min(1, (Number(event.layerIndex) || 0) / (event.layerCount - 1)))
+    : 0;
+  const progressPitch = 2 ** (Math.round(layerProgress * 4) / 12);
   return {
     category: base.category || "effects",
     sample: base.sample,
     signature: `sample:${base.sample}`,
-    pan: Number.isFinite(eventX) ? Math.max(-0.72, Math.min(0.72, (eventX / 960) * 1.44 - 0.72)) : 0,
+    pan: contactPanForEvent(event),
     gain: (Number(base.gain) || 1) * (1 + (((hash >>> 10) % 7) - 3) * 0.015),
-    playbackRate: minRate + rateMix * (maxRate - minRate),
+    playbackRate: (minRate + rateMix * (maxRate - minRate)) * progressPitch,
     maxDuration: base.maxDuration || 0,
     loop: base.loop === true,
     offset: event.type === "race-ying-yang-switch"

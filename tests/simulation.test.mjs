@@ -1494,10 +1494,17 @@ function run(sim, seconds, dt = 1 / 120) {
   const countdownStart = first.events.find((event) => event.type === "race-hydrogen-bomb-countdown-start");
   assert.equal(countdownStart.countdownSeconds, 60);
   assert.ok(bomb.raceHydrogenCountdownProgress > 0 && bomb.raceHydrogenCountdownProgress < 1);
+  const fuseWarnings = [];
   for (let step = 0; step < 7199; step += 1) {
+    const eventStart = first.nextEventId;
     stepSimulation(first, 1 / 120);
+    if (step < 55 * 120) continue;
+    for (const event of first.events) {
+      if (event.id >= eventStart && event.type === "race-hydrogen-fuse-second") fuseWarnings.push(event.remainingSecond);
+    }
   }
   assert.equal(first.raceHydrogenBombExploded, false, "Hydrogen Bomb must not detonate before sixty fixed-step seconds");
+  assert.deepEqual(fuseWarnings, [3, 2, 1], "the fuse emits one warning per real second before detonation");
   for (let step = 0; step < 4 && !first.raceHydrogenBombExploded; step += 1) {
     stepSimulation(first, 1 / 120);
   }

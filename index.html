@@ -333,6 +333,11 @@
             </div>
           </section>
           <div id="raceLayerToolbar" class="race-layer-toolbar">
+            <label>COURSE PRESET
+              <select id="raceCoursePreset">
+                <option value="custom">Custom</option>
+              </select>
+            </label>
             <label>NUMBER OF LAYERS
               <input id="raceLayerCount" type="number" min="1" max="50" value="3" />
             </label>
@@ -358,7 +363,7 @@
             </label>
           </div>
           <div id="raceOptionToolbar" class="race-option-toolbar">
-            <label><input id="raceTargetMessageToggle" type="checkbox" checked /> SHOW “WHO WILL BREAK…” MESSAGE</label>
+            <label><input id="raceTargetMessageToggle" type="checkbox" checked /> SHOW TARGET WALL AT START</label>
             <label><input id="raceTargetAudioToggle" type="checkbox" checked /> SAY TARGET-LAYER QUESTION</label>
             <label><input id="raceMatchupAudioToggle" type="checkbox" checked /> SAY ORB MATCHUP</label>
             <label><input id="raceTiltedLayerToggle" type="checkbox" /> USE TWO-PIECE TILTED LAYER</label>
@@ -459,8 +464,8 @@
             <div>
               <span>FRAME RATE</span>
               <div class="option-row">
-                <label><input type="radio" name="socialFps" value="30" checked /> <span>30 FPS</span></label>
-                <label><input type="radio" name="socialFps" value="60" /> <span>60 FPS</span></label>
+                <label><input type="radio" name="socialFps" value="30" /> <span>30 FPS</span></label>
+                <label><input type="radio" name="socialFps" value="60" checked /> <span>60 FPS</span></label>
               </div>
             </div>
           </div>
@@ -548,6 +553,6 @@
       </form>
     </dialog>
 
-  <script type="module" src="./src/main.js?v=20261029-announcer-export-retry1"></script>
+  <script type="module" src="./src/main.js?v=20261108-arena-cut1"></script>
   </body>
 </html>

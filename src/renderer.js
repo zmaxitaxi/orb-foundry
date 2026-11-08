@@ -3,18 +3,40 @@ import {
   CLASS_DEFS,
   classicCutterZoneGeometryFor,
   classicCutterVisibleZoneGeometriesFor,
+  classicOrbiterPosition,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261008-purple-sun-title1";
-import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
-import { themeById } from "./presentation.js?v=20260811-classic-health-reactor-batman-fairy-zeus-frost3";
+} from "./simulation.js?v=20261108-arena-cut1";
+import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261108-arena-cut1";
+import { themeById } from "./presentation.js?v=20261108-arena-cut1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
-import { ORB_RACERS } from "./orb-race.js?v=20261008-purple-sun-title1";
+import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";
 
 const TAU = Math.PI * 2;
 const PIXEL_FONT = "Roboto, Arial, sans-serif";
 const CLASSIC_NUMBER_FONT = "Impact, Haettenschweiler, Arial Narrow Bold, sans-serif";
+
+export function drawMotionStreak(ctx, points, radius, color) {
+  if (points.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const distance = Math.hypot(to.x - from.x, to.y - from.y);
+    if (distance < 0.4 || distance > radius * 2.6) continue;
+    const weight = index / (points.length - 1);
+    ctx.lineWidth = radius * (0.34 + 0.8 * weight);
+    ctx.globalAlpha = weight * 0.28;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
 // Classic keeps its own gameplay IDs, but shared identities should remain
 // instantly recognizable to viewers who know Orb Race. These aliases only
@@ -1539,6 +1561,15 @@ export class ArenaRenderer {
 
   drawTrail(ctx, fighter) {
     const def = CLASS_DEFS[fighter.type];
+    if (this.lastSim?.gameplayMode === "classic"
+      && !fighter.classicFadingTrailsEnabled && !fighter.classicSolidTrailsEnabled) {
+      if (this.options.motionTrails) {
+        const points = fighter.trail.slice(0, 8).reverse();
+        points.push(fighter);
+        drawMotionStreak(ctx, points, fighter.radius, classicVisualColorFor(fighter.type, def.color));
+      }
+      return;
+    }
     fighter.trail.forEach((point, index) => {
       if (this.lastSim?.gameplayMode === "classic") {
         const fading = fighter.classicFadingTrailsEnabled === true;
@@ -3288,20 +3319,31 @@ export class ArenaRenderer {
 
   drawClassicOrbiters(ctx, fighter, time) {
     const count = Math.max(0, fighter.classicOrbiters || 0);
-    const radius = fighter.radius * 0.34;
-    const ringRadius = fighter.radius * 1.92;
+    const growth = this.lastSim?.events?.findLast((event) => (
+      event.type === "classic-orbital-growth" && event.fighterId === fighter.id
+    ));
+    const growAge = growth ? time - growth.time : Infinity;
+    const palette = CLASS_DEFS.orbital;
     for (let index = 0; index < count; index += 1) {
-      const angle = time * 2.4 + index / count * TAU;
-      const x = fighter.x + Math.cos(angle) * ringRadius;
-      const y = fighter.y + Math.sin(angle) * ringRadius;
-      ctx.fillStyle = "#050505";
+      const { x, y, radius, ringIndex, ringOrbIndex } = classicOrbiterPosition(fighter, index, time);
+      const emerging = growAge >= 0 && growAge < 0.2
+        && ringIndex === growth?.ringIndex && ringOrbIndex === growth.ringOrbiterCount - 1;
+      ctx.save();
+      ctx.fillStyle = emerging ? "#e2fbff" : classicVisualColorFor("orbital", palette.color);
+      ctx.strokeStyle = this.options.classicBlackTheme ? palette.accent : "#111418";
+      ctx.lineWidth = Math.max(1.5, radius * 0.22);
       ctx.beginPath();
-      ctx.arc(Math.round(x), Math.round(y), radius + 2, 0, TAU);
+      ctx.arc(x, y, radius, 0, TAU);
       ctx.fill();
-      ctx.fillStyle = CLASS_DEFS.orbital.color;
-      ctx.beginPath();
-      ctx.arc(Math.round(x), Math.round(y), radius, 0, TAU);
-      ctx.fill();
+      ctx.stroke();
+      if (emerging && this.options.motionTrails) {
+        ctx.globalAlpha = 0.65 * (1 - growAge / 0.2);
+        ctx.strokeStyle = palette.accent;
+        ctx.beginPath();
+        ctx.arc(x, y, radius * (1.1 + 2.8 * growAge), 0, TAU);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
   }
 
@@ -3931,6 +3973,20 @@ export class ArenaRenderer {
     ctx.restore();
   }
 
+  drawClassicSwordContact(ctx, event, attacker, accent, age) {
+    if (!Number.isFinite(event.x) || !Number.isFinite(event.y)) return;
+    const angle = Math.atan2(event.y - attacker.y, event.x - attacker.x);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - age / 0.14);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 3.5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(event.x, event.y, attacker.radius * (0.38 + 3 * age), angle - 0.93, angle + 0.93);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   drawClassicTridentImpactBurst(ctx, impact = {}) {
     this.drawClassicCircularImpactBurst(ctx, {
       ...impact,
@@ -3946,6 +4002,28 @@ export class ArenaRenderer {
       if (!Number.isFinite(eventTime)) continue;
       const age = Number(time) - eventTime;
       if (age < 0 || age > CLASSIC_IMPACT_BURST_DURATION) continue;
+      if (event.type === "weapon-hit" || event.type === "classic-orbital-hit") {
+        if (!(event.amount > 0) || age > 0.21) continue;
+        const attacker = fighterById.get(event.fighterId);
+        const accent = CLASS_DEFS[attacker?.type]?.accent || "#ffd77f";
+        const target = fighterById.get(event.targetId);
+        this.drawClassicCircularImpactBurst(ctx, {
+          x: event.x,
+          y: event.y,
+          radius: target?.radius,
+          age,
+          seed: event.id,
+          palette: [accent, "#fff8ea"],
+          duration: 0.21,
+          particleCount: this.options.flashReduction ? 5 : 11,
+          spreadScale: 0.72,
+          particleScale: 0.8,
+        });
+        if (attacker?.type === "sword" && !this.options.flashReduction) {
+          this.drawClassicSwordContact(ctx, event, attacker, accent, age);
+        }
+        continue;
+      }
       if (event.type === "classic-trident-stick") {
         const surface = event.surface === "wall" ? "wall" : event.surface === "orb" ? "orb" : null;
         if (!surface) continue;
@@ -5402,6 +5480,16 @@ export class ArenaRenderer {
     ctx.fillStyle = "#ffffff";
     ctx.strokeText(String(health), 0, 1);
     ctx.fillText(String(health), 0, 1);
+    const maxHealth = Number(fighter.maxHealth);
+    if (this.options.duelHealthBars && !fighter.classicIsDuplicate && health > 0 && maxHealth > 0 && fighter.health < maxHealth) {
+      const width = radius * 1.4;
+      const height = Math.max(3, radius * 0.095);
+      const y = radius * 1.25;
+      ctx.fillStyle = this.options.classicBlackTheme ? "#3c414a" : "#ded9d1";
+      ctx.fillRect(-width / 2, y, width, height);
+      ctx.fillStyle = classicVisualColorFor(fighter.type, "#e0c68c");
+      ctx.fillRect(-width / 2, y, width * Math.max(0, fighter.health / maxHealth), height);
+    }
     ctx.restore();
   }
 
@@ -5450,7 +5538,8 @@ export class ArenaRenderer {
     }
 
     ctx.save();
-    ctx.translate(Math.round(fighter.x), Math.round(fighter.y));
+    if (this.lastSim?.gameplayMode === "classic") ctx.translate(fighter.x, fighter.y);
+    else ctx.translate(Math.round(fighter.x), Math.round(fighter.y));
 
     if (!this.options.flatOrbs) {
       ctx.shadowColor = country?.accent || (this.lastSim?.gameplayMode === "classic"

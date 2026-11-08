@@ -18,6 +18,7 @@ import {
     classicCutterZoneGeometriesFor,
     classicCutterVisibleZoneGeometriesFor,
     classicCutterZoneContainsPoint,
+    classicOrbiterPosition,
     createSimulation,
     getWeaponSegment,
     stepSimulation,
@@ -4184,19 +4185,47 @@ test("Classic fighter and Orbital collision damage can hit Necromancer minions, 
         maxHealth: 5,
         collisionDamage: 0,
     };
-    orbitalSim.classicEntities.push(orbitalMinion);
-    orbital.classicOrbiters = 1;
-    orbital.classicOrbitalRings = [{ ringIndex: 0, orbiterCount: 1, radiusScale: 1, rangeScale: 1 }];
+    orbital.classicOrbiters = 2;
+    orbital.classicOrbitalRings = [{ ringIndex: 0, orbiterCount: 2, radiusScale: 1, rangeScale: 1 }];
+    const firstSatellite = classicOrbiterPosition(orbital, 0, orbitalSim.time + STEP);
+    const secondSatellite = classicOrbiterPosition(orbital, 1, orbitalSim.time + STEP);
+    Object.assign(orbitalMinion, { x: firstSatellite.x, y: firstSatellite.y });
+    const oppositeMinion = {
+        ...orbitalMinion,
+        id: "classic-collision-test-opposite-minion",
+        x: secondSatellite.x,
+        y: secondSatellite.y,
+    };
+    orbitalSim.classicEntities.push(orbitalMinion, oppositeMinion);
     orbital.classicOrbitalRingCount = 1;
     orbital.stunUntil = Infinity;
     orbital.vx = orbital.vy = 0;
     orbitalNecromancer.x = sim.arenaBounds.x + sim.arenaBounds.width - orbitalNecromancer.radius - 20;
     orbitalNecromancer.y = sim.arenaBounds.y + sim.arenaBounds.height - orbitalNecromancer.radius - 20;
     step(orbitalSim);
-    assert.equal(orbitalMinion.health, 4, "Orbital satellites should damage opposing Necromancer minions");
-    assert.ok(orbitalSim.events.some(({ type, targetId }) => (
-        type === "classic-orbital-hit" && targetId === orbitalMinion.id
-    )));
+    assert.equal(orbitalMinion.health, 3, "each Orbital satellite should deal two damage to an opposing minion");
+    assert.equal(oppositeMinion.health, 3, "a first hit must not move the second satellite away from its contact");
+    assert.equal(orbital.classicOrbiters, 0, "both satellites should be spent on contact");
+    assert.deepEqual(
+        orbitalSim.events.filter(({ type }) => type === "classic-orbital-hit")
+            .map(({ targetId, amount, remainingOrbiters }) => [targetId, amount, remainingOrbiters]),
+        [[orbitalMinion.id, 2, 1], [oppositeMinion.id, 2, 0]],
+    );
+});
+
+test("Classic Orbital contact timing and damage repeat for a fixed seed", () => {
+    function firstContact() {
+        const sim = createSimulation({ count: 2, classicTeams: [["sword"], ["orbital"]], seed: 2406 });
+        for (let frame = 0; frame < 120 * 15; frame += 1) {
+            step(sim);
+            const event = sim.events.find(({ type }) => type === "classic-orbital-hit");
+            if (event) return event;
+        }
+        assert.fail("Orbital should land a satellite hit in the seeded match");
+    }
+    const hit = firstContact();
+    assert.equal(hit.amount, 2);
+    assert.deepEqual(firstContact(), hit);
 });
 
 test("Vampire latches do not remove Spikey triangles, and the full triangle is its hitbox", () => {

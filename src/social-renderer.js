@@ -17,16 +17,19 @@ import {
   RACE_TIME_BOMB_PULSE_SECONDS,
   RACE_TIME_BOMB_PULSE_EXPANSION_SECONDS,
   RACE_TSAR_BOMB_COUNTDOWN_SECONDS,
+  RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS,
+  RACE_HYDROGEN_FUSE_WARNING_SECONDS,
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261008-purple-sun-title1";
+} from "./simulation.js?v=20261108-arena-cut1";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
   classicVisualColorFor,
-} from "./renderer.js?v=20261008-purple-sun-title1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261008-purple-sun-title1";
+  drawMotionStreak,
+} from "./renderer.js?v=20261108-arena-cut1";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261108-arena-cut1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -45,12 +48,12 @@ import {
   raceComboTitleFor,
   raceHasAbility,
   raceTeamDisplayName,
-} from "./orb-race.js?v=20261008-purple-sun-title1";
+} from "./orb-race.js?v=20261108-arena-cut1";
 import {
   CLASSIC_ORBS,
   classicTeamDisplayName,
   classicTeamOutlineColorFor,
-} from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
+} from "./classic-orbs.js?v=20261108-arena-cut1";
 import {
   TOURNAMENT_CONNECTOR_COLORS,
   TOURNAMENT_PRESENTATION_TIMING,
@@ -74,8 +77,7 @@ import {
 const TAU = Math.PI * 2;
 const METEOR_BURN_SECONDS = 5;
 const RACE_HYDROGEN_TEXT_COLOR = "#e11d48";
-const RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS = 60;
-const RACE_HYDROGEN_BOMB_FLASH_SECONDS = 4;
+const RACE_FUSE_WARNING_COLOR = "#b91c1c";
 const SOCIAL_RACE_CACHE_KEY = "20260825-tsar-all-in-one1";
 const RACE_TWIN_HEALING_COLOR = "#22c55e";
 const RACE_TWIN_HEALING_ACCENT = "#86efac";
@@ -843,6 +845,16 @@ function raceTextColorForRacer(racer, fallback = "#111111") {
     : raceThemeColorForRacer(racer, fallback);
 }
 
+// Keep the color identity on cream paper while darkening bright neon fills
+// enough that small labels can stand on their own without a thick outline.
+function racePortraitInk(color) {
+  const rgb = raceHexColorToRgb(color);
+  if (!rgb) return "#211d18";
+  const luma = 0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b;
+  const scale = Math.min(1, 112 / Math.max(1, luma));
+  return raceRgbToHex({ r: rgb.r * scale, g: rgb.g * scale, b: rgb.b * scale });
+}
+
 function raceLayerMaxHealthFor(sim, team, index) {
   const configuredValues = [team?.raceLayerStrengths, sim?.raceLayerStrengths];
   for (const values of configuredValues) {
@@ -1332,10 +1344,19 @@ function raceSniperHudLinesFor(racer) {
   ].filter(Boolean);
 }
 
-function raceHydrogenCountdownLineFor(racer) {
+function raceHydrogenRemainingSeconds(racer) {
   const elapsed = Math.max(0, Number(racer?.raceHydrogenCountdownElapsed) || 0);
-  const remaining = Math.max(0, RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS - elapsed);
-  return `${remaining.toFixed(3)}S`;
+  return Math.max(0, RACE_HYDROGEN_BOMB_COUNTDOWN_SECONDS - elapsed);
+}
+
+function raceHydrogenFuseIsLow(racer) {
+  const remaining = raceHydrogenRemainingSeconds(racer);
+  return remaining > 0 && remaining <= RACE_HYDROGEN_FUSE_WARNING_SECONDS;
+}
+
+function raceHydrogenCountdownLineFor(racer) {
+  if (racer.raceHydrogenExploded) return "DETONATED";
+  return `FUSE ${raceHydrogenRemainingSeconds(racer).toFixed(1)}S`;
 }
 
 function raceTsarBombCountdownLineFor(racer) {
@@ -1487,13 +1508,23 @@ function raceHudLinesFor(racer, simTime = 0) {
     return [raceDamageHudLineFor(racer), raceAbilityMetricLine(racer, comboAbilityIds[0])].filter(Boolean);
   }
 
+  const bounceDamage = raceBounceDamageLineFor(racer);
+  if (bounceDamage) return [bounceDamage];
   return [
     raceDamageHudLineFor(racer),
     raceBaseSpecialLine(racer),
   ].filter(Boolean).slice(0, 2);
 }
 
+function raceBounceDamageLineFor(racer) {
+  if (!["x-squared", "fibonacci", "phi", "x-power", "super-x-power", "sylvester", "lucas", "tetration"]
+    .includes(racer?.raceOrbId) || racer.raceScalingDamageEnabled === false) return "";
+  const bounces = Math.max(0, Number(racer.raceBounces) || 0);
+  return `${bounces} ${bounces === 1 ? "BOUNCE" : "BOUNCES"} → ${formatRaceDamageValue(racer, racer.raceDamage)} DAMAGE`;
+}
+
 function raceHudColorForRacer(racer, fallback = "#111111") {
+  if (racer?.raceOrbId === "hydrogen-bomb" && raceHydrogenFuseIsLow(racer)) return RACE_FUSE_WARNING_COLOR;
   if (racer?.raceOrbId === "batman") return "#050505";
   return raceTextColorForRacer(racer, fallback);
 }
@@ -2182,10 +2213,7 @@ export class SocialBattleRenderer {
       loadOrbSprites: true,
     });
     this.format = "portrait";
-    this.raceLongformCameraY = 0;
-    this.raceLongformCameraTargetY = 0;
-    this.raceLongformCameraSimTime = -1;
-    this.raceLongformCameraSimulation = null;
+    this.resetRaceLongformCameras();
     this.raceFinishExplosionSimulation = null;
     this.raceFinishExplosionStartTimes = new Map();
     this.classicMarkerSimulation = null;
@@ -2212,12 +2240,14 @@ export class SocialBattleRenderer {
     if (this.canvas.height !== format.height) this.canvas.height = format.height;
     this.canvas.style.aspectRatio = `${format.width} / ${format.height}`;
     this.ctx.imageSmoothingEnabled = false;
-    if (this.format !== "race-landscape") {
-      this.raceLongformCameraY = 0;
-      this.raceLongformCameraTargetY = 0;
-      this.raceLongformCameraSimTime = -1;
-      this.raceLongformCameraSimulation = null;
-    }
+    if (this.format !== "race-landscape") this.resetRaceLongformCameras();
+  }
+
+  resetRaceLongformCameras() {
+    this.raceLongformCameraY = [0, 0];
+    this.raceLongformCameraAt = null;
+    this.raceLongformCameraSimTime = -1;
+    this.raceLongformCameraSimulation = null;
   }
 
   draw(sim, presentation = {}) {
@@ -2232,6 +2262,8 @@ export class SocialBattleRenderer {
         || sim.raceTournamentPresentation,
     );
     const motion = presentation.options || {};
+    this.reducedMotion = motion.reducedMotion === true;
+    this.flashReduction = motion.flashReduction === true;
     const classicBlackTheme = sim.gameplayMode === "classic" && motion.classicBlackTheme === true;
     const classicTeamColors = sim.gameplayMode === "classic" && motion.classicTeamColors !== false;
     this.arenaRenderer.setOptions({
@@ -2242,9 +2274,8 @@ export class SocialBattleRenderer {
       simpleWalls: true,
       arenaBorder: false,
       pixelWeapons: true,
-      motionTrails: sim.gameplayMode === "classic" && (sim.fighters || []).some((fighter) => (
-        fighter.classicFadingTrailsEnabled || fighter.classicSolidTrailsEnabled
-      )),
+      motionTrails: sim.gameplayMode === "classic" && !this.reducedMotion,
+      duelHealthBars: sim.gameplayMode === "classic" && sim.fighters.filter((fighter) => !fighter.classicIsDuplicate).length === 2,
       damageNumbers: false,
       flashReduction: motion.flashReduction === true,
       classicBlackTheme,
@@ -2255,10 +2286,7 @@ export class SocialBattleRenderer {
       this.drawOrbRace(ctx, sim, presentation, width, height);
       return;
     }
-    this.raceLongformCameraY = 0;
-    this.raceLongformCameraTargetY = 0;
-    this.raceLongformCameraSimTime = -1;
-    this.raceLongformCameraSimulation = null;
+    if (this.raceLongformCameraSimulation) this.resetRaceLongformCameras();
     this.arenaRenderer.draw(sim);
 
     ctx.clearRect(0, 0, width, height);
@@ -2269,7 +2297,7 @@ export class SocialBattleRenderer {
     const highlightShake = !classicShakeDisabled && motion.screenShake !== false && presentation.highlight
       ? presentation.highlight.strength * Math.min(width, height) * 0.006
       : 0;
-    const impact = sim.gameplayMode === "classic" ? null : presentation.impactFrame;
+    const impact = presentation.impactFrame;
     const impactAge = impact ? Math.max(0, (presentation.now || 0) - impact.startedAt) : 0;
     const impactProgress = impact ? Math.min(1, impactAge / Math.max(1, impact.duration)) : 1;
     const impactShake = motion.screenShake !== false && !motion.reducedMotion && impact
@@ -2301,7 +2329,13 @@ export class SocialBattleRenderer {
       this.drawKingOfHillHud(ctx, sim, layout.names);
       this.drawKingOfHillStatusDock(ctx, sim, layout.abilities);
     } else {
-      this.drawFighterNames(ctx, sim, layout.names, classicBlackTheme, classicTeamColors);
+      if (sim.gameplayMode === "classic" && sim.finished && sim.winner) {
+        const names = layout.names;
+        this.drawMatchResult(ctx, sim, names.x + names.width / 2, names.y + names.height * 0.54,
+          names.width * 0.94, Math.min(72, names.height * 0.6), classicBlackTheme ? "#ffffff" : "#171511");
+      } else {
+        this.drawFighterNames(ctx, sim, layout.names, classicBlackTheme, classicTeamColors);
+      }
       this.drawClassicStatDock(ctx, sim, layout.abilities, classicBlackTheme);
     }
     if (presentation.phase === "countdown" && sim.gameplayMode !== "classic") {
@@ -2366,13 +2400,17 @@ export class SocialBattleRenderer {
           : 0;
         return Math.max(strongest, strength);
       }, 0);
+    const impact = presentation.impactFrame;
+    const impactShake = impact
+      ? impact.shake * Math.max(0, 1 - (Number(presentation.now) - impact.startedAt) / impact.duration)
+      : 0;
     const shakeAmount = motion.screenShake === false || motion.reducedMotion
       ? 0
-      : reactorShake * Math.min(width, height) * 0.004;
+      : Math.max(reactorShake, impactShake) * Math.min(width, height) * 0.004;
     ctx.save();
     ctx.translate(
-      shakeAmount ? Math.sin(sim.time * 113) * shakeAmount : 0,
-      shakeAmount ? Math.cos(sim.time * 97) * shakeAmount * 0.62 : 0,
+      shakeAmount ? Math.sin((visualNow ?? sim.time * 1000) * 0.113) * shakeAmount : 0,
+      shakeAmount ? Math.cos((visualNow ?? sim.time * 1000) * 0.097) * shakeAmount * 0.62 : 0,
     );
     if (this.format === "race-landscape") {
       this.drawRaceLongform(ctx, sim, teams, presentation, width, height, visualNow);
@@ -2393,13 +2431,12 @@ export class SocialBattleRenderer {
     // Draw it after both boards have painted their layers so the target board
     // cannot cover the visiting orb, and use that board's coordinate system.
     this.drawRaceVisitingTwins?.(ctx, teams, layout.boards, sim.time, visualNow);
-    if (teams.length === 2 && teams.every(Boolean)) this.drawRaceMatchup(
-      ctx,
-      teams,
-      width,
-      layout.topY + layout.boardHeight + layout.gap * 0.5,
-      layout.gap,
-    );
+    const matchupY = layout.topY + layout.boardHeight + layout.gap * 0.5;
+    if (sim.finished && sim.winner) {
+      this.drawMatchResult(ctx, sim, width / 2, matchupY, width * 0.78, 54, "#171511", true);
+    } else if (teams.length === 2 && teams.every(Boolean)) {
+      this.drawRaceMatchup(ctx, teams, width, matchupY, layout.gap);
+    }
     this.drawRaceTimeBombPulses?.(ctx, sim, teams, width, height, layout);
     ctx.restore();
     if (typeof this.drawRaceHydrogenExplosionFlash === "function") {
@@ -3127,10 +3164,41 @@ export class SocialBattleRenderer {
         ? Number(sim.raceTsarBombExplosionElapsed) || 0
         : (sim.fighters || []).find((racer) => racer.raceAllInOneHydrogenExploded)
           ?.raceAllInOneHydrogenExplosionElapsed;
-    if (!Number.isFinite(Number(activeFlash)) || Number(activeFlash) >= RACE_HYDROGEN_BOMB_FLASH_SECONDS) return;
+    const elapsed = Number(activeFlash);
+    if (!Number.isFinite(elapsed) || elapsed >= 1.05) return;
+    const sourceId = sim.raceHydrogenBombSourceId || sim.raceTsarBombSourceId;
+    const source = sim.fighters?.find((racer) => racer.id === sourceId || racer.raceAllInOneHydrogenExploded);
     ctx.save();
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
+    // Keep the cleared course visible during the simulation's detonation hold.
+    if (elapsed < 0.18) {
+      ctx.globalAlpha = (1 - elapsed / 0.18) * (this.flashReduction || this.reducedMotion ? 0.12 : 0.55);
+      ctx.fillStyle = "#fff2dc";
+      ctx.fillRect(0, 0, width, height);
+    }
+    if (source && !this.reducedMotion) {
+      const layout = this.format === "race-landscape" ? orbRaceLongformLayout(width, height) : orbRaceBoardLayout(width, height);
+      const side = source.raceTeamIndex;
+      const track = layout.tracks?.[side];
+      const board = track || layout.boards?.[side];
+      if (board) {
+        const x = board.x + board.width * (source.raceX ?? 0.5);
+        let y = board.y + board.height * (source.raceY ?? 0.2);
+        if (track) {
+          const layerCount = Math.max(1, sim.raceTeams?.[side]?.raceLayerHealth?.length || sim.raceLayerCount || 3);
+          const metrics = this.longformWorldMetrics(track, layout, layerCount);
+          const worldY = this.longformWorldYForSimY(source, source.raceY ?? 0.2, metrics);
+          const chamberY = track.y + layout.headerHeight;
+          y = Math.max(chamberY, Math.min(track.y + track.height, chamberY + worldY - (this.raceLongformCameraY?.[side] || 0)));
+        }
+        const progress = elapsed / 1.05;
+        ctx.globalAlpha = (1 - progress) * (this.flashReduction ? 0.38 : 0.8);
+        ctx.strokeStyle = "#f26942";
+        ctx.lineWidth = Math.max(3, Math.min(width, height) * 0.012 * (1 - progress));
+        ctx.beginPath();
+        ctx.arc(x, y, 8 + Math.hypot(width, height) * (1 - (1 - progress) ** 2) * 0.7, 0, TAU);
+        ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 
@@ -3143,7 +3211,6 @@ export class SocialBattleRenderer {
     const positions = new Map();
     if (this.format === "race-landscape") {
       const layout = orbRaceLongformLayout(width, height);
-      const cameraY = Number(this.raceLongformCameraY) || 0;
       layout.tracks.forEach((track, index) => {
         const team = teams[index];
         const racer = team?.members?.find((member) => member.raceOrbId === "time-bomb");
@@ -3154,7 +3221,7 @@ export class SocialBattleRenderer {
         const transformed = this.transformLongformRacer(racer, worldYForSimY, metrics.totalWorldHeight);
         const worldRect = {
           x: track.x,
-          y: track.y + layout.headerHeight - cameraY,
+          y: track.y + layout.headerHeight - (this.raceLongformCameraY[index] || 0),
           width: track.width,
           height: metrics.totalWorldHeight,
         };
@@ -3203,44 +3270,24 @@ export class SocialBattleRenderer {
 
   drawRaceLongform(ctx, sim, teams, presentation, width, height, visualNow = null) {
     const layout = orbRaceLongformLayout(width, height);
-    const layerCount = Math.max(
-      1,
-      ...teams.map((team) => team?.raceLayerHealth?.length || sim.raceLayerCount || 3),
-    );
-    const sharedMetrics = this.longformWorldMetrics(layout.tracks[0], layout, layerCount);
-    const leaderIndex = this.longformLeaderIndex(
-      teams,
-      Number.isInteger(sim.winningRaceTeamIndex)
-        ? sim.winningRaceTeamIndex
-        : Number.isInteger(sim.winner?.raceTeamIndex) ? sim.winner.raceTeamIndex : null,
-    );
-    const cameraMax = Math.max(0, sharedMetrics.totalWorldHeight - sharedMetrics.viewportHeight);
-    const desiredTarget = this.longformCameraTargetForTeam(teams[leaderIndex], sharedMetrics);
-    const isReplay = this.raceLongformCameraSimulation !== sim
-      || this.raceLongformCameraSimTime < 0
-      || sim.time < this.raceLongformCameraSimTime;
-    if (isReplay || !Number.isFinite(this.raceLongformCameraY)) {
-      this.raceLongformCameraY = 0;
-      this.raceLongformCameraTargetY = 0;
+    if (this.raceLongformCameraSimulation !== sim || sim.time < this.raceLongformCameraSimTime) {
+      this.resetRaceLongformCameras();
     }
-    // Camera intent is derived only from the leader's completed layer count.
-    // raceY, trails, bounces, impacts, and trailing-track state cannot move it.
-    this.raceLongformCameraTargetY = Math.max(
-      this.raceLongformCameraTargetY,
-      desiredTarget,
-    );
-    this.raceLongformCameraY += (
-      this.raceLongformCameraTargetY - this.raceLongformCameraY
-    ) * ORB_RACE_LONGFORM_PRESENTATION.cameraEase;
-    this.raceLongformCameraY = Math.max(
-      0,
-      Math.min(cameraMax, this.raceLongformCameraY),
-    );
+    const frameMs = Number.isFinite(visualNow) && Number.isFinite(this.raceLongformCameraAt)
+      ? Math.max(0, Math.min(100, visualNow - this.raceLongformCameraAt))
+      : 1000 / 60;
+    const ease = 1 - (1 - ORB_RACE_LONGFORM_PRESENTATION.cameraEase) ** (frameMs * 0.06);
+    this.raceLongformCameraAt = visualNow;
     this.raceLongformCameraSimTime = sim.time;
     this.raceLongformCameraSimulation = sim;
     layout.tracks.forEach((track, index) => {
       const team = teams[index];
       if (!team) return;
+      const layerCount = Math.max(1, team.raceLayerHealth?.length || sim.raceLayerCount || 3);
+      const metrics = this.longformWorldMetrics(track, layout, layerCount);
+      // Following the local wall keeps both contenders visible when their lanes diverge.
+      const target = this.longformCameraTargetForTeam(team, metrics);
+      this.raceLongformCameraY[index] += (target - this.raceLongformCameraY[index]) * ease;
       this.drawRaceLongformTrack(
         ctx,
         sim,
@@ -3248,7 +3295,7 @@ export class SocialBattleRenderer {
         track,
         layout,
         index,
-        this.raceLongformCameraY,
+        this.raceLongformCameraY[index],
         visualNow,
         presentation,
       );
@@ -3257,7 +3304,9 @@ export class SocialBattleRenderer {
     // must be composited after both worlds, using the opponent's transformed
     // world rectangle rather than the owner's track rectangle.
     this.drawRaceLongformVisitingTwins?.(ctx, sim, teams, layout, this.raceLongformCameraY, visualNow);
-    if (Number(presentation.raceTargetPrompt) > 0) {
+    if (sim.finished && sim.winner) {
+      this.drawMatchResult(ctx, sim, width / 2, height * 0.026, width * 0.68, 32, "#171511");
+    } else if (Number(presentation.raceTargetPrompt) > 0) {
       this.drawRaceLongformTargetPrompt(
         ctx,
         presentation.raceTargetPrompt,
@@ -3268,37 +3317,13 @@ export class SocialBattleRenderer {
   }
 
   drawRaceLongformTargetPrompt(ctx, target, width, height) {
-    const centerX = width * 0.5;
-    const centerY = height * 0.57;
-    const maxWidth = Math.min(width * 0.72, 1320);
-    const lines = [
-      { text: "WHO WILL BREAK", color: "#ffffff", maxSize: 78, height: 94 },
-      { text: `${formatOrbRaceNumber(target)} LAYER`, color: "#ff1818", maxSize: 104, height: 122 },
-      { text: "FIRST?", color: "#14ef45", maxSize: 86, height: 102 },
-    ];
-    const totalHeight = lines.reduce((sum, line) => sum + line.height, 0);
-    let y = centerY - totalHeight * 0.5;
     ctx.save();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    for (const line of lines) {
-      let fontSize = line.maxSize;
-      ctx.font = `900 ${fontSize}px ${RACE_NUMBER_FONT}`;
-      while (fontSize > 34 && ctx.measureText(line.text).width > maxWidth - 48) {
-        fontSize -= 2;
-        ctx.font = `900 ${fontSize}px ${RACE_NUMBER_FONT}`;
-      }
-      const textWidth = Math.min(maxWidth, ctx.measureText(line.text).width + 48);
-      const x = centerX - textWidth * 0.5;
-      ctx.fillStyle = "#050505";
-      ctx.fillRect(x, y, textWidth, line.height);
-      ctx.strokeStyle = "#050505";
-      ctx.lineWidth = Math.max(5, fontSize * 0.075);
-      ctx.fillStyle = line.color;
-      ctx.strokeText(line.text, centerX, y + line.height * 0.5);
-      ctx.fillText(line.text, centerX, y + line.height * 0.5);
-      y += line.height;
-    }
+    const label = `FINAL WALL · ${formatOrbRaceNumber(target)} HP`;
+    setFittedFont(ctx, label, width * 0.5, 900, height * 0.024, 12, PIXEL_FONT);
+    ctx.fillStyle = "#25211d";
+    ctx.fillText(label, width * 0.5, height * 0.026);
     ctx.restore();
   }
 
@@ -3444,17 +3469,6 @@ export class SocialBattleRenderer {
     );
   }
 
-  longformLeaderIndex(teams, winningTeamIndex = null) {
-    if (Number.isInteger(winningTeamIndex)) {
-      return Math.max(0, Math.min(teams.length - 1, winningTeamIndex));
-    }
-    return teams.reduce((bestIndex, team, index) => (
-      this.longformTeamProgress(team) > this.longformTeamProgress(teams[bestIndex])
-        ? index
-        : bestIndex
-    ), 0);
-  }
-
   longformCameraTargetForTeam(team, metrics) {
     const progressY = metrics.chamberHeight
       + this.longformTeamProgress(team) * metrics.worldLayerStep;
@@ -3527,10 +3541,13 @@ export class SocialBattleRenderer {
     ctx.fillRect(track.x, chamberY, track.width, chamberHeight);
 
     const activeLayer = Math.max(0, Math.min(layerCount - 1, team.raceLayerIndex || 0));
+    const viewportBottom = track.y + track.height;
     for (let index = 0; index < layerCount; index += 1) {
       const layerPullOffset = raceLayerPullOffsetFor(primary, index);
       const y = worldRect.y + this.longformWorldLayerTopForIndex(index, metrics)
         + (layerPullOffset / Math.max(0.001, RACE_LAYER_HEIGHT)) * metrics.worldLayerStep;
+      // Leave one row of overscan for effects that extend beyond their wall.
+      if (y + visualLayerHeight < clipTop - worldLayerStep || y > viewportBottom + worldLayerStep) continue;
       const persistentTiltedHealth = Array.isArray(team.raceTiltedLayerHealth?.[index])
         ? team.raceTiltedLayerHealth[index]
         : null;
@@ -3675,7 +3692,7 @@ export class SocialBattleRenderer {
       ctx.strokeRect(track.x, finishY, track.width, finishHeight);
     }
 
-    members.forEach((racer) => {
+    members.forEach((racer, memberIndex) => {
       const transformed = this.transformLongformRacer(racer, worldYForSimY, totalWorldHeight);
       transformed.raceLongform = true;
       transformed.raceLongformViewportRect = {
@@ -3688,6 +3705,7 @@ export class SocialBattleRenderer {
       const orbRadius = raceRenderOrbRadius(track.width, racer.raceOrbScale, 15);
       const orbX = worldRect.x + worldRect.width * (Number.isFinite(transformed.raceX) ? transformed.raceX : 0.88);
       const orbY = worldRect.y + worldRect.height * (Number.isFinite(transformed.raceY) ? transformed.raceY : 0.08);
+      if (memberIndex < 6) this.drawRaceMotionTrail(ctx, racer, memberDef, worldRect, orbRadius, sim.time, worldYForSimY);
       this.drawRaceTrail(ctx, transformed, memberDef, worldRect, orbRadius);
       this.drawRaceBounceEffects(ctx, transformed, memberDef, worldRect, orbRadius, true, visualNow);
       this.drawRaceLaser(ctx, sim, transformed, worldRect, orbRadius);
@@ -3719,10 +3737,7 @@ export class SocialBattleRenderer {
       Math.max(6, track.width * 0.008),
     );
 
-    // Long-form tracks keep the shallow FINISH/checker band dedicated to the
-    // finish line. Put the CTA and hashtag in the outer side margin instead,
-    // where they remain visible without covering race content.
-    this.drawRaceLongformSideCopy(ctx, layout, track, trackIndex);
+    if (sim.finished && trackIndex === 0) this.drawRaceLongformSideCopy(ctx, layout, track, trackIndex);
   }
 
   drawRaceLongformSideCopy(ctx, layout, track, trackIndex) {
@@ -3931,16 +3946,16 @@ export class SocialBattleRenderer {
     });
     const absorber = members.length === 1 && members[0]?.raceOrbId === "roulette" ? members[0] : null;
     const showDescriptor = members.length < 5 && !hasDuplicateBalls && !absorber;
-    const hydrogenCountdownLine = members.length === 1 && members[0]?.raceOrbId === "hydrogen-bomb"
-      ? raceHydrogenCountdownLineFor(members[0])
-      : "";
-    const hideDamage = Boolean(hydrogenCountdownLine);
+    const hydrogenBomb = members.find((racer) => racer.raceOrbId === "hydrogen-bomb");
+    const hydrogenCountdownLine = hydrogenBomb ? raceHydrogenCountdownLineFor(hydrogenBomb) : "";
+    const fuseWarning = hydrogenBomb && raceHydrogenFuseIsLow(hydrogenBomb);
+    const hideDamage = members.length === 1 && Boolean(hydrogenCountdownLine);
     const hasScalingDamage = members.some((racer) => racer?.raceScalingDamageEnabled !== false);
     const damageLine = hideDamage || !hasScalingDamage
       ? ""
       : members.length > 1
         ? `DAMAGE/SEC: ${formatCombatValue(team.raceDamagePerSecond)}`
-        : raceDamageHudLineFor(members[0]);
+        : raceBounceDamageLineFor(members[0]) || raceDamageHudLineFor(members[0]);
     const drillMembers = members.filter((racer) => raceHasAbility(racer, "drill"));
     const drillLine = drillMembers.length
       ? `DRAG: ${formatCombatValue(Math.max(...drillMembers.map((racer) => raceDrillDragFor(racer))))}`
@@ -3963,8 +3978,9 @@ export class SocialBattleRenderer {
             : members.length === 1 && members[0]?.raceOrbId === "all-in-one"
               ? `POWER ${members[0].raceAllInOneActive ? "ACTIVE" : "CHARGING"} · BOMB ${Math.max(0, RACE_TSAR_BOMB_COUNTDOWN_SECONDS - (Number(members[0].raceAllInOneHydrogenCountdownElapsed) || 0)).toFixed(1)}S`
           : "";
-    const statLines = hydrogenCountdownLine || specialCountdownLine
-      ? [hydrogenCountdownLine || specialCountdownLine]
+    const totalWalls = team.raceLayerHealth?.length || 0;
+    const statLines = specialCountdownLine || (!totalWalls && hydrogenCountdownLine)
+      ? [specialCountdownLine || hydrogenCountdownLine]
       : absorber
         ? [damageLine].filter(Boolean)
         : [[damageLine, longformTopStatLine, drillLine, blackHoleLine].filter(Boolean).join(" · ")].filter(Boolean);
@@ -3982,7 +3998,7 @@ export class SocialBattleRenderer {
     ctx.lineWidth = 5;
     ctx.strokeStyle = "#080808";
     ctx.fillStyle = themeColor;
-    const nameSize = Math.min(54, headerHeight * 0.34);
+    const nameSize = Math.min(50, headerHeight * 0.31);
     setFittedFont(ctx, name, track.width * 0.9, 900, nameSize, 16, PIXEL_FONT);
     const titleSegments = raceTitleSegmentsFor(team, name);
     if (titleSegments) {
@@ -3991,8 +4007,8 @@ export class SocialBattleRenderer {
       ctx.strokeText(name, track.x + track.width / 2, headerY + 10);
       ctx.fillText(name, track.x + track.width / 2, headerY + 10);
     }
-    const infoSize = Math.max(17, Math.min(27, headerHeight * 0.18));
-    const descriptorY = headerY + 14 + nameSize + 3;
+    const infoSize = Math.max(15, Math.min(23, headerHeight * 0.16));
+    const descriptorY = headerY + nameSize + 11;
     if (descriptorLine) {
       setFittedFont(ctx, descriptorLine, track.width * 0.9, 900, infoSize, 12, PIXEL_FONT);
       ctx.fillStyle = themeColor;
@@ -4015,7 +4031,7 @@ export class SocialBattleRenderer {
         ctx.strokeText(statLine, track.x + track.width / 2, statY);
         ctx.lineWidth = 2;
         ctx.strokeStyle = "#080808";
-        ctx.fillStyle = hydrogenCountdownLine ? themeColor : "#858585";
+        ctx.fillStyle = fuseWarning ? RACE_FUSE_WARNING_COLOR : hydrogenCountdownLine ? themeColor : "#858585";
         ctx.strokeText(statLine, track.x + track.width / 2, statY);
         ctx.fillText(statLine, track.x + track.width / 2, statY);
       });
@@ -4025,7 +4041,7 @@ export class SocialBattleRenderer {
         const tokenRows = Math.max(1, Math.ceil(tokens.length / tokenColumns));
         const tokenTop = statsStartY + statsSize + 3;
         const tokenWidth = track.width / tokenColumns;
-        const tokenHeight = Math.max(12, (headerHeight - (tokenTop - headerY) - 3) / tokenRows);
+        const tokenHeight = Math.max(10, (headerHeight - (tokenTop - headerY) - (totalWalls ? 28 : 3)) / tokenRows);
         tokens.forEach((token, index) => {
           const column = index % tokenColumns;
           const row = Math.floor(index / tokenColumns);
@@ -4043,6 +4059,20 @@ export class SocialBattleRenderer {
           ctx.fillText(text, tokenX, tokenY);
         });
       }
+    }
+    if (totalWalls) {
+      const cleared = this.longformTeamProgress(team);
+      const status = `${cleared}/${totalWalls} CLEARED${hydrogenCountdownLine ? ` · ${hydrogenCountdownLine}` : ""}`;
+      const left = track.x + track.width * 0.05;
+      const railWidth = track.width * 0.9;
+      const railY = headerY + headerHeight - 10;
+      setFittedFont(ctx, status, railWidth, 900, 23, 14, PIXEL_FONT);
+      ctx.fillStyle = fuseWarning ? RACE_FUSE_WARNING_COLOR : "#211d18";
+      ctx.fillText(status, track.x + track.width / 2, railY - 25);
+      ctx.fillStyle = "#e7e1d9";
+      ctx.fillRect(left, railY, railWidth, 4);
+      ctx.fillStyle = themeColor;
+      ctx.fillRect(left, railY, railWidth * cleared / totalWalls, 4);
     }
     ctx.restore();
   }
@@ -4076,12 +4106,12 @@ export class SocialBattleRenderer {
   drawRaceMatchup(ctx, teams, width, y, gap) {
     const left = ORB_RACERS[teams[0].orbIds[0]];
     const right = ORB_RACERS[teams[1].orbIds[0]];
-    const leftThemeColor = raceTextColorForRacer(teams[0].members?.[0], left?.color || "#111111");
-    const rightThemeColor = raceTextColorForRacer(teams[1].members?.[0], right?.color || "#111111");
+    const leftThemeColor = racePortraitInk(raceTextColorForRacer(teams[0].members?.[0], left?.color || "#111111"));
+    const rightThemeColor = racePortraitInk(raceTextColorForRacer(teams[1].members?.[0], right?.color || "#111111"));
     const leftName = teams[0].name || raceTeamDisplayName(teams[0].orbIds);
     const rightName = teams[1].name || raceTeamDisplayName(teams[1].orbIds);
-    const nameSize = Math.max(28, Math.min(62, gap * 0.24));
-    const vsSize = Math.max(22, Math.min(42, gap * 0.17));
+    const nameSize = Math.max(28, Math.min(69, gap * 0.25));
+    const vsSize = Math.max(20, Math.min(33, gap * 0.14));
     const lineGap = Math.max(5, nameSize * 0.1);
     const totalHeight = nameSize * 2 + vsSize + lineGap * 2;
     const topNameY = y - totalHeight / 2 + nameSize / 2;
@@ -4090,8 +4120,8 @@ export class SocialBattleRenderer {
     const nameWidth = width * 0.82;
     ctx.save();
     ctx.textBaseline = "middle";
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = "#080808";
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#fffaf1";
     setFittedFont(ctx, leftName, nameWidth, 900, nameSize, 18, PIXEL_FONT);
     ctx.textAlign = "center";
     ctx.fillStyle = leftThemeColor;
@@ -4100,7 +4130,6 @@ export class SocialBattleRenderer {
     } else if (raceTitleSegmentsFor(teams[0], leftName)) {
       drawTextSegments(ctx, raceTitleSegmentsFor(teams[0], leftName), width / 2, topNameY);
     } else {
-      ctx.strokeText(leftName, width / 2, topNameY);
       ctx.fillText(leftName, width / 2, topNameY);
     }
     setFittedFont(ctx, rightName, nameWidth, 900, nameSize, 18, PIXEL_FONT);
@@ -4110,13 +4139,11 @@ export class SocialBattleRenderer {
     } else if (raceTitleSegmentsFor(teams[1], rightName)) {
       drawTextSegments(ctx, raceTitleSegmentsFor(teams[1], rightName), width / 2, bottomNameY);
     } else {
-      ctx.strokeText(rightName, width / 2, bottomNameY);
       ctx.fillText(rightName, width / 2, bottomNameY);
     }
     ctx.font = `900 ${vsSize}px ${PIXEL_FONT}`;
     ctx.textAlign = "center";
-    ctx.fillStyle = "#111111";
-    ctx.strokeText("VS", width / 2, vsY);
+    ctx.fillStyle = "#5c554c";
     ctx.fillText("VS", width / 2, vsY);
     ctx.restore();
   }
@@ -4272,7 +4299,6 @@ export class SocialBattleRenderer {
     const checkerAbsoluteY = rect.y + checkerY;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(rect.x, finishAbsoluteY, rect.width, finishHeight);
-    const finishLabel = raceFinishLabelForIndex(racerIndex);
     ctx.save();
     ctx.globalAlpha = 0.68;
     ctx.fillStyle = "#686868";
@@ -4280,25 +4306,14 @@ export class SocialBattleRenderer {
     ctx.textBaseline = "middle";
     setFittedFont(
       ctx,
-      finishLabel,
+      "FINISH",
       rect.width * 0.84,
       900,
       Math.max(16, finishLabelHeight * 0.5),
       10,
       RACE_NUMBER_FONT,
     );
-    ctx.fillText(finishLabel, rect.x + rect.width / 2, finishAbsoluteY + finishLabelHeight * 0.34);
-    ctx.globalAlpha = 0.72;
-    setFittedFont(
-      ctx,
-      ORB_RACE_FOOTER_TAG,
-      rect.width * 0.76,
-      900,
-      Math.max(10, finishLabelHeight * 0.24),
-      8,
-      RACE_NUMBER_FONT,
-    );
-    ctx.fillText(ORB_RACE_FOOTER_TAG, rect.x + rect.width / 2, finishAbsoluteY + finishLabelHeight * 0.78);
+    ctx.fillText("FINISH", rect.x + rect.width / 2, finishAbsoluteY + finishLabelHeight / 2);
     ctx.restore();
     // Keep a dedicated label band above the flag. The separator and clipping
     // guarantee the checker pattern can never run through the text.
@@ -4322,6 +4337,7 @@ export class SocialBattleRenderer {
       const orbRadius = raceRenderOrbRadius(rect.width, racer.raceOrbScale);
       const orbX = rect.x + rect.width * (Number.isFinite(racer.raceX) ? racer.raceX : 0.88);
       const orbY = rect.y + rect.height * (Number.isFinite(racer.raceY) ? racer.raceY : 0.09);
+      if (members.length <= 6) this.drawRaceMotionTrail(ctx, racer, memberDef, rect, orbRadius, time);
       this.drawRaceTrail(ctx, racer, memberDef, rect, orbRadius);
       this.drawRaceBounceEffects(ctx, racer, memberDef, rect, orbRadius, false, visualNow);
       this.drawRaceLaser(ctx, sim, racer, rect, orbRadius);
@@ -4373,14 +4389,14 @@ export class SocialBattleRenderer {
       }
     });
 
-    // Keep the outer race box visually dominant and draw it last so layers,
-    // finish graphics, and effects cannot soften or cover its perimeter.
-    drawThemedArenaBorder(
-      ctx,
-      rect,
-      themeColor,
-      Math.max(7, rect.width * 0.012),
-    );
+    // A single ink outline frames the physics; the short color tab identifies
+    // the lane without surrounding the action in saturated color.
+    const frameWidth = Math.max(3, rect.width * 0.005);
+    ctx.strokeStyle = "#242019";
+    ctx.lineWidth = frameWidth;
+    ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+    ctx.fillStyle = themeColor;
+    ctx.fillRect(rect.x + frameWidth, rect.y + frameWidth * 0.5, rect.width * 0.22, frameWidth * 1.35);
     ctx.restore();
   }
 
@@ -4414,14 +4430,17 @@ export class SocialBattleRenderer {
       const centerY = rect.y + effect.y * rect.height;
       const impactRings = effect.purpleSunImpact || effect.laserImpact || effect.blueSunImpact
         || effect.phaseTwoSunImpact || effect.phaseTwoSunBurn;
-      if (!impactRings) {
-        ctx.strokeStyle = `${effect.color || def?.color || "#ed1bd4"}${alpha}`;
-        ctx.lineWidth = Math.max(2, orbRadius * (0.16 + (1 - progress) * 0.12));
+      const ringProgress = effect.layerBreak || effect.finishExplosion
+        ? progress : Math.min(1, effectAge / 0.14);
+      if (!impactRings && ringProgress < 1) {
+        const ringAlpha = Math.round((1 - ringProgress) * 185).toString(16).padStart(2, "0");
+        ctx.strokeStyle = `${effect.color || def?.color || "#ed1bd4"}${ringAlpha}`;
+        ctx.lineWidth = Math.max(2, orbRadius * (0.07 + (1 - ringProgress) * 0.08));
         ctx.beginPath();
         ctx.arc(
           centerX,
           centerY,
-          orbRadius * (effect.scale || 1) * (1 + progress * 0.5),
+          orbRadius * (effect.scale || 1) * (1 + ringProgress * 0.45),
           0,
           TAU,
         );
@@ -4611,6 +4630,24 @@ export class SocialBattleRenderer {
       }
     }
     ctx.restore();
+  }
+
+  drawRaceMotionTrail(ctx, racer, def, rect, radius, time, worldYForSimY = null) {
+    if (this.reducedMotion || racer.raceFinished || racer.raceFadingTrailsEnabled
+      || racer.raceSolidTrailsEnabled || !Number.isFinite(racer.raceX) || !Number.isFinite(racer.raceY)) return;
+    this.raceMotionTrails ||= new WeakMap();
+    let trail = this.raceMotionTrails.get(racer) || [];
+    if (trail.at(-1)?.time > time) trail = [];
+    if (!trail.length || time - trail.at(-1).time >= 1 / 60 - 0.00001) {
+      trail = trail.filter((point) => time - point.time <= 0.09).slice(-5);
+      trail.push({ x: racer.raceX, y: racer.raceY, time });
+      this.raceMotionTrails.set(racer, trail);
+    }
+    const points = trail.map((point) => ({
+      x: rect.x + point.x * rect.width,
+      y: rect.y + (worldYForSimY ? worldYForSimY(racer, point.y) : point.y * rect.height),
+    }));
+    drawMotionStreak(ctx, points, radius, def?.color || "#686868");
   }
 
   drawRaceTrail(ctx, racer, def, rect, orbRadius) {
@@ -4807,11 +4844,7 @@ export class SocialBattleRenderer {
     }
   }
 
-  drawRaceLongformVisitingTwins(ctx, sim, teams, layout, cameraY = 0, visualNow = null) {
-    const layerCount = Math.max(
-      1,
-      ...teams.map((team) => team?.raceLayerHealth?.length || sim.raceLayerCount || 3),
-    );
+  drawRaceLongformVisitingTwins(ctx, sim, teams, layout, cameraOffsets = [], visualNow = null) {
     for (const { owner, twin } of this.visitingRaceTwinEntries(teams)) {
       const targetTeamIndex = Number.isInteger(Number(twin.raceTeamIndex))
         ? Number(twin.raceTeamIndex)
@@ -4819,6 +4852,7 @@ export class SocialBattleRenderer {
       const targetTrack = layout.tracks?.[targetTeamIndex];
       const targetTeam = teams[targetTeamIndex];
       if (!targetTrack || !targetTeam) continue;
+      const layerCount = Math.max(1, targetTeam.raceLayerHealth?.length || sim.raceLayerCount || 3);
       const metrics = this.longformWorldMetrics(targetTrack, layout, layerCount);
       const worldYForSimY = (racer, value) => this.longformWorldYForSimY(racer, value, metrics);
       const transformed = this.transformLongformRacer(
@@ -4831,7 +4865,7 @@ export class SocialBattleRenderer {
       const clipTop = Math.max(targetTrack.y, contentTop - raceLongformBlueSunOverflowFor(targetTrack.width, [owner]));
       const worldRect = {
         x: targetTrack.x,
-        y: targetTrack.y + layout.headerHeight - cameraY,
+        y: targetTrack.y + layout.headerHeight - (cameraOffsets[targetTeamIndex] || 0),
         width: targetTrack.width,
         height: metrics.totalWorldHeight,
       };
@@ -5242,8 +5276,6 @@ export class SocialBattleRenderer {
     ctx.font = `900 ${maxFontSize}px ${PIXEL_FONT}`;
     ctx.textAlign = racerIndex === 0 ? "left" : "right";
     ctx.textBaseline = racerIndex === 0 ? "bottom" : "top";
-    ctx.lineWidth = draftmasterHud ? 3 : 4;
-    ctx.strokeStyle = "#080808";
     lines.forEach((line, index) => {
       const spacing = rect.height * (
         draftmasterHud
@@ -5274,8 +5306,7 @@ export class SocialBattleRenderer {
           PIXEL_FONT,
         );
       }
-      ctx.fillStyle = line.color || raceHudColorForRacer(racer, def?.color || "#111111");
-      ctx.strokeText(line.text, anchorX, y);
+      ctx.fillStyle = racePortraitInk(line.color || baseColor);
       ctx.fillText(line.text, anchorX, y);
     });
     ctx.restore();
@@ -5731,7 +5762,18 @@ export class SocialBattleRenderer {
     } else if (racer.raceOrbId === "berserker") {
       this.drawRaceBerserkerOrb(ctx, racer, x, y, radius);
     } else {
-      this.drawRaceOrbUnit(ctx, visualDef, x, y, radius, visualRacer, time);
+      const contact = racer.raceBounceEffects?.at(-1);
+      const press = this.reducedMotion || !contact || contact.finishExplosion
+        ? 0 : 0.10 * Math.max(0, 1 - (Number(contact.age) || 0) / 0.12);
+      if (press) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(1 + press, 1 - press);
+        this.drawRaceOrbUnit(ctx, visualDef, 0, 0, radius, visualRacer, time);
+        ctx.restore();
+      } else {
+        this.drawRaceOrbUnit(ctx, visualDef, x, y, radius, visualRacer, time);
+      }
     }
     if (racer.raceOrbId === "all-in-one" && racer.raceAllInOneActive) {
       const pulse = 1 + Math.sin(time * 10) * 0.035;
@@ -10602,11 +10644,12 @@ export class SocialBattleRenderer {
         rightIcon: rightAccessory,
       },
     );
-    const titleColorFor = (fighter, teamIndex = null) => teamIndex !== null && classicTeamColors
-      ? classicTeamOutlineColorFor(teamIndex)
-      : fighter.type === "lazer"
-      ? "#b66cff"
-      : CLASS_DEFS[fighter.type]?.color || "#ffffff";
+    const titleColorFor = (fighter, teamIndex = null) => {
+      if (teamIndex !== null && classicTeamColors) return classicTeamOutlineColorFor(teamIndex);
+      if (fighter.type === "lazer") return "#b66cff";
+      const def = CLASS_DEFS[fighter.type];
+      return classicBlackTheme ? classicVisualColorFor(fighter.type, def?.accent || "#ffffff") : def?.color || "#ffffff";
+    };
 
     if (sim.gameplayMode === "classic") {
       const statY = rect.y + Math.max(8, rect.height * 0.1);
@@ -11129,6 +11172,23 @@ export class SocialBattleRenderer {
     ctx.restore();
   }
 
+  drawMatchResult(ctx, sim, x, y, width, size, color, showSubscribe = false) {
+    const classicTeam = sim.classicTeamNames?.[sim.winner?.classicTeamIndex];
+    const label = (classicTeam ? `${classicTeam} wins` : winnerFieldMessage(sim)).toUpperCase();
+    if (!label) return;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = color;
+    setFittedFont(ctx, label, width, 900, size, Math.min(16, size), PIXEL_FONT);
+    ctx.fillText(label, x, showSubscribe ? y - size * 0.24 : y);
+    if (showSubscribe) {
+      ctx.font = `900 ${Math.round(size * 0.36)}px ${PIXEL_FONT}`;
+      ctx.fillText("SUBSCRIBE FOR THE NEXT MATCH", x, y + size * 0.58);
+    }
+    ctx.restore();
+  }
+
   drawArenaModifierBadge(ctx, sim, rect) {
     const labels = [];
     if (sim.arenaModifierLabel && sim.arenaModifier !== "standard") labels.push(sim.arenaModifierLabel);
@@ -11193,6 +11253,47 @@ export class SocialBattleRenderer {
   }
 
   drawClassicStatDock(ctx, sim, rect, classicBlackTheme = false) {
+    if (!sim.finished) {
+      const fighters = sim.fighters || [];
+      ctx.save();
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      [0, 1].forEach((side) => {
+        const fighter = fighters.find((entry) => entry.classicTeamIndex === side) || fighters[side];
+        if (!fighter) return;
+        const hud = buildAbilityHud(fighter, sim.time);
+        const orbital = fighter.type === "orbital";
+        const swordPhase = fighter.type === "sword" && fighter.classicSwordPhase !== "idle"
+          ? fighter.classicSwordPhase
+          : null;
+        const status = orbital
+          ? `${fighter.classicOrbiters || 0} SATELLITES`
+          : (swordPhase === "active" ? "STRIKE" : swordPhase?.toUpperCase()) || hud.label;
+        const detail = orbital
+          ? `+1 PER BOUNCE · ${CLASSIC_ORBS.orbital.classicAbility.satelliteDamage} DMG EACH`
+          : hud.detail?.split(" · ")[0];
+        const color = CLASSIC_ORBS[fighter.type]?.accent || CLASS_DEFS[fighter.type]?.color || "#888888";
+        const width = rect.width * 0.4;
+        const center = rect.x + rect.width * (side === 0 ? 0.24 : 0.76);
+        const railY = rect.y + rect.height * 0.6;
+        setFittedFont(ctx, status, width, 900, Math.min(35, rect.height * 0.43), 12, PIXEL_FONT);
+        ctx.fillStyle = classicBlackTheme ? color : "#191919";
+        ctx.fillText(status, center, rect.y + rect.height * 0.32);
+        if (!hud.passive && !orbital) {
+          ctx.fillStyle = classicBlackTheme ? "#35383f" : "#e5dfd6";
+          ctx.fillRect(center - width / 2, railY, width, 5);
+          ctx.fillStyle = color;
+          ctx.fillRect(center - width / 2, railY, width * hud.progress, 5);
+        }
+        if (detail) {
+          setFittedFont(ctx, detail, width, 800, Math.min(27, rect.height * 0.28), 14, PIXEL_FONT);
+          ctx.fillStyle = classicBlackTheme ? "#d6d5d2" : "#49423b";
+          ctx.fillText(detail, center, rect.y + rect.height * 0.83);
+        }
+      });
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.textBaseline = "middle";
     const cta = classicCtaLayout(ctx, {

@@ -1711,7 +1711,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20261008-purple-sun-title1/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261108-arena-cut1/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -2032,9 +2032,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
 
 {
   const rendererProbe = Object.create(SocialBattleRenderer.prototype);
-  rendererProbe.raceLongformCameraY = 0;
-  rendererProbe.raceLongformCameraTargetY = 0;
-  rendererProbe.raceLongformCameraSimTime = -1;
+  rendererProbe.resetRaceLongformCameras();
   rendererProbe.drawRaceLongformTrack = () => {};
   let centerDividerDraws = 0;
   const ctx = {
@@ -2123,8 +2121,8 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
     "portrait rendering should omit future layers whose ranged damage reduced health to zero",
   );
   assert.ok(
-    lineWidths.includes(Math.max(7, rect.width * 0.012)),
-    "portrait rendering should use a bold perimeter around the race board",
+    lineWidths.includes(Math.max(3, rect.width * 0.005)),
+    "portrait rendering should keep the lane visible with a slim perimeter",
   );
 }
 
@@ -2152,27 +2150,26 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
 }
 
 {
-  const flashRects = [];
+  const flashes = [];
   const context = {
     save() {},
     restore() {},
-    fillRect(...args) { flashRects.push(args); },
-    set fillStyle(_value) {},
+    fillRect() { flashes.push(this.globalAlpha); },
   };
   const rendererProbe = Object.create(SocialBattleRenderer.prototype);
-  rendererProbe.drawRaceHydrogenExplosionFlash(
+  const draw = (elapsed) => rendererProbe.drawRaceHydrogenExplosionFlash(
     context,
-    { raceHydrogenBombExploded: true, raceHydrogenBombExplosionElapsed: 3.999 },
+    { raceHydrogenBombExploded: true, raceHydrogenBombExplosionElapsed: elapsed },
     720,
     1280,
   );
-  rendererProbe.drawRaceHydrogenExplosionFlash(
-    context,
-    { raceHydrogenBombExploded: true, raceHydrogenBombExplosionElapsed: 4 },
-    720,
-    1280,
-  );
-  assert.deepEqual(flashRects, [[0, 0, 720, 1280]], "the Hydrogen Bomb renderer should flash through but not beyond four seconds");
+  draw(0);
+  draw(0.2);
+  draw(3.999);
+  assert.equal(flashes.length, 1, "the initial flare must give way to the cleared arena during the detonation hold");
+  rendererProbe.flashReduction = true;
+  draw(0);
+  assert.ok(flashes[0] > flashes[1], "flash reduction should lower the initial flare");
 }
 
 {
@@ -2534,8 +2531,8 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   );
   assert.deepEqual(
     captureRaceStatLabels({ raceOrbId: "hydrogen-bomb", raceDamage: 0, raceHydrogenCountdownElapsed: 12.345 }),
-    ["47.655S"],
-    "Hydrogen Bomb should show its millisecond timer without damage text",
+    ["FUSE 47.7S"],
+    "Hydrogen Bomb should show a labeled fuse without damage text",
   );
   assert.deepEqual(
     captureRaceStatLabels({ raceOrbId: "sniper", raceDamage: 1, raceSniperDamage: 75, raceSniperShots: 4, raceSniperHits: 2 }),
@@ -2650,11 +2647,10 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
     { x: 0, y: 200, width: 900, height: 600 },
     0,
   );
-  assert.deepEqual(
-    fillStyles,
-    [ORB_RACERS.speed.color, ORB_RACERS.sticky.color],
-    "combo HUD attributes should use their own orb themes",
-  );
+  const [[speedRed, speedGreen, speedBlue], [stickyRed, stickyGreen, stickyBlue]] = fillStyles
+    .map((hex) => hex.slice(1).match(/../g).map((value) => Number.parseInt(value, 16)));
+  assert.ok(speedBlue > speedGreen && speedGreen > speedRed, "the Speed metric should stay blue");
+  assert.ok(stickyRed > stickyGreen && stickyGreen > stickyBlue, "the Sticky metric should stay orange");
 }
 
 {
@@ -3656,6 +3652,7 @@ function run(sim, seconds = 120) {
     },
     strokeText(text, x, y) { ctaDrawCalls.push({ kind: "stroke", text, x, y }); },
     fillText(text, x, y) { ctaDrawCalls.push({ kind: "fill", text, x, y }); },
+    fillRect() {},
   };
   const cta = classicCtaLayout(ctaContext, {
     width: 1080,
@@ -3671,7 +3668,19 @@ function run(sim, seconds = 120) {
     const current = cta.segments[index];
     assert.ok(current.x - (previous.x + previous.width) > 0, "CTA runs should retain visible gaps");
   }
-  SocialBattleRenderer.prototype.drawClassicStatDock.call({}, ctaContext, {}, { x: 0, y: 0, width: 1080, height: 92 }, true);
+  const dock = { x: 0, y: 0, width: 1080, height: 92 };
+  SocialBattleRenderer.prototype.drawClassicStatDock.call({}, ctaContext, {
+    time: 1,
+    fighters: [
+      { type: "sword", classicSwordPhase: "windup", classicTeamIndex: 0 },
+      { type: "orbital", classicOrbiters: 3, classicTeamIndex: 1 },
+    ],
+  }, dock, true);
+  assert.ok(ctaDrawCalls.some(({ text }) => text === "WINDUP"));
+  assert.ok(ctaDrawCalls.some(({ text }) => text === "3 SATELLITES"));
+  assert.ok(ctaDrawCalls.every(({ text }) => !text.includes("SUBSCRIBE")));
+  ctaDrawCalls.length = 0;
+  SocialBattleRenderer.prototype.drawClassicStatDock.call({}, ctaContext, { finished: true }, dock, true);
   assert.deepEqual(
     ctaDrawCalls.filter((call) => call.kind === "fill").map((call) => call.text),
     ["LIKE", "&", "SUBSCRIBE"],
@@ -4101,7 +4110,7 @@ function run(sim, seconds = 120) {
     restore() {},
     fillRect() {},
     strokeText() {},
-    fillText(text) { labels.push(text); },
+    fillText(text, _x, y) { labels.push({ text, y }); },
     measureText(text) { return { width: String(text).length * 42 }; },
     set textAlign(_value) {},
     set textBaseline(_value) {},
@@ -4116,11 +4125,8 @@ function run(sim, seconds = 120) {
     1920,
     1080,
   );
-  assert.deepEqual(labels, [
-    "WHO WILL BREAK",
-    "1,000,000,000,000,000,000 LAYER",
-    "FIRST?",
-  ]);
+  assert.equal(labels[0]?.text, "FINAL WALL · 1,000,000,000,000,000,000 HP");
+  assert.ok(labels[0].y < orbRaceLongformLayout(1920, 1080).tracks[0].y, "the opening target stays above the playfield");
 }
 
 {
@@ -4146,18 +4152,19 @@ function run(sim, seconds = 120) {
     targetBeforeBounce,
     "camera target must not change during an intra-layer rebound arc",
   );
-  assert.equal(rendererProbe.longformLeaderIndex([leader, lagging]), 0, "the maximum discrete layer progress should select the leader");
+  lagging.raceLayerIndex = 0;
   lagging.members[0].raceY = 10000;
-  assert.equal(
-    rendererProbe.longformLeaderIndex([leader, lagging]),
-    0,
-    "a lagging team's raceY, impacts, and offscreen motion must not influence the shared camera",
-  );
-  assert.equal(
-    rendererProbe.longformLeaderIndex([leader, lagging], 1),
-    1,
-    "once a winner exists the shared camera should follow winningRaceTeamIndex",
-  );
+  const sim = { time: 1, raceLayerCount: 50 };
+  const offsets = [];
+  rendererProbe.drawRaceLongformTrack = (_ctx, _sim, _team, _track, _layout, side, offset) => {
+    offsets[side] = offset;
+  };
+  rendererProbe.drawRaceLongform({}, sim, [leader, lagging], {}, 1920, 1080, 1000);
+  assert.ok(offsets[0] > 0, "the advancing lane scrolls with its own active wall");
+  assert.equal(offsets[1], 0, "the stationary boss lane stays at its launch chamber");
+  const leaderOffset = offsets[0];
+  rendererProbe.drawRaceLongform({}, sim, [leader, lagging], {}, 1920, 1080, 1016);
+  assert.ok(offsets[0] > leaderOffset && offsets[0] < targetBeforeBounce, "the lane camera eases toward its wall");
   const splitLeader = {
     raceLayerIndex: 0,
     raceLayerHealth: Array.from({ length: 50 }, () => 1),
@@ -4167,16 +4174,6 @@ function run(sim, seconds = 120) {
     rendererProbe.longformTeamProgress(splitLeader),
     2,
     "long-form camera progress should follow a Scissor member that advanced through an open half",
-  );
-  const splitFollower = {
-    raceLayerIndex: 1,
-    raceLayerHealth: Array.from({ length: 50 }, () => 1),
-    members: [{ raceLayerIndex: 1 }],
-  };
-  assert.equal(
-    rendererProbe.longformLeaderIndex([splitLeader, splitFollower]),
-    0,
-    "a team with an advanced Scissor member should remain the camera leader",
   );
 }
 
@@ -5527,6 +5524,13 @@ function run(sim, seconds = 120) {
     4,
     "the ear-ringing sample should cover the full four-second white flash",
   );
+  const firstTick = soundPlanForEvent({ type: "race-hydrogen-fuse-second", id: 913, remainingSecond: 3 });
+  const lastTick = soundPlanForEvent({ type: "race-hydrogen-fuse-second", id: 914, remainingSecond: 1 });
+  assert.ok(lastTick.layers[0].startFrequency > firstTick.layers[0].startFrequency, "the fuse warning should rise in pitch");
+  const firstBreak = samplePlanForEvent({ type: "race-layer-break", layerCount: 3, layerIndex: 0, raceTeamIndex: 0 });
+  const lastBreak = samplePlanForEvent({ type: "race-layer-break", layerCount: 3, layerIndex: 2, raceTeamIndex: 1 });
+  assert.ok(firstBreak.pan < 0 && lastBreak.pan > 0, "wall breaks should sound from their lane");
+  assert.ok(lastBreak.playbackRate > firstBreak.playbackRate, "later walls should have a higher break cue");
   assert.equal(samplePlanForEvent({ type: "race-antimatter-detonation", id: 9031 }).sample, "hydrogen-bomb-explosion");
   assert.equal(samplePlanForEvent({ type: "race-time-bomb-midnight", id: 9032 }).sample, "chrono-time-stop");
   assert.equal(samplePlanForEvent({ type: "race-reality-spawn", id: 9033 }).sample, "black-hole-teleport");

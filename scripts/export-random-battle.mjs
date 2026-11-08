@@ -55,7 +55,7 @@ export async function exportSocialVideo(options = {}) {
   const seed = Number(options.seed || process.env.BATTLE_SEED) || Math.floor(Math.random() * 999_998) + 1;
   const gameplayMode = options.gameplayMode === "orb-race" ? "orb-race" : "classic";
   const format = options.format || process.env.BATTLE_FORMAT || "portrait";
-  const fps = Number(options.fps || process.env.BATTLE_FPS) === 60 ? 60 : 30;
+  const fps = Number(options.fps ?? process.env.BATTLE_FPS ?? 60) === 60 ? 60 : 30;
   let orbNames;
   let selectedClasses = options.selectedClasses || [];
   let settings;
@@ -324,7 +324,6 @@ function launchChrome({ userDataDir, url }) {
   }
   const args = [
     "--headless=new",
-    "--disable-gpu",
     "--disable-dev-shm-usage",
     "--no-first-run",
     "--no-default-browser-check",
@@ -338,7 +337,7 @@ function launchChrome({ userDataDir, url }) {
     url,
   ];
   if (process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true") {
-    args.push("--no-sandbox", "--disable-setuid-sandbox");
+    args.push("--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox");
   }
   const child = spawn(executablePath, args, { stdio: ["ignore", "ignore", "pipe"] });
   const stderr = [];

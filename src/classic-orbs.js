@@ -77,8 +77,9 @@ export const CLASSIC_ORBS = Object.freeze({
         collisionEnabled: true,
     }),
     orbital: orb("orbital", "ORBITAL", "#123b72", "#7aa9e6", {
-        power: "+1 ORBITER PER WALL BOUNCE · ORBITERS BREAK ON HIT",
+        power: "+1 SATELLITE PER WALL BOUNCE · 2 DAMAGE PER SATELLITE",
         statLabel: "ORBS",
+        ability: { satelliteDamage: 2 },
     }),
     unarmed: orb("unarmed", "UNARMED", "#9da3aa", "#f4f6f8", {
         power: "+1 DAMAGE PER WALL BOUNCE",

@@ -1,4 +1,4 @@
-import { THEME_IDS } from "./presentation.js?v=20260728-orbital-cyan1-classic-reactor-blue2";
+import { THEME_IDS } from "./presentation.js?v=20261108-arena-cut1";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
 import {
@@ -14,7 +14,7 @@ import {
   normalizeRaceOrbScale,
   normalizeRaceTeamOptions,
   normalizeRaceTeams,
-} from "./orb-race.js?v=20261008-purple-sun-title1";
+} from "./orb-race.js?v=20261108-arena-cut1";
 import {
     CLASSIC_DEFAULT_CLASSES,
     CLASSIC_DEFAULT_TEAMS,
@@ -25,7 +25,7 @@ import {
     normalizeClassicTeamOptions,
     normalizeClassicTeams,
     normalizeClassicSpeedMode as normalizeRegistryClassicSpeedMode,
-} from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
+} from "./classic-orbs.js?v=20261108-arena-cut1";
 
 export const ARENA_MODIFIER_IDS = Object.freeze(["standard", "tiny", "suddenDeath", "overdrive", "glassCannon"]);
 export const ARENA_SHAPE_IDS = Object.freeze(["square", "circle"]);
@@ -325,7 +325,7 @@ export function createDefaultSettings() {
     social: {
       enabled: true,
       format: "portrait",
-      fps: 30,
+      fps: 60,
       highlightMode: true,
       showWinProbability: true,
       minimumDurationSeconds: 0,
@@ -611,7 +611,7 @@ export function normalizeSettings(input = {}, validClasses = []) {
     social: {
       enabled: true,
       format: normalizedSocialFormat,
-      fps: Number(input.social?.fps) === 60 ? 60 : 30,
+      fps: Number(input.social?.fps ?? defaults.social.fps) === 60 ? 60 : 30,
       highlightMode: input.social?.highlightMode !== false,
       showWinProbability: input.social?.showWinProbability !== false,
       minimumDurationSeconds: Math.max(
@@ -849,7 +849,7 @@ function expandSettings(value) {
           highlightMode: value.o.h !== 0,
           showWinProbability: value.o.w !== 0,
         }
-      : undefined,
+      : { fps: 30 },
     balance: value.b,
     // `t` was historically both the Orb Race solid-trail flag and a dormant
     // tournament object. Only an object is treated as that legacy payload;

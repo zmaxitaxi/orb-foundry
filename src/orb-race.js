@@ -6,6 +6,11 @@ export const ORB_RACE_MAX_LAYER_COUNT = 50;
 export const ORB_RACE_MAX_LAYER_STRENGTH = 1_000_000_000_000_000_000;
 export const ORB_RACE_MAX_MATH_DAMAGE = 1_000_000_000_000_000_000_000;
 export const ORB_RACE_DEFAULT_LAYERS = Object.freeze([18, 48, 110]);
+export const ORB_RACE_COURSE_PRESETS = Object.freeze({
+  sprint: Object.freeze({ label: "Sprint", layers: Object.freeze([120, 240, 360]), tiltedLayer: null }),
+  "power-gate": Object.freeze({ label: "Power Gate", layers: Object.freeze([180, 450, 2400]), tiltedLayer: null }),
+  "bank-shot": Object.freeze({ label: "Bank Shot", layers: Object.freeze([180, 500, 900]), tiltedLayer: 1 }),
+});
 export const ORB_RACE_FINAL_LAYER_PRESETS = Object.freeze([
   Object.freeze({ value: 10_000, label: "10,000" }),
   Object.freeze({ value: 100_000, label: "100,000" }),
@@ -65,8 +70,7 @@ export const ORB_RACE_LONGFORM_PRESENTATION = Object.freeze({
   // walls remain readable at once while the camera advances in small, calm
   // groups instead of chasing every bounce.
   visibleLayerCount: 7,
-  // Retained as a compatibility hint for older exports. Long-form now uses a
-  // single continuous camera rather than per-track stepped cameras.
+  // Retained as a compatibility hint for older stepped exports.
   cameraStepLayers: 3,
   worldLayerHeightFraction: 0.075,
   worldLayerHeightMin: 54,

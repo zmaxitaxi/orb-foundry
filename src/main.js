@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261008-purple-sun-title1";
+} from "./simulation.js?v=20261108-arena-cut1";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261029-announcer-export-retry1";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261008-purple-sun-title1";
+} from "./audio.js?v=20261108-arena-cut1";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261108-arena-cut1";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -28,11 +28,10 @@ import {
   buildWinProbability,
   createCaption,
   detectHighlight,
-  impactPresentationForEvent,
+  matchPresentationImpact,
   normalizeSocialOptions,
-  presentationPauseMs,
   recordingFilename,
-} from "./social.js?v=20261008-purple-sun-title1";
+} from "./social.js?v=20261108-arena-cut1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -52,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261008-purple-sun-title1";
+} from "./config.js?v=20261108-arena-cut1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -62,7 +61,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20260811-classic-health-reactor-batman-fairy-zeus-frost3";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261108-arena-cut1";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -79,6 +78,7 @@ import {
   ORB_RACE_COMBO_ABILITIES,
   ORB_RACE_COMBO_ABILITY_IDS,
   ORB_RACE_ARTIST_PAINTINGS,
+  ORB_RACE_COURSE_PRESETS,
   ORB_RACE_DEFAULT_LAYERS,
   ORB_RACE_FINAL_LAYER_PRESETS,
   ORB_RACE_LONGFORM_DEFAULT_LAYERS,
@@ -97,7 +97,7 @@ import {
   normalizeRaceTeamOptions,
   normalizeRaceTeams,
   raceTeamMemberCount,
-} from "./orb-race.js?v=20261008-purple-sun-title1";
+} from "./orb-race.js?v=20261108-arena-cut1";
 import {
   CLASSIC_MAX_ORB_COPIES,
   CLASSIC_ORBS,
@@ -107,7 +107,7 @@ import {
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20260812-classic-health-reactor-batman-fairy-zeus-frost-snowball1";
+} from "./classic-orbs.js?v=20261108-arena-cut1";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);
@@ -121,7 +121,7 @@ const elements = Object.fromEntries(
   [
     "matchStatus", "matchClock", "pauseButton", "setupDialog", "seedInput", "randomSeedButton",
     "launchButton", "soundButton", "copyLinkButton", "balanceButton", "developerButton",
-    "hazardPreset", "arenaModifierSelect", "arenaSizeSelect", "arenaShapeSelect", "hazardFieldset", "gameplayModeSelect", "raceLengthPicker", "shortFormRaceButton", "longFormRaceButton", "tournamentRaceButton", "countryFieldset", "countryGrid", "raceOrbFieldset", "raceTeamBuilder", "raceTeamOneGrid", "raceTeamTwoGrid", "raceTournamentPanel", "raceTournamentOptions", "raceTournamentPageIndicator", "raceTournamentWizardPage1", "raceTournamentWizardPage2", "raceTournamentWizardPage3", "raceTournamentWizardNext1", "raceTournamentWizardBack2", "raceTournamentWizardNext2", "raceTournamentWizardBack3", "raceTournamentTitle", "raceTournamentSize", "raceTournamentSeedingMode", "raceTournamentRecordingScope", "raceTournamentPresetSummary", "raceTournamentEntrants", "raceTournamentEntrantCount", "raceTournamentSeedList", "raceTournamentSeedHelp", "raceTournamentRoundSelection", "raceTournamentRoundList", "raceTournamentRecordRoundButton", "raceTournamentRecordTournamentButton", "raceTournamentLayerCount", "raceTournamentFinalLayerHealth", "raceTournamentLayerFields", "raceTournamentSaveButton", "raceTournamentResumeButton", "raceTournamentClearButton", "raceTournamentOpenBracketButton", "raceTournamentRecordMatchButton", "raceTournamentSavedMatch", "raceTournamentSavedMatchLabel", "raceTournamentSavedTitle", "raceTournamentStorageStatus", "raceTournamentBracketPreview", "raceTournamentPortraitPreviewButton", "raceTournamentLandscapePreviewButton", "raceTournamentZoomOut", "raceTournamentZoomReset", "raceTournamentZoomIn", "raceTournamentValidation", "nonTournamentSetupFields", "classicTeamOneGrid", "classicTeamTwoGrid", "raceLayerFields", "raceLayerToolbar", "raceOptionToolbar", "raceLayerCount", "raceFinalLayerHealthLabel", "raceFinalLayerHealth", "raceOrbScale", "raceTargetMessageToggle", "raceTargetAudioToggle", "raceMatchupAudioToggle", "raceTiltedLayerToggle", "raceTiltedLayerIndex", "raceTiltedLayerIndexLabel", "classFieldset", "classicBlackTheme", "classicTeamColors", "developerDialog", "featureToggles", "applyFeaturesButton",
+    "hazardPreset", "arenaModifierSelect", "arenaSizeSelect", "arenaShapeSelect", "hazardFieldset", "gameplayModeSelect", "raceLengthPicker", "shortFormRaceButton", "longFormRaceButton", "tournamentRaceButton", "countryFieldset", "countryGrid", "raceOrbFieldset", "raceTeamBuilder", "raceTeamOneGrid", "raceTeamTwoGrid", "raceTournamentPanel", "raceTournamentOptions", "raceTournamentPageIndicator", "raceTournamentWizardPage1", "raceTournamentWizardPage2", "raceTournamentWizardPage3", "raceTournamentWizardNext1", "raceTournamentWizardBack2", "raceTournamentWizardNext2", "raceTournamentWizardBack3", "raceTournamentTitle", "raceTournamentSize", "raceTournamentSeedingMode", "raceTournamentRecordingScope", "raceTournamentPresetSummary", "raceTournamentEntrants", "raceTournamentEntrantCount", "raceTournamentSeedList", "raceTournamentSeedHelp", "raceTournamentRoundSelection", "raceTournamentRoundList", "raceTournamentRecordRoundButton", "raceTournamentRecordTournamentButton", "raceTournamentLayerCount", "raceTournamentFinalLayerHealth", "raceTournamentLayerFields", "raceTournamentSaveButton", "raceTournamentResumeButton", "raceTournamentClearButton", "raceTournamentOpenBracketButton", "raceTournamentRecordMatchButton", "raceTournamentSavedMatch", "raceTournamentSavedMatchLabel", "raceTournamentSavedTitle", "raceTournamentStorageStatus", "raceTournamentBracketPreview", "raceTournamentPortraitPreviewButton", "raceTournamentLandscapePreviewButton", "raceTournamentZoomOut", "raceTournamentZoomReset", "raceTournamentZoomIn", "raceTournamentValidation", "nonTournamentSetupFields", "classicTeamOneGrid", "classicTeamTwoGrid", "raceLayerFields", "raceLayerToolbar", "raceCoursePreset", "raceOptionToolbar", "raceLayerCount", "raceFinalLayerHealthLabel", "raceFinalLayerHealth", "raceOrbScale", "raceTargetMessageToggle", "raceTargetAudioToggle", "raceMatchupAudioToggle", "raceTiltedLayerToggle", "raceTiltedLayerIndex", "raceTiltedLayerIndexLabel", "classFieldset", "classicBlackTheme", "classicTeamColors", "developerDialog", "featureToggles", "applyFeaturesButton",
     "balanceDialog", "balanceScope", "balanceControls", "balanceValidation", "balanceResetButton",
     "balanceRandomButton", "balanceExportButton", "balanceImportButton", "balanceImportInput",
     "balanceApplyButton", "menuScreen", "profileScreen", "gameScreen", "orbMenu", "menuPlayButton",
@@ -1815,6 +1815,19 @@ function syncRaceFinalLayerHealthSelect(values = null) {
   elements.raceFinalLayerHealth.value = preset ? String(preset.value) : "custom";
 }
 
+function syncRaceCoursePreset(layers = [...elements.raceLayerFields.querySelectorAll('input[name="raceLayerStrength"]')]
+  .map((input) => Number(input.value))) {
+  const tiltedLayer = elements.raceTiltedLayerToggle.checked
+    ? Number(elements.raceTiltedLayerIndex.value) - 1
+    : null;
+  const preset = Object.entries(ORB_RACE_COURSE_PRESETS).find(([, course]) => (
+    course.tiltedLayer === tiltedLayer
+      && course.layers.length === layers.length
+      && course.layers.every((health, index) => health === layers[index])
+  ));
+  elements.raceCoursePreset.value = preset?.[0] ?? "custom";
+}
+
 function renderRaceLayerFields(values = null) {
   if (!elements.raceLayerFields || !elements.raceLayerCount) return;
   const count = normalizeRaceLayerCount(elements.raceLayerCount.value, settings.raceLayerCount);
@@ -1831,6 +1844,7 @@ function renderRaceLayerFields(values = null) {
     count,
     Math.max(1, Number(elements.raceTiltedLayerIndex.value) || 1),
   ));
+  syncRaceCoursePreset(layers);
 }
 
 function selectLongFormRace() {
@@ -2151,7 +2165,7 @@ function playSocialMatchupAnnouncement(now) {
       },
     );
     if (longFormRace && settings.raceShowTargetMessage) {
-      socialPresentation.raceTargetPromptUntil = now + 4500;
+      socialPresentation.raceTargetPromptUntil = now + 1600;
     }
     return;
   }
@@ -2251,12 +2265,13 @@ function consumeSocialEvents(now) {
         });
       }
     }
-    const pauseMs = settings.features.hitStop ? presentationPauseMs(event) : 0;
-    if (pauseMs > 0) {
-      socialPresentation.hitStopUntil = Math.max(socialPresentation.hitStopUntil, now + pauseMs);
-      const impact = settings.gameplayMode === "classic" ? null : impactPresentationForEvent(event);
+    const impact = settings.features.hitStop
+      ? matchPresentationImpact(event, sim.gameplayMode, sim.raceLayerCount)
+      : null;
+    if (impact) {
+      socialPresentation.hitStopUntil = Math.max(socialPresentation.hitStopUntil, now + impact.duration);
       const activePriority = socialPresentation.impactFrame?.priority ?? -1;
-      if (impact && impact.priority >= activePriority) {
+      if (impact.priority >= activePriority) {
         socialPresentation.impactFrame = {
           eventId: event.id,
           kind: impact.kind,
@@ -2296,6 +2311,8 @@ function socialSimulationRate(now) {
   if (
     settings.features.slowMotionHighlights &&
     socialPresentation.highlight &&
+    (settings.gameplayMode !== "classic" && settings.gameplayMode !== ORB_RACE_MODE
+      || socialPresentation.highlight.kind === "final-blow") &&
     socialPresentation.highlight.strength >= 0.75 &&
     now < socialPresentation.highlightUntil
   ) {
@@ -3406,12 +3423,28 @@ elements.raceFinalLayerHealth.addEventListener("change", () => {
   const count = normalizeRaceLayerCount(elements.raceLayerCount.value, settings.raceLayerCount);
   renderRaceLayerFields(buildRaceLayerPreset(count, elements.raceFinalLayerHealth.value));
 });
-elements.raceTiltedLayerToggle.addEventListener("change", syncSetupModeVisibility);
+for (const [id, course] of Object.entries(ORB_RACE_COURSE_PRESETS)) {
+  elements.raceCoursePreset.add(new Option(course.label, id));
+}
+elements.raceCoursePreset.addEventListener("change", () => {
+  const course = ORB_RACE_COURSE_PRESETS[elements.raceCoursePreset.value];
+  if (!course) return;
+  elements.raceLayerCount.value = String(course.layers.length);
+  elements.raceTiltedLayerToggle.checked = course.tiltedLayer !== null;
+  elements.raceTiltedLayerIndex.value = String((course.tiltedLayer ?? 0) + 1);
+  renderRaceLayerFields(course.layers);
+  syncRaceFinalLayerHealthSelect(course.layers);
+  syncSetupModeVisibility();
+});
+elements.raceTiltedLayerToggle.addEventListener("change", () => {
+  syncRaceCoursePreset();
+  syncSetupModeVisibility();
+});
+elements.raceTiltedLayerIndex.addEventListener("input", () => syncRaceCoursePreset());
 elements.raceLayerFields.addEventListener("input", (event) => {
-  if (
-    elements.socialFormatSelect.value === "race-landscape"
-    && event.target.matches('input[name="raceLayerStrength"]')
-  ) {
+  if (!event.target.matches('input[name="raceLayerStrength"]')) return;
+  syncRaceCoursePreset();
+  if (elements.socialFormatSelect.value === "race-landscape") {
     elements.raceFinalLayerHealth.value = "custom";
   }
 });

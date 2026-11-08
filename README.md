@@ -15,12 +15,19 @@ The setup includes:
 - Non-damaging arena hazards
 - Cosmetic arena theme
 - True 9:16 portrait export at 1080 × 1920, plus square and landscape presets
-- 30 or 60 FPS recording
+- 60 FPS recording by default, with a 30 FPS option
+- Orb Race course presets for Sprint, Power Gate, and the tilted Bank Shot
 - Optional presentation-only highlight emphasis
 
 When more than two classes are selected, the seed chooses the same reproducible
 pair every time. Legacy tournament and ordinary match links are normalized into
 this two-fighter Social Battle flow.
+
+Choose an Orb Race course preset to fill in the wall health and tilt settings.
+Those values can be edited and shared with the seed. Landscape races follow
+each lane independently and keep wall progress and the Hydrogen Bomb fuse
+visible. Classic matches show the current ability below the arena, including
+Sword's attack phase and Orbital's live satellite count.
 
 ## Visual Language
 

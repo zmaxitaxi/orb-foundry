@@ -1,5 +1,38 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-08 — Arena motion and course pass
+
+- Added Sprint, Power Gate, and Bank Shot as setup presets. The course still
+  travels in existing share fields for wall health and tilt. In a 16-seed
+  comparison X² won each Sprint race, while Fibonacci won each Power Gate
+  race.
+- Added compact bounce trails, spring on race contact, shorter bounce rings,
+  and weapon and satellite impacts drawn at actual Classic contact positions.
+  Orbital now renders from the same ring geometry used for collision.
+- Added separate, time-eased landscape cameras and pinned progress and fuse
+  labels. Race and Classic subscribe copy appears at the result, and live
+  Classic readouts show power and phase. New recordings default to 60 fps.
+- Tuned Classic Orbital's satellite hit from one to two damage. The change
+  gave Orbital two wins in a 12-seed, side-alternating Sword sample, up from
+  zero. Satellite hitboxes now stay in place until all contacts for that
+  step resolve, so two visible contacts can both count.
+- Refined the portrait look with a slim lane frame, small color tabs, and
+  higher contrast labels. Classic duels add a small health bar after damage.
+- Separated quiet bounces from wall breaks, which now rise in pitch with
+  course progress and play from the corresponding lane. Hydrogen has three
+  rising fuse ticks, a warning readout, and a brief shockwave that reveals
+  the cleared course during the existing post-blast hold.
+- Publisher preflight currently measures final margin and runtime. The next
+  pass should favor sustained lead changes and shorter gaps between meaningful
+  events, then select courses where the rival abilities matter. A fixed render
+  clock is the next experiment for wide races; the live recorder can drop
+  frames even when the canvas requests 60 fps.
+- Verified with 199 Node tests, local Playwright on the dedicated portrait and
+  landscape export canvases, and two recordings with spoken announcer cues.
+  On this machine Sword vs Orbital averaged 59.5 fps and the 50-wall Hydrogen
+  race averaged 46.8 fps. The same-seed before and after race finished at the
+  same simulation time (34.617 seconds).
+
 ## Classic Portrait Shorts (2026-11-04)
 
 - Classic / Orb Foundry uploads now use the same `1080×1920` portrait Shorts frame as Orb Race Shorts. The previous square crop is `1080×1020`, wider than tall, so YouTube filed those videos as regular uploads. The arena stays a large square, the theme stays black, and Classic remains Shorts-only. Recordings must stay within YouTube's three-minute Shorts limit.

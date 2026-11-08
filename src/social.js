@@ -1,4 +1,4 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261008-purple-sun-title1";
+import { CLASS_DEFS } from "./simulation.js?v=20261108-arena-cut1";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),
@@ -9,7 +9,7 @@ export const SOCIAL_FORMATS = Object.freeze({
 
 export const SOCIAL_DEFAULTS = Object.freeze({
   format: "portrait",
-  fps: 30,
+  fps: 60,
   highlightMode: true,
   showWinProbability: true,
 });
@@ -63,6 +63,17 @@ export function presentationPauseMs(event) {
   return impactPresentationForEvent(event)?.duration || 0;
 }
 
+const FINAL_WALL_IMPACT = Object.freeze({ kind: "critical", duration: 70, shake: 0.56, priority: 3 });
+
+export function matchPresentationImpact(event, mode, raceLayerCount) {
+  if (mode === "classic" || mode === "orb-race") {
+    if (event.type === "race-layer-break" && mode === "orb-race"
+      && event.layerIndex === raceLayerCount - 1) return FINAL_WALL_IMPACT;
+    if (event.type !== "knockout") return null;
+  }
+  return impactPresentationForEvent(event);
+}
+
 const LEGACY_SOCIAL_CLASS_META = {
   fire: Object.freeze({ short: "CI", ability: "PASSIVE · BURN 1 × 4S", maxCooldown: 0 }),
   ice: Object.freeze({ short: "GL", ability: "HAILSTORM · 5 DAMAGE / S", maxCooldown: 30 }),
@@ -101,7 +112,7 @@ export function normalizeSocialOptions(input = {}) {
   const format = input.format === "longform" ? "race-landscape" : input.format;
   return {
     format: SOCIAL_FORMATS[format] ? format : SOCIAL_DEFAULTS.format,
-    fps: Number(input.fps) === 60 ? 60 : 30,
+    fps: Number(input.fps ?? SOCIAL_DEFAULTS.fps) === 60 ? 60 : 30,
     highlightMode: input.highlightMode !== false,
     showWinProbability: input.showWinProbability !== false,
   };

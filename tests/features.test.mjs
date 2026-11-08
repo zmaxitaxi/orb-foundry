@@ -72,6 +72,7 @@ import {
 import { ORB_PROFILES, ORB_ROSTER, ORB_SPRITE_PROFILES, THEME_IDS, validateProfileMetadata } from "../src/presentation.js";
 import {
   ORB_RACE_DEFAULT_LAYERS,
+  ORB_RACE_COURSE_PRESETS,
   ORB_RACE_DEFAULT_ORB_SCALE,
   ORB_RACE_EVERYONE_LABEL,
   ORB_RACE_FINAL_LAYER_PRESETS,
@@ -901,6 +902,21 @@ function arrangeHit(attacker, target) {
     [1_000_000_000, 1_000_000_000_000_000_000],
     "quintillion final-layer presets should survive URL serialization",
   );
+
+  for (const course of Object.values(ORB_RACE_COURSE_PRESETS)) {
+    const setup = settingsFromUrl(settingsToUrl({
+      gameplayMode: ORB_RACE_MODE,
+      raceLayerStrengths: course.layers,
+      raceTiltedLayerEnabled: course.tiltedLayer !== null,
+      raceTiltedLayerIndex: course.tiltedLayer ?? 0,
+    }, "https://example.test/play", classes), classes);
+    assert.deepEqual(setup.raceLayerStrengths, course.layers);
+    assert.equal(setup.raceTiltedLayerEnabled, course.tiltedLayer !== null);
+    assert.equal(setup.raceTiltedLayerIndex, course.tiltedLayer ?? 0);
+    assert.equal(setup.social.fps, 60);
+  }
+  const oldShare = encodeURIComponent(JSON.stringify({ v: 1, g: "r", o: { f: "r" } }));
+  assert.equal(decodeSettings(oldShare, classes).social.fps, 30, "existing share links retain their 30 fps option");
 }
 
 {
