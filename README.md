@@ -201,6 +201,12 @@ are buffered before recording. Generation is preflighted from those same require
 before the browser recorder starts, and the final artifact is checked again;
 anything that does not fit is never uploaded.
 
+## Future
+
+The exploration of later picture tools, competition records, models, a
+single operation across the channel and the lab, and a sustainable
+study-and-show lives in [`docs/FUTURE.md`](docs/FUTURE.md).
+
 ## Test
 
 ```bash
