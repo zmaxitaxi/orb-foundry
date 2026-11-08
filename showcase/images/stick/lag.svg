@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Lag fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#39ff14" stroke-width="4"/>
+<polygon points="92,138 76,200 98,200 104,140" fill="#050805" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="110,140 122,200 144,200 120,140" fill="#050805" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="86,96 122,96 114,144 92,144" fill="#050805" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="78" y="190" width="16" height="10" fill="#39ff14" stroke="#1a120e" stroke-width="3"/>
+<rect x="124" y="190" width="16" height="10" fill="#39ff14" stroke="#1a120e" stroke-width="3"/>
+<rect x="92" y="118" width="22" height="14" fill="#39ff14" stroke="#1a120e" stroke-width="2"/>
+<rect x="92" y="127" width="22" height="6" fill="#39ff14" stroke="#1a120e" stroke-width="2"/>
+<polygon points="80.42499147964965,111.70178023691763 62.42499147964965,139.70178023691764 69.57500852035035,144.29821976308236 87.57500852035035,116.29821976308237" fill="#050805" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="59" y="135" width="14" height="14" rx="2" fill="#39ff14" stroke="#1a120e" stroke-width="3"/>
+<polygon points="119.61651750557631,118.98527242750791 171.61651750557633,122.98527242750791 172.38348249442367,113.01472757249209 120.38348249442369,109.01472757249209" fill="#050805" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="103" y="132" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="8" font-weight="700" fill="#1a120e">LG</text>
+<circle cx="104" cy="76" r="26" fill="#050805" stroke="#1a120e" stroke-width="3"/>
+<rect x="80" y="71" width="48" height="9.88" fill="#39ff14" stroke="#1a120e" stroke-width="2"/>
+<rect x="92.03999999999999" y="72.88" width="5.72" height="5.72" fill="#1a120e"/>
+<rect x="108.16" y="72.88" width="5.72" height="5.72" fill="#1a120e"/>
+<path d="M 100 84.32 L 109 82.24" stroke="#1a120e" stroke-width="2" fill="none"/>
+<rect x="164" y="110" width="16" height="16" rx="2" fill="#39ff14" stroke="#1a120e" stroke-width="3"/>
+<rect x="180" y="116" width="36" height="5" fill="#39ff14" stroke="#1a120e" stroke-width="2"/>
+</svg>

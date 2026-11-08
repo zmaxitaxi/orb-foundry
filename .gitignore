@@ -29,6 +29,10 @@ artifacts/
 output/
 outputs/
 
+# Next.js site build output.
+site/.next/
+site/site/.next/
+
 # Generated review files and root-level QA captures.
 assets/generated/**/review/
 assets/generated/**/working/

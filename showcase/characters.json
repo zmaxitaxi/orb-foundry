@@ -1,0 +1,1821 @@
+{
+  "description": "Character catalog for a future showcase site. The formula is the damage rule. n is the bounce count. Math results cap at 1e21.",
+  "source": "ORB_RACERS, CLASSIC_ORBS, and the racer-card damage rules.",
+  "modes": {
+    "orb-race": "The team that clears every one of its own layers first wins. The opponent's remaining health does not decide the race.",
+    "classic": "The last living team wins."
+  },
+  "characters": [
+    {
+      "id": "duplicator",
+      "name": "Duplicator",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff2bd6",
+      "accent": "#ffd21a",
+      "symbol": "D",
+      "statLabel": "DUPES",
+      "formula": "Starts at 1, +1 per bounce, and copies itself",
+      "images": {
+        "animated": "images/animated/anim-duplicator.jpg",
+        "stick": "images/stick/duplicator.svg"
+      },
+      "duplicateEvery": 12
+    },
+    {
+      "id": "speed",
+      "name": "Speedster",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#168cff",
+      "accent": "#8ef0ff",
+      "symbol": "S",
+      "statLabel": "SPEED",
+      "formula": "+1 per bounce, and speed ramps on each bounce",
+      "images": {
+        "animated": "images/animated/anim-speedster.jpg",
+        "stick": "images/stick/speed.svg"
+      }
+    },
+    {
+      "id": "orbital",
+      "name": "Orbital",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#00d8e8",
+      "accent": "#8ef0ff",
+      "symbol": "O",
+      "statLabel": "ORBITERS",
+      "formula": "+1 per bounce, plus orbiter contacts on the line",
+      "images": {
+        "animated": "images/animated/anim-orbital.jpg",
+        "stick": "images/stick/orbital.svg"
+      }
+    },
+    {
+      "id": "drill",
+      "name": "Drill",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#35e866",
+      "accent": "#0f7a31",
+      "symbol": "DR",
+      "statLabel": "DRAG",
+      "formula": "+1 per bounce, plus drill projectiles",
+      "images": {
+        "animated": "images/animated/anim-drill.jpg",
+        "stick": "images/stick/drill.svg"
+      },
+      "duplicateEvery": 3
+    },
+    {
+      "id": "x-squared",
+      "name": "X²",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ff3654",
+      "accent": "#ffe26b",
+      "symbol": "X²",
+      "statLabel": "SQUARE",
+      "formula": "n² on bounce n",
+      "images": {
+        "animated": "images/animated/anim-x-squared.jpg",
+        "stick": "images/stick/x-squared.svg"
+      }
+    },
+    {
+      "id": "fibonacci",
+      "name": "Fibonacci",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#25ed73",
+      "accent": "#d8ff5c",
+      "symbol": "F",
+      "statLabel": "FIB",
+      "formula": "The nth Fibonacci number",
+      "images": {
+        "animated": "images/animated/anim-fibonacci.jpg",
+        "stick": "images/stick/fibonacci.svg"
+      }
+    },
+    {
+      "id": "sylvester",
+      "name": "Sylvester",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#74111c",
+      "accent": "#ff7a86",
+      "symbol": "sₙ₊₁",
+      "statLabel": "SYLVESTER",
+      "formula": "Sylvester sequence: 2, then v(v−1)+1",
+      "images": {
+        "animated": "images/animated/anim-sylvester.jpg",
+        "stick": "images/stick/sylvester.svg"
+      }
+    },
+    {
+      "id": "lucas",
+      "name": "Lucas Sequence",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#14532d",
+      "accent": "#86efac",
+      "symbol": "Lₙ",
+      "statLabel": "LUCAS",
+      "formula": "Lucas number Lₙ. First hit is 1",
+      "images": {
+        "animated": "images/animated/anim-lucas.jpg",
+        "stick": "images/stick/lucas.svg"
+      }
+    },
+    {
+      "id": "tetration",
+      "name": "Tetration",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#5d2b82",
+      "accent": "#e7c6ff",
+      "symbol": "a^^b",
+      "statLabel": "TETRATION",
+      "formula": "Base-2 tetration. 2, 4, 16, 65536",
+      "images": {
+        "animated": "images/animated/anim-tetration.jpg",
+        "stick": "images/stick/tetration.svg"
+      }
+    },
+    {
+      "id": "professor",
+      "name": "Professor",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#f0f0f0",
+      "accent": "#ffd21a",
+      "symbol": "P",
+      "statLabel": "MATH FORM",
+      "formula": "The copied math formula. 0 while no form is active",
+      "images": {
+        "animated": "images/animated/anim-professor.jpg",
+        "portrait": "images/portraits/professor-portrait.jpg",
+        "stick": "images/stick/professor.svg"
+      }
+    },
+    {
+      "id": "trifecta",
+      "name": "Trifecta",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#f59e0b",
+      "accent": "#fff3a3",
+      "symbol": "△",
+      "statLabel": "SHOCKWAVE",
+      "formula": "Body 0. Every 3rd hit removes 1/3 of that layer’s original maximum",
+      "images": {
+        "animated": "images/animated/anim-trifecta.jpg",
+        "stick": "images/stick/trifecta.svg"
+      }
+    },
+    {
+      "id": "gravitator",
+      "name": "Gravitator",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#4c1d95",
+      "accent": "#c4b5fd",
+      "symbol": "G",
+      "statLabel": "GRAVITY PULL",
+      "formula": "+1 per bounce, then attaches and pulls the layer",
+      "images": {
+        "animated": "images/animated/anim-gravitator.jpg",
+        "stick": "images/stick/gravitator.svg"
+      }
+    },
+    {
+      "id": "grower",
+      "name": "Grower",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#a7f52f",
+      "accent": "#eaff94",
+      "symbol": "G",
+      "statLabel": "SIZE",
+      "formula": "+1 per bounce, and the body grows",
+      "images": {
+        "animated": "images/animated/anim-grower.jpg",
+        "stick": "images/stick/grower.svg"
+      }
+    },
+    {
+      "id": "lazer",
+      "name": "Lazer",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff2d73",
+      "accent": "#ff9bc0",
+      "symbol": "L",
+      "statLabel": "BEAM",
+      "formula": "Body stays 1. The beam hits faster after every bounce",
+      "images": {
+        "animated": "images/animated/anim-lazer.jpg",
+        "stick": "images/stick/lazer.svg"
+      }
+    },
+    {
+      "id": "sticky",
+      "name": "Sticky",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff8b20",
+      "accent": "#ffe092",
+      "symbol": "ST",
+      "statLabel": "STICK",
+      "formula": "+1 per bounce, plus ground ticks while stuck",
+      "images": {
+        "animated": "images/animated/anim-sticky.jpg",
+        "stick": "images/stick/sticky.svg"
+      }
+    },
+    {
+      "id": "unarmed",
+      "name": "Unarmed",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#808080",
+      "accent": "#d1d5db",
+      "symbol": "",
+      "statLabel": "DAMAGE + SPEED",
+      "formula": "+1 damage and a speed ramp per bounce",
+      "images": {
+        "animated": "images/animated/anim-unarmed.jpg",
+        "stick": "images/stick/unarmed.svg"
+      }
+    },
+    {
+      "id": "slammy",
+      "name": "Slammy",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ef4444",
+      "accent": "#fca5a5",
+      "symbol": "SL",
+      "statLabel": "SLAM DAMAGE",
+      "formula": "1 + 2n",
+      "images": {
+        "animated": "images/animated/anim-slammy.jpg",
+        "portrait": "images/portraits/slammy-portrait.jpg",
+        "stick": "images/stick/slammy.svg"
+      }
+    },
+    {
+      "id": "super-slammy",
+      "name": "Super Slammy",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#7f1d1d",
+      "accent": "#f87171",
+      "symbol": "SS",
+      "statLabel": "SLAM +5 DAMAGE",
+      "formula": "1 + 5n",
+      "images": {
+        "animated": "images/animated/anim-super-slammy.jpg",
+        "stick": "images/stick/super-slammy.svg"
+      }
+    },
+    {
+      "id": "piercer",
+      "name": "Piercer",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#374151",
+      "accent": "#d1d5db",
+      "symbol": "P",
+      "statLabel": "PIERCE ALL LAYERS",
+      "formula": "+0.75 per number-line hit, and the hit pierces layers",
+      "images": {
+        "animated": "images/animated/anim-piercer.jpg",
+        "stick": "images/stick/piercer.svg"
+      }
+    },
+    {
+      "id": "ying-yang",
+      "name": "Ying Yang",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#090909",
+      "accent": "#ffffff",
+      "symbol": "☯",
+      "statLabel": "MODE",
+      "formula": "Switches speed and damage modes. Damage level rises in damage mode",
+      "images": {
+        "animated": "images/animated/anim-ying-yang.jpg",
+        "stick": "images/stick/ying-yang.svg"
+      }
+    },
+    {
+      "id": "poison",
+      "name": "Poison",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#8b5cf6",
+      "accent": "#d8b4fe",
+      "symbol": "",
+      "statLabel": "POISON",
+      "formula": "Body 0. Ticks grow by 1 each bounce and pulse every 0.1s",
+      "images": {
+        "animated": "images/animated/anim-poison.jpg",
+        "stick": "images/stick/poison.svg"
+      }
+    },
+    {
+      "id": "hydrogen-bomb",
+      "name": "Hydrogen Bomb",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#ffd400",
+      "accent": "#242024",
+      "symbol": "☢",
+      "statLabel": "COUNTDOWN",
+      "formula": "Body 0. After 60 seconds every layer is set to 0 and the other team is destroyed",
+      "images": {
+        "animated": "images/animated/anim-hydrogen-bomb.jpg",
+        "portrait": "images/portraits/hydrogen-bomb-portrait.jpg",
+        "stick": "images/stick/hydrogen-bomb.svg"
+      }
+    },
+    {
+      "id": "antimatter-bomb",
+      "name": "Antimatter Bomb",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#17131f",
+      "accent": "#ff5d8f",
+      "symbol": "A",
+      "statLabel": "15S → 5S DETONATION",
+      "formula": "Body 0 until detonation. The fuse shortens from 15s toward 5s",
+      "images": {
+        "animated": "images/animated/anim-antimatter-bomb.jpg",
+        "stick": "images/stick/antimatter-bomb.svg"
+      }
+    },
+    {
+      "id": "time-bomb",
+      "name": "Time Bomb",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#17202b",
+      "accent": "#ffcf5a",
+      "symbol": "◷",
+      "statLabel": "MIDNIGHT FREEZE",
+      "formula": "Body 0 until the midnight blast",
+      "images": {
+        "animated": "images/animated/anim-time-bomb.jpg",
+        "stick": "images/stick/time-bomb.svg"
+      }
+    },
+    {
+      "id": "reality-bomb",
+      "name": "Reality Bomb",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#8f1426",
+      "accent": "#ff9b9b",
+      "symbol": "R",
+      "statLabel": "REALITY SHIFT",
+      "formula": "Body 0. Summoned Slammies deal 1 + 2n",
+      "images": {
+        "animated": "images/animated/anim-reality-bomb.jpg",
+        "stick": "images/stick/reality-bomb.svg"
+      }
+    },
+    {
+      "id": "tsar-bomb",
+      "name": "Tsar Bomb",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#090909",
+      "accent": "#ff3b30",
+      "symbol": "☢",
+      "statLabel": "90S + REACTOR",
+      "formula": "Body 0. A 90-second fuse, then a reactor-scale blast",
+      "images": {
+        "animated": "images/animated/anim-tsar-bomb.jpg",
+        "stick": "images/stick/tsar-bomb.svg"
+      }
+    },
+    {
+      "id": "all-in-one",
+      "name": "All In One",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#080808",
+      "accent": "#ffffff",
+      "symbol": "∞",
+      "statLabel": "ALL ABILITIES",
+      "formula": "Body damage × the active-window power. Power rises 10× per bounce while active",
+      "images": {
+        "animated": "images/animated/anim-all-in-one.jpg",
+        "stick": "images/stick/all-in-one.svg"
+      }
+    },
+    {
+      "id": "breaker",
+      "name": "Breaker",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#8f1d2c",
+      "accent": "#ff7183",
+      "symbol": "!",
+      "statLabel": "CRIT CHANCE",
+      "formula": "Body is 1. A crit removes half the layer’s original max, plus 1",
+      "images": {
+        "animated": "images/animated/anim-breaker.jpg",
+        "stick": "images/stick/breaker.svg"
+      }
+    },
+    {
+      "id": "square-root",
+      "name": "Square Root",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ffffff",
+      "accent": "#222222",
+      "symbol": "√",
+      "statLabel": "ROOT DAMAGE",
+      "formula": "Removes health − √health, so the layer is left at its root",
+      "images": {
+        "animated": "images/animated/anim-square-root.jpg",
+        "stick": "images/stick/square-root.svg"
+      }
+    },
+    {
+      "id": "progressive",
+      "name": "Progressive",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#2367c8",
+      "accent": "#9fd4ff",
+      "symbol": "P",
+      "statLabel": "DAMAGE TIMER",
+      "formula": "A timer damage that starts at 1 and climbs",
+      "images": {
+        "animated": "images/animated/anim-progressive.jpg",
+        "stick": "images/stick/progressive.svg"
+      }
+    },
+    {
+      "id": "random",
+      "name": "Random",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#7c3aed",
+      "accent": "#f0abfc",
+      "symbol": "?",
+      "statLabel": "RANDOM DAMAGE",
+      "formula": "A seeded roll from 1 to a maximum that grows every bounce",
+      "images": {
+        "animated": "images/animated/anim-random.jpg",
+        "stick": "images/stick/random.svg"
+      }
+    },
+    {
+      "id": "lag",
+      "name": "Lag",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#050805",
+      "accent": "#39ff14",
+      "symbol": "L",
+      "statLabel": "GLITCH",
+      "formula": "Body 0. The glitch channel deals the damage",
+      "images": {
+        "animated": "images/animated/anim-lag.jpg",
+        "stick": "images/stick/lag.svg"
+      }
+    },
+    {
+      "id": "twins",
+      "name": "Twins",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#168cff",
+      "accent": "#8ef0ff",
+      "symbol": "2",
+      "statLabel": "TWIN DAMAGE",
+      "formula": "+1 per bounce, shared with the twin",
+      "images": {
+        "animated": "images/animated/anim-twins.jpg",
+        "stick": "images/stick/twins.svg"
+      }
+    },
+    {
+      "id": "scissor",
+      "name": "Scissor",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#7d8793",
+      "accent": "#e9eef5",
+      "symbol": "✂",
+      "statLabel": "SPLIT",
+      "formula": "Body 0. The split pieces deal the damage",
+      "images": {
+        "animated": "images/animated/anim-scissor.jpg",
+        "stick": "images/stick/scissor.svg"
+      }
+    },
+    {
+      "id": "whirlwind",
+      "name": "Whirlwind",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#a7e8f2",
+      "accent": "#94a3b8",
+      "symbol": "W",
+      "statLabel": "WHIRL SPEED",
+      "formula": "Body 0. Damage comes from contacts along the line",
+      "images": {
+        "animated": "images/animated/anim-whirlwind.jpg",
+        "stick": "images/stick/whirlwind.svg"
+      }
+    },
+    {
+      "id": "rgb",
+      "name": "RGB",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff3b8d",
+      "accent": "#ffffff",
+      "symbol": "RGB",
+      "statLabel": "COLOR MODE",
+      "formula": "1 plus a color-mode bonus, and the body grows",
+      "images": {
+        "animated": "images/animated/anim-rgb.jpg",
+        "stick": "images/stick/rgb.svg"
+      }
+    },
+    {
+      "id": "x-power",
+      "name": "Xˣ",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#a64dff",
+      "accent": "#f1b6ff",
+      "symbol": "Xˣ",
+      "statLabel": "POWER",
+      "formula": "nⁿ on bounce n",
+      "images": {
+        "animated": "images/animated/anim-x-to-the-x.jpg",
+        "stick": "images/stick/x-power.svg"
+      }
+    },
+    {
+      "id": "super-x-power",
+      "name": "Super X^X",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#15151b",
+      "accent": "#b98cff",
+      "symbol": "Xˣ",
+      "statLabel": "SUPER POWER",
+      "formula": "n^(nⁿ), inner exponent capped at 16",
+      "images": {
+        "animated": "images/animated/anim-super-x.jpg",
+        "stick": "images/stick/super-x-power.svg"
+      }
+    },
+    {
+      "id": "phi",
+      "name": "Golden Ratio",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ffd326",
+      "accent": "#fff39b",
+      "symbol": "φ",
+      "statLabel": "PHI",
+      "formula": "round(φⁿ), φ = (1+√5)/2",
+      "images": {
+        "animated": "images/animated/anim-golden-ratio.jpg",
+        "stick": "images/stick/phi.svg"
+      }
+    },
+    {
+      "id": "factorial",
+      "name": "Factorial",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ff6b35",
+      "accent": "#ffe2b8",
+      "symbol": "n!",
+      "statLabel": "FACTORIAL",
+      "formula": "n!",
+      "images": {
+        "animated": "images/animated/anim-factorial.jpg",
+        "stick": "images/stick/factorial.svg"
+      }
+    },
+    {
+      "id": "prime",
+      "name": "Prime",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#00b894",
+      "accent": "#b8ffe8",
+      "symbol": "P",
+      "statLabel": "PRIME HITS",
+      "formula": "The nth prime",
+      "images": {
+        "animated": "images/animated/anim-prime.jpg",
+        "stick": "images/stick/prime.svg"
+      }
+    },
+    {
+      "id": "integral",
+      "name": "Integral",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#7b61ff",
+      "accent": "#d8d0ff",
+      "symbol": "∫",
+      "statLabel": "AREA",
+      "formula": "n(n+1)/2",
+      "images": {
+        "animated": "images/animated/anim-integral.jpg",
+        "stick": "images/stick/integral.svg"
+      }
+    },
+    {
+      "id": "quadratic",
+      "name": "Quadratic",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#00b7ff",
+      "accent": "#b7f1ff",
+      "symbol": "x¹",
+      "statLabel": "EXPONENT",
+      "formula": "2ⁿ",
+      "images": {
+        "animated": "images/animated/anim-quadratic.jpg",
+        "stick": "images/stick/quadratic.svg"
+      }
+    },
+    {
+      "id": "pi",
+      "name": "Pi",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ff4f9a",
+      "accent": "#ffd2e6",
+      "symbol": "π",
+      "statLabel": "PI DIGIT",
+      "formula": "Running damage × the next digit of pi",
+      "images": {
+        "animated": "images/animated/anim-pi.jpg",
+        "stick": "images/stick/pi.svg"
+      }
+    },
+    {
+      "id": "flash",
+      "name": "Flash",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff3c2f",
+      "accent": "#ffe45c",
+      "symbol": "⚡",
+      "statLabel": "SPEED",
+      "formula": "+1 per bounce. A full charge makes the next ramp 5×",
+      "images": {
+        "animated": "images/animated/anim-flash.jpg",
+        "stick": "images/stick/flash.svg"
+      }
+    },
+    {
+      "id": "batman",
+      "name": "Batman",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ffd21a",
+      "accent": "#080808",
+      "symbol": "BAT",
+      "statLabel": "BATARANGS",
+      "formula": "+1 per bounce, plus batarangs",
+      "images": {
+        "animated": "images/animated/anim-night-cape.jpg",
+        "stick": "images/stick/batman.svg"
+      },
+      "duplicateEvery": 5,
+      "imageLettering": "NIGHT CAPE"
+    },
+    {
+      "id": "boomerang",
+      "name": "Boomerang",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#00c9ff",
+      "accent": "#fff06a",
+      "symbol": "",
+      "statLabel": "BOOMERANGS",
+      "formula": "Projectile damage equals the bounce count",
+      "images": {
+        "animated": "images/animated/anim-boomerang.jpg",
+        "stick": "images/stick/boomerang.svg"
+      },
+      "duplicateEvery": 5
+    },
+    {
+      "id": "magnet",
+      "name": "Magnet",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff3fa4",
+      "accent": "#7df9ff",
+      "symbol": "",
+      "statLabel": "PULL",
+      "formula": "+1 per bounce, and it pulls nearby orbs",
+      "images": {
+        "animated": "images/animated/anim-magnet.jpg",
+        "stick": "images/stick/magnet.svg"
+      }
+    },
+    {
+      "id": "mines",
+      "name": "Splodey",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff701f",
+      "accent": "#ffe45c",
+      "symbol": "",
+      "statLabel": "BOMBS",
+      "formula": "Thrown bombs deal the current bounce count",
+      "images": {
+        "animated": "images/animated/anim-splodey.jpg",
+        "stick": "images/stick/mines.svg"
+      }
+    },
+    {
+      "id": "gravity",
+      "name": "Gravity",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#7d4dff",
+      "accent": "#9cf7ff",
+      "symbol": "",
+      "statLabel": "GRAVITY LEVEL",
+      "formula": "+1 per bounce, and gravity level rises",
+      "images": {
+        "animated": "images/animated/anim-gravity.jpg",
+        "stick": "images/stick/gravity.svg"
+      },
+      "duplicateEvery": 1
+    },
+    {
+      "id": "jackpot",
+      "name": "Jackpot",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ffd400",
+      "accent": "#ff3b30",
+      "symbol": "",
+      "statLabel": "SLOT MACHINE",
+      "formula": "+1 per bounce, plus the slot result",
+      "images": {
+        "animated": "images/animated/anim-jackpot.jpg",
+        "stick": "images/stick/jackpot.svg"
+      }
+    },
+    {
+      "id": "speed-impact",
+      "name": "Slow",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#8b949e",
+      "accent": "#d8dee4",
+      "symbol": "",
+      "statLabel": "IMPACT DAMAGE",
+      "formula": "Starts at 50, then +100 per bounce",
+      "images": {
+        "animated": "images/animated/anim-slow.jpg",
+        "stick": "images/stick/speed-impact.svg"
+      }
+    },
+    {
+      "id": "ricochet",
+      "name": "Ricochet Cannon",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#19d3ff",
+      "accent": "#d8fbff",
+      "symbol": "",
+      "statLabel": "CANNON DAMAGE",
+      "formula": "+1 per bounce. Every 3rd bounce fires a shot that doubles off walls",
+      "images": {
+        "animated": "images/animated/anim-ricochet-cannon.jpg",
+        "stick": "images/stick/ricochet.svg"
+      },
+      "duplicateEvery": 3
+    },
+    {
+      "id": "commander",
+      "name": "Commander",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#243b7a",
+      "accent": "#ffd24a",
+      "symbol": "",
+      "statLabel": "DRONES",
+      "formula": "+1 per bounce, plus drone bombs and missiles",
+      "images": {
+        "animated": "images/animated/anim-commander.jpg",
+        "stick": "images/stick/commander.svg"
+      }
+    },
+    {
+      "id": "shrapnel",
+      "name": "Shrapnel",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff7a00",
+      "accent": "#d7d9de",
+      "symbol": "",
+      "statLabel": "FRAGMENTS",
+      "formula": "+1 per bounce. A broken layer throws fragments",
+      "images": {
+        "animated": "images/animated/anim-shrapnel.jpg",
+        "stick": "images/stick/shrapnel.svg"
+      }
+    },
+    {
+      "id": "roulette",
+      "name": "Absorber",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#ff2aa6",
+      "accent": "#ffd1ed",
+      "symbol": "",
+      "statLabel": "ABSORBED",
+      "formula": "Copies another orb’s ability on a timer, then uses that ability’s damage",
+      "images": {
+        "animated": "images/animated/anim-absorber.jpg",
+        "stick": "images/stick/roulette.svg"
+      }
+    },
+    {
+      "id": "architect",
+      "name": "Architect",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ffd21a",
+      "accent": "#334155",
+      "symbol": "",
+      "statLabel": "BUILDS",
+      "formula": "+1 per bounce, plus what it builds",
+      "images": {
+        "animated": "images/animated/anim-architect.jpg",
+        "stick": "images/stick/architect.svg"
+      }
+    },
+    {
+      "id": "sawblade",
+      "name": "Sawblade",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff9f1c",
+      "accent": "#fff0bd",
+      "symbol": "",
+      "statLabel": "SAWBLADE SHOTS",
+      "formula": "+1 per bounce, plus saw shots",
+      "images": {
+        "animated": "images/animated/anim-sawblade.jpg",
+        "stick": "images/stick/sawblade.svg"
+      },
+      "duplicateEvery": 4
+    },
+    {
+      "id": "meteor",
+      "name": "Meteor",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#191919",
+      "accent": "#ff4a1f",
+      "symbol": "",
+      "statLabel": "METEORS",
+      "formula": "+1 per bounce. Meteors scale off that damage",
+      "images": {
+        "animated": "images/animated/anim-meteor.jpg",
+        "stick": "images/stick/meteor.svg"
+      }
+    },
+    {
+      "id": "black-hole",
+      "name": "Black Hole",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#090617",
+      "accent": "#d45cff",
+      "symbol": "",
+      "statLabel": "POWER",
+      "formula": "Hits stay at 1 until the singularity returns the drained total",
+      "images": {
+        "animated": "images/animated/anim-black-hole.jpg",
+        "stick": "images/stick/black-hole.svg"
+      }
+    },
+    {
+      "id": "godzilla",
+      "name": "Godzilla",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#171c22",
+      "accent": "#19c7ff",
+      "symbol": "",
+      "statLabel": "STOMP",
+      "formula": "+1 per bounce, plus stomp, swipe, and the beam while firing",
+      "images": {
+        "animated": "images/animated/anim-godzilla.jpg",
+        "portrait": "images/portraits/godzilla-portrait.jpg",
+        "stick": "images/stick/godzilla.svg"
+      },
+      "imageLettering": "KAIJU"
+    },
+    {
+      "id": "centy",
+      "name": "Centy",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ffffff",
+      "accent": "#202020",
+      "symbol": "%",
+      "statLabel": "PERCENT",
+      "formula": "Layer max × percent. Starts at 1%, +0.1% per bounce",
+      "images": {
+        "animated": "images/animated/anim-centy.jpg",
+        "stick": "images/stick/centy.svg"
+      }
+    },
+    {
+      "id": "infinity",
+      "name": "Infinity",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#050505",
+      "accent": "#ffffff",
+      "symbol": "∞",
+      "statLabel": "DAMAGE",
+      "formula": "1×10²¹ on every hit",
+      "images": {
+        "animated": "images/animated/anim-infinity.jpg",
+        "portrait": "images/portraits/infinity-portrait.jpg",
+        "stick": "images/stick/infinity.svg"
+      }
+    },
+    {
+      "id": "charger",
+      "name": "Charger",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#0b5d32",
+      "accent": "#5dff9a",
+      "symbol": "C",
+      "statLabel": "CHARGE",
+      "formula": "+1 per bounce. The charge interval shrinks",
+      "images": {
+        "animated": "images/animated/anim-charger.jpg",
+        "stick": "images/stick/charger.svg"
+      }
+    },
+    {
+      "id": "bouncer",
+      "name": "Bouncer",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff4fb8",
+      "accent": "#ffd1eb",
+      "symbol": "B",
+      "statLabel": "MINI ORBS",
+      "formula": "+1 per bounce, plus the mini orbs’ own hits",
+      "images": {
+        "animated": "images/animated/anim-bouncer.jpg",
+        "stick": "images/stick/bouncer.svg"
+      }
+    },
+    {
+      "id": "blue-sun",
+      "name": "Blue Sun",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#050505",
+      "accent": "#00eaff",
+      "symbol": "",
+      "statLabel": "POWER LEVEL",
+      "formula": "+1 per bounce, plus lasers that hit the line",
+      "images": {
+        "animated": "images/animated/anim-blue-sun.jpg",
+        "stick": "images/stick/blue-sun.svg"
+      }
+    },
+    {
+      "id": "purple-sun",
+      "name": "Purple Sun",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#a855f7",
+      "accent": "#f0abfc",
+      "symbol": "",
+      "statLabel": "POWER LEVEL",
+      "formula": "Beams by power level. Body does not take the +1 ramp",
+      "images": {
+        "animated": "images/animated/anim-purple-sun.jpg",
+        "stick": "images/stick/purple-sun.svg"
+      }
+    },
+    {
+      "id": "phase-three-sun",
+      "name": "The Sun",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#d8a800",
+      "accent": "#fff36b",
+      "symbol": "III",
+      "statLabel": "POWER LEVEL",
+      "formula": "Body 0. Damage is the phase-three beam",
+      "images": {
+        "animated": "images/animated/anim-the-sun.jpg",
+        "portrait": "images/portraits/the-sun-portrait.jpg",
+        "stick": "images/stick/phase-three-sun.svg"
+      }
+    },
+    {
+      "id": "phase-two-sun",
+      "name": "Phase Two Sun",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#f97316",
+      "accent": "#ffd166",
+      "symbol": "II",
+      "statLabel": "POWER LEVEL",
+      "formula": "Body 0. Damage is the phase-two beam",
+      "images": {
+        "animated": "images/animated/anim-phase-two-sun.jpg",
+        "stick": "images/stick/phase-two-sun.svg"
+      }
+    },
+    {
+      "id": "snake",
+      "name": "Snake",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#164b2b",
+      "accent": "#8aff8a",
+      "symbol": "S",
+      "statLabel": "TAIL",
+      "formula": "Body 0. The grounded tail deals the damage",
+      "images": {
+        "animated": "images/animated/anim-snake.jpg",
+        "portrait": "images/portraits/snake-portrait.jpg",
+        "stick": "images/stick/snake.svg"
+      }
+    },
+    {
+      "id": "vampire",
+      "name": "Vampire",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#7d0c19",
+      "accent": "#ff6577",
+      "symbol": "☻",
+      "statLabel": "DAMAGE STEAL",
+      "formula": "Steal percent rises every bounce and is taken from the hit",
+      "images": {
+        "animated": "images/animated/anim-vampire.jpg",
+        "stick": "images/stick/vampire.svg"
+      }
+    },
+    {
+      "id": "cubed",
+      "name": "Cubed",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#8854ff",
+      "accent": "#dac7ff",
+      "symbol": "x³",
+      "statLabel": "CUBE",
+      "formula": "n³",
+      "images": {
+        "animated": "images/animated/anim-cubed.jpg",
+        "stick": "images/stick/cubed.svg"
+      }
+    },
+    {
+      "id": "double",
+      "name": "Double",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#00a8ff",
+      "accent": "#b8ebff",
+      "symbol": "×2",
+      "statLabel": "DOUBLE",
+      "formula": "2ⁿ",
+      "images": {
+        "animated": "images/animated/anim-double.jpg",
+        "stick": "images/stick/double.svg"
+      }
+    },
+    {
+      "id": "tripler",
+      "name": "Tripler",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#ff8a00",
+      "accent": "#ffe0a6",
+      "symbol": "×3",
+      "statLabel": "TRIPLE",
+      "formula": "3ⁿ",
+      "images": {
+        "animated": "images/animated/anim-tripler.jpg",
+        "stick": "images/stick/tripler.svg"
+      }
+    },
+    {
+      "id": "turret",
+      "name": "Turret",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#ff7a00",
+      "accent": "#ff7a00",
+      "symbol": "",
+      "statLabel": "TURRET TIME",
+      "formula": "+1 per bounce, plus turret shots",
+      "images": {
+        "animated": "images/animated/anim-turret.jpg",
+        "stick": "images/stick/turret.svg"
+      }
+    },
+    {
+      "id": "leech",
+      "name": "Leech",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#155d27",
+      "accent": "#77d66a",
+      "symbol": "",
+      "statLabel": "LEECH LEVEL",
+      "formula": "+1 per bounce. Leech level follows the sticky hold",
+      "images": {
+        "animated": "images/animated/anim-leech.jpg",
+        "stick": "images/stick/leech.svg"
+      }
+    },
+    {
+      "id": "crusher",
+      "name": "Crusher",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#515860",
+      "accent": "#b8c0c8",
+      "symbol": "",
+      "statLabel": "WEIGHT",
+      "formula": "+1 per bounce, plus extra damage as weight rises",
+      "images": {
+        "animated": "images/animated/anim-crusher.jpg",
+        "stick": "images/stick/crusher.svg"
+      }
+    },
+    {
+      "id": "berserker",
+      "name": "Berserker",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#e11d2e",
+      "accent": "#ff9a6b",
+      "symbol": "",
+      "statLabel": "RAGE",
+      "formula": "+1 per bounce, and more while trailing by 10% of the layer",
+      "images": {
+        "animated": "images/animated/anim-berserker.jpg",
+        "stick": "images/stick/berserker.svg"
+      }
+    },
+    {
+      "id": "reactor",
+      "name": "Reactor",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#168cff",
+      "accent": "#9de9ff",
+      "symbol": "",
+      "statLabel": "REACTOR",
+      "formula": "+1 per bounce, plus the charged blast",
+      "images": {
+        "animated": "images/animated/anim-reactor.jpg",
+        "stick": "images/stick/reactor.svg"
+      }
+    },
+    {
+      "id": "parasite",
+      "name": "Parasite",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#6b4f2a",
+      "accent": "#79a83b",
+      "symbol": "",
+      "statLabel": "SPAWN",
+      "formula": "+1 per bounce, plus each attached parasite",
+      "images": {
+        "animated": "images/animated/anim-parasite.jpg",
+        "stick": "images/stick/parasite.svg"
+      }
+    },
+    {
+      "id": "draftmaster",
+      "name": "Draftmaster",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#3556a8",
+      "accent": "#d6b85a",
+      "symbol": "DM",
+      "statLabel": "UPGRADES",
+      "formula": "+1 per bounce, plus drafted bullets",
+      "images": {
+        "animated": "images/animated/anim-draftmaster.jpg",
+        "stick": "images/stick/draftmaster.svg"
+      }
+    },
+    {
+      "id": "needle",
+      "name": "Needle",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#f7f7f7",
+      "accent": "#424242",
+      "symbol": "⌁",
+      "statLabel": "PIERCE",
+      "formula": "Pierce hits. The body does not take the +1 ramp",
+      "images": {
+        "animated": "images/animated/anim-needle.jpg",
+        "stick": "images/stick/needle.svg"
+      }
+    },
+    {
+      "id": "multiplier",
+      "name": "Multiplier",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#15d67f",
+      "accent": "#baffdd",
+      "symbol": "×",
+      "statLabel": "MULTIPLIER",
+      "formula": "Scales the hit by its multiplier instead of +1 per bounce",
+      "images": {
+        "animated": "images/animated/anim-multiplier.jpg",
+        "stick": "images/stick/multiplier.svg"
+      }
+    },
+    {
+      "id": "sniper",
+      "name": "Sniper",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#6ea23a",
+      "accent": "#d7ff8a",
+      "symbol": "⌖",
+      "statLabel": "SHOT DAMAGE",
+      "formula": "Shot damage. Bounce shortens the fire cooldown",
+      "images": {
+        "animated": "images/animated/anim-sniper.jpg",
+        "stick": "images/stick/sniper.svg"
+      }
+    },
+    {
+      "id": "snowball",
+      "name": "Snowball",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#eafcff",
+      "accent": "#70d9ff",
+      "symbol": "❄",
+      "statLabel": "SIZE",
+      "formula": "Grows, and the hit is not the plain +1 ramp",
+      "images": {
+        "animated": "images/animated/anim-snowball.jpg",
+        "stick": "images/stick/snowball.svg"
+      }
+    },
+    {
+      "id": "countdown",
+      "name": "Countdown",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#ff3b30",
+      "accent": "#ffd24a",
+      "symbol": "10",
+      "statLabel": "COUNTDOWN",
+      "formula": "A blast multiplier when the countdown lands",
+      "images": {
+        "animated": "images/animated/anim-countdown.jpg",
+        "stick": "images/stick/countdown.svg"
+      }
+    },
+    {
+      "id": "copycat",
+      "name": "Copycat",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#ff74c8",
+      "accent": "#7ee8ff",
+      "symbol": "C",
+      "statLabel": "COPIED DAMAGE",
+      "formula": "Body starts at 0, then uses the damage of the orb it copied",
+      "images": {
+        "animated": "images/animated/anim-copycat.jpg",
+        "stick": "images/stick/copycat.svg"
+      }
+    },
+    {
+      "id": "critical",
+      "name": "Critical",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#ffd21a",
+      "accent": "#ff4b2b",
+      "symbol": "!",
+      "statLabel": "CRIT CHANCE",
+      "formula": "A critical multiplier on the hit, off the +1 ramp",
+      "images": {
+        "animated": "images/animated/anim-critical.jpg",
+        "stick": "images/stick/critical.svg"
+      }
+    },
+    {
+      "id": "100x",
+      "name": "100X",
+      "mode": "orb-race",
+      "family": "math",
+      "color": "#f43f5e",
+      "accent": "#fecdd3",
+      "symbol": "100×",
+      "statLabel": "100X DAMAGE",
+      "formula": "100ⁿ",
+      "images": {
+        "animated": "images/animated/anim-100x.jpg",
+        "stick": "images/stick/100x.svg"
+      }
+    },
+    {
+      "id": "grappler",
+      "name": "Grappler",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#0f766e",
+      "accent": "#99f6e4",
+      "symbol": "G",
+      "statLabel": "GRAPPLE DAMAGE",
+      "formula": "Body starts at 0. The grapple supplies the hit",
+      "images": {
+        "animated": "images/animated/anim-grappler.jpg",
+        "stick": "images/stick/grappler.svg"
+      }
+    },
+    {
+      "id": "artists",
+      "name": "Artist",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#f97316",
+      "accent": "#fef08a",
+      "symbol": "✎",
+      "statLabel": "PAINTING",
+      "formula": "Body starts at 0. Painting damage rises when scaling is on",
+      "images": {
+        "animated": "images/animated/anim-artist.jpg",
+        "stick": "images/stick/artists.svg"
+      }
+    },
+    {
+      "id": "pancake",
+      "name": "Pancake",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#d6a15d",
+      "accent": "#fff1bd",
+      "symbol": "🥞",
+      "statLabel": "FLIPS + STACK",
+      "formula": "+1 per bounce. Syrup and butter patches tick on the layer",
+      "images": {
+        "animated": "images/animated/anim-pancake.jpg",
+        "stick": "images/stick/pancake.svg"
+      }
+    },
+    {
+      "id": "tree",
+      "name": "Tree",
+      "mode": "orb-race",
+      "family": "contact",
+      "color": "#16a34a",
+      "accent": "#bbf7d0",
+      "symbol": "🌳",
+      "statLabel": "ROOTS",
+      "formula": "+1 per bounce. After the charge, roots drain every layer",
+      "images": {
+        "animated": "images/animated/anim-tree.jpg",
+        "stick": "images/stick/tree.svg"
+      }
+    },
+    {
+      "id": "rain",
+      "name": "Rain",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#345b82",
+      "accent": "#b9efff",
+      "symbol": "☔",
+      "statLabel": "RAIN DAMAGE",
+      "formula": "Body 0. Rain hits the layer",
+      "images": {
+        "animated": "images/animated/anim-rain.jpg",
+        "stick": "images/stick/rain.svg"
+      }
+    },
+    {
+      "id": "hacker",
+      "name": "Hacker",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#050905",
+      "accent": "#39ff14",
+      "symbol": "⌨",
+      "statLabel": "HACKS",
+      "formula": "Body 0. Each hack applies one seeded outcome",
+      "images": {
+        "animated": "images/animated/anim-hacker.jpg",
+        "portrait": "images/portraits/hacker-portrait.jpg",
+        "stick": "images/stick/hacker.svg"
+      }
+    },
+    {
+      "id": "miner",
+      "name": "Miner",
+      "mode": "orb-race",
+      "family": "special",
+      "color": "#78502e",
+      "accent": "#f4d35e",
+      "symbol": "⛏",
+      "statLabel": "DRILL PROGRESS",
+      "formula": "Body 0. The drill eats the current layer by progress",
+      "images": {
+        "animated": "images/animated/anim-miner.jpg",
+        "stick": "images/stick/miner.svg"
+      }
+    },
+    {
+      "id": "sword",
+      "name": "Sword",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#d8c9a7",
+      "accent": "#fff7df",
+      "statLabel": "DAMAGE",
+      "formula": "Swing 5. Extended poke 3. Last team alive wins",
+      "images": {
+        "animated": "images/animated/anim-sword.jpg",
+        "stick": "images/stick/sword.svg"
+      }
+    },
+    {
+      "id": "tripwire",
+      "name": "Tripwire",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#f7f7f7",
+      "accent": "#cfd6df",
+      "statLabel": "WIRES",
+      "formula": "Permanent wall wires, 1 damage per second",
+      "images": {
+        "animated": "images/animated/anim-tripwire.jpg",
+        "stick": "images/stick/tripwire.svg"
+      }
+    },
+    {
+      "id": "necromancer",
+      "name": "Necromancer",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#4b384f",
+      "accent": "#d7d0da",
+      "statLabel": "SOLDIERS",
+      "formula": "Two 1 HP soldiers. Arrows deal 3",
+      "images": {
+        "animated": "images/animated/anim-necromancer.jpg",
+        "stick": "images/stick/necromancer.svg"
+      }
+    },
+    {
+      "id": "spikey",
+      "name": "Spikey",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#bb2f3b",
+      "accent": "#ffd5d9",
+      "statLabel": "SPIKES",
+      "formula": "Permanent wall spikes, 3 damage",
+      "images": {
+        "animated": "images/animated/anim-spikey.jpg",
+        "stick": "images/stick/spikey.svg"
+      }
+    },
+    {
+      "id": "virus",
+      "name": "Virus",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#39ff5a",
+      "accent": "#d7ffdd",
+      "statLabel": "VIRUS",
+      "formula": "Contact stack 1, then 2, then onward, in 5-second windows",
+      "images": {
+        "animated": "images/animated/anim-virus.jpg",
+        "stick": "images/stick/virus.svg"
+      }
+    },
+    {
+      "id": "cobwebs",
+      "name": "Cobwebs",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#f4f4f1",
+      "accent": "#bdc4c9",
+      "statLabel": "WEBS",
+      "formula": "Webs deal 1 damage per second",
+      "images": {
+        "animated": "images/animated/anim-cobwebs.jpg",
+        "stick": "images/stick/cobwebs.svg"
+      }
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#d8322e",
+      "accent": "#75cc43",
+      "statLabel": "APPLES",
+      "formula": "Every 2s: owner +3 HP, opponent −5 HP",
+      "images": {
+        "animated": "images/animated/anim-apple.jpg",
+        "stick": "images/stick/apple.svg"
+      }
+    },
+    {
+      "id": "absorber",
+      "name": "Classic Absorber",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#7050c8",
+      "accent": "#ded4ff",
+      "statLabel": "ABSORBED",
+      "formula": "Absorbs one seeded opponent ability",
+      "images": {
+        "animated": "images/animated/anim-classic-absorber.jpg",
+        "stick": "images/stick/absorber.svg"
+      }
+    },
+    {
+      "id": "trapper",
+      "name": "Cowboy",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#9b5c2e",
+      "accent": "#f0c190",
+      "statLabel": "TRAPS",
+      "formula": "Three lassos, 4 damage per second",
+      "images": {
+        "animated": "images/animated/anim-cowboy.jpg",
+        "portrait": "images/portraits/cowboy-portrait.jpg",
+        "stick": "images/stick/trapper.svg"
+      }
+    },
+    {
+      "id": "hive-ball",
+      "name": "Hive Ball",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#d9a91a",
+      "accent": "#fff0a8",
+      "statLabel": "BEES",
+      "formula": "Bees deal 3 per hit",
+      "images": {
+        "animated": "images/animated/anim-hive-ball.jpg",
+        "stick": "images/stick/hive-ball.svg"
+      }
+    },
+    {
+      "id": "zeus",
+      "name": "Zeus",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#75c9ff",
+      "accent": "#f1e3a0",
+      "statLabel": "STORMS",
+      "formula": "Lightning, 10 damage per second",
+      "images": {
+        "animated": "images/animated/anim-zeus.jpg",
+        "portrait": "images/portraits/zeus-portrait.jpg",
+        "stick": "images/stick/zeus.svg"
+      }
+    },
+    {
+      "id": "glass-ball",
+      "name": "Glass Ball",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#bcecff",
+      "accent": "#ffffff",
+      "statLabel": "SHARDS",
+      "formula": "3 to 5 shards, 2 damage each",
+      "images": {
+        "animated": "images/animated/anim-glass-ball.jpg",
+        "stick": "images/stick/glass-ball.svg"
+      }
+    },
+    {
+      "id": "pistol",
+      "name": "Pistol",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#464a50",
+      "accent": "#bfc4ca",
+      "statLabel": "AMMO",
+      "formula": "Two shots, 5 damage",
+      "images": {
+        "animated": "images/animated/anim-pistol.jpg",
+        "stick": "images/stick/pistol.svg"
+      }
+    },
+    {
+      "id": "shotgun",
+      "name": "Shotgun",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#34383d",
+      "accent": "#c5a56d",
+      "statLabel": "SHELLS",
+      "formula": "Wide spread, 4 damage",
+      "images": {
+        "animated": "images/animated/anim-shotgun.jpg",
+        "stick": "images/stick/shotgun.svg"
+      }
+    },
+    {
+      "id": "rifle",
+      "name": "Rifle",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#596068",
+      "accent": "#cdd2d6",
+      "statLabel": "AMMO",
+      "formula": "Five rounds, two wall ricochets",
+      "images": {
+        "animated": "images/animated/anim-rifle.jpg",
+        "stick": "images/stick/rifle.svg"
+      }
+    },
+    {
+      "id": "sawball",
+      "name": "Sawball",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#42a94f",
+      "accent": "#dbffe0",
+      "statLabel": "SAWS",
+      "formula": "Twin saws, 5 damage",
+      "images": {
+        "animated": "images/animated/anim-sawball.jpg",
+        "stick": "images/stick/sawball.svg"
+      }
+    },
+    {
+      "id": "cutter",
+      "name": "Cutter",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#d62626",
+      "accent": "#ffb6b6",
+      "statLabel": "CUTS",
+      "formula": "2 damage every 0.5s inside the red zone",
+      "images": {
+        "animated": "images/animated/anim-cutter.jpg",
+        "stick": "images/stick/cutter.svg"
+      }
+    },
+    {
+      "id": "trident",
+      "name": "Trident",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#33cbd0",
+      "accent": "#c9ffff",
+      "statLabel": "THROWS",
+      "formula": "Throw deals 20 and sticks for 3 seconds",
+      "images": {
+        "animated": "images/animated/anim-trident.jpg",
+        "stick": "images/stick/trident.svg"
+      }
+    },
+    {
+      "id": "parasites",
+      "name": "Parasites",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#778d3d",
+      "accent": "#d6e8a6",
+      "statLabel": "LATCHES",
+      "formula": "A latch deals 2 damage per second",
+      "images": {
+        "animated": "images/animated/anim-parasites.jpg",
+        "stick": "images/stick/parasites.svg"
+      }
+    },
+    {
+      "id": "train",
+      "name": "Train",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#3e4c58",
+      "accent": "#d6a63f",
+      "statLabel": "TRACKS",
+      "formula": "After three wall bounces, the train deals 10",
+      "images": {
+        "animated": "images/animated/anim-train.jpg",
+        "stick": "images/stick/train.svg"
+      }
+    },
+    {
+      "id": "frost-ball",
+      "name": "Classic Snowball",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#eafcff",
+      "accent": "#70d9ff",
+      "statLabel": "FROST",
+      "formula": "Frost trail deals 3 on entry and can freeze",
+      "images": {
+        "animated": "images/animated/anim-classic-snowball.jpg",
+        "stick": "images/stick/frost-ball.svg"
+      }
+    },
+    {
+      "id": "boxer",
+      "name": "Boxer",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#c83a32",
+      "accent": "#ffd0ca",
+      "statLabel": "PUNCHES",
+      "formula": "A punch cycle: retract, extend, impact, recover",
+      "images": {
+        "animated": "images/animated/anim-boxer.jpg",
+        "portrait": "images/portraits/boxer-portrait.jpg",
+        "stick": "images/stick/boxer.svg"
+      }
+    },
+    {
+      "id": "artist",
+      "name": "Classic Artist",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#e870ba",
+      "accent": "#fff0fa",
+      "statLabel": "PAINTINGS",
+      "formula": "Summons Monster, Fairy, or Soldier",
+      "images": {
+        "animated": "images/animated/anim-classic-artist.jpg",
+        "stick": "images/stick/artist.svg"
+      }
+    },
+    {
+      "id": "monster",
+      "name": "Monster",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#397f4b",
+      "accent": "#9fd3a9",
+      "statLabel": "PUNCHES",
+      "formula": "Fists deal 5",
+      "images": {
+        "animated": "images/animated/anim-monster.jpg",
+        "stick": "images/stick/monster.svg"
+      }
+    },
+    {
+      "id": "fairy",
+      "name": "Fairy",
+      "mode": "classic",
+      "family": "classic",
+      "color": "#e594ff",
+      "accent": "#fff0ff",
+      "statLabel": "MAGIC",
+      "formula": "Tracking wand magic",
+      "images": {
+        "animated": "images/animated/anim-fairy.jpg",
+        "portrait": "images/portraits/fairy-portrait.jpg",
+        "stick": "images/stick/fairy.svg"
+      }
+    }
+  ]
+}

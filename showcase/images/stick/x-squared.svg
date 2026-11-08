@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="X² fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#ffe26b" stroke-width="4"/>
+<polygon points="60,150 40,200 62,200 76,150" fill="#ff3654" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="88,150 108,174 128,200 108,200 96,154" fill="#ff3654" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="74,100 112,96 106,154 78,154" fill="#ff3654" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="82,108 100,124 92,132 76,114" fill="#ffe26b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="42" y="190" width="16" height="10" fill="#ffe26b" stroke="#1a120e" stroke-width="3"/>
+<rect x="112" y="190" width="16" height="10" fill="#ffe26b" stroke="#1a120e" stroke-width="3"/>
+<rect x="80" y="112" width="26" height="28" fill="#ffe26b" stroke="#1a120e" stroke-width="2"/>
+<rect x="80" y="135" width="26" height="6" fill="#ffe26b" stroke="#1a120e" stroke-width="2"/>
+<polygon points="68.99498807150951,100.78249233168468 50.9949880715095,128.7824923316847 61.0050119284905,135.2175076683153 79.00501192849049,107.21750766831532" fill="#ff3654" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="49" y="125" width="14" height="14" rx="2" fill="#ffe26b" stroke="#1a120e" stroke-width="3"/>
+<rect x="40" y="124" width="14" height="16" fill="#ffe26b" stroke="#1a120e" stroke-width="3"/>
+<polygon points="109.46312450780684,106.97938139851107 161.46312450780684,110.97938139851107 162.53687549219316,97.02061860148893 110.53687549219316,93.02061860148893" fill="#ff3654" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="93" y="126" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">X²</text>
+<circle cx="94" cy="82" r="13" fill="#f0c4a4" stroke="#1a120e" stroke-width="3"/>
+<polygon points="81,80 77,53 92,69 102,49 109,80" fill="#ffe26b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="88.02" y="80.44" width="3" height="3" fill="#1a120e"/>
+<rect x="96.08" y="80.44" width="3" height="3" fill="#1a120e"/>
+<path d="M 90 86.16 L 99 85.12" stroke="#1a120e" stroke-width="2" fill="none"/>
+<rect x="153" y="95" width="18" height="18" rx="2" fill="#ffe26b" stroke="#1a120e" stroke-width="3"/>
+</svg>

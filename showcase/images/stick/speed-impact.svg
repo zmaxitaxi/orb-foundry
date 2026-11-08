@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Slow fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#d8dee4" stroke-width="4"/>
+<polygon points="58,160 34,200 70,200 86,160" fill="#8b949e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="116,160 132,200 168,200 142,160" fill="#8b949e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="44,104 158,104 150,168 52,168" fill="#8b949e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="36" y="190" width="22" height="10" fill="#d8dee4" stroke="#1a120e" stroke-width="3"/>
+<rect x="140" y="190" width="20" height="10" fill="#d8dee4" stroke="#1a120e" stroke-width="3"/>
+<rect x="74" y="145" width="52" height="6" fill="#d8dee4" stroke="#1a120e" stroke-width="2"/>
+<polygon points="59.34122041907061,118.25887297145444 77.34122041907061,102.25887297145444 62.65877958092939,85.74112702854556 44.65877958092939,101.74112702854556" fill="#8b949e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="70" cy="94" r="13" fill="#d8dee4" stroke="#1a120e" stroke-width="3"/>
+<polygon points="157.78349703118943,99.43944009770927 143.78349703118943,83.43944009770927 124.21650296881059,100.56055990229073 138.21650296881057,116.56055990229073" fill="#8b949e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="100" y="130" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">50</text>
+<circle cx="100" cy="88" r="16" fill="#8b949e" stroke="#1a120e" stroke-width="3"/>
+<path d="M 84 88 A 16 16 0 0 0 116 88" fill="#d8dee4" stroke="#1a120e" stroke-width="3"/>
+<rect x="92.64" y="86.08" width="3.52" height="3.52" fill="#1a120e"/>
+<rect x="102.56" y="86.08" width="3.52" height="3.52" fill="#1a120e"/>
+<path d="M 96 93.12 L 105 91.84" stroke="#1a120e" stroke-width="2" fill="none"/>
+<circle cx="134" cy="92" r="15" fill="#d8dee4" stroke="#1a120e" stroke-width="3"/>
+</svg>

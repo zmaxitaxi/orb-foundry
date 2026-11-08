@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Godzilla fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#19c7ff" stroke-width="4"/>
+<polygon points="78,174 38,150 48,192 72,182" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="36,166 74,146 148,142 176,162 158,190 46,192" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="44,176 34,200 62,200 66,176" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="96" y="158" width="36" height="16" fill="#19c7ff" stroke="#1a120e" stroke-width="2"/>
+<polygon points="72.99498807150951,162.7824923316847 54.9949880715095,190.7824923316847 65.00501192849049,197.2175076683153 83.00501192849049,169.2175076683153" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="53" y="187" width="14" height="14" rx="2" fill="#19c7ff" stroke="#1a120e" stroke-width="3"/>
+<polygon points="147.72444162042265,160.61980619513406 211.72444162042265,182.61980619513406 216.27555837957735,169.38019380486594 152.27555837957735,147.38019380486594" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="114" y="172" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">GZ</text>
+<circle cx="168" cy="146" r="15" fill="#171c22" stroke="#1a120e" stroke-width="3"/>
+<polygon points="155,142 143,117 166,138" fill="#19c7ff" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="181,142 193,117 170,138" fill="#19c7ff" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="174,144 198,152 172,160" fill="#171c22" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="166" y="142" width="5.3" height="3.3" fill="#1a120e"/>
+<polygon points="180,154 188,160 178,160" fill="#1a120e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="206" y="168" width="16" height="16" rx="2" fill="#19c7ff" stroke="#1a120e" stroke-width="3"/>
+</svg>

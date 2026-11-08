@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Monster fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#9fd3a9" stroke-width="4"/>
+<polygon points="36,166 74,146 148,142 176,162 158,190 46,192" fill="#397f4b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="44,176 34,200 62,200 66,176" fill="#397f4b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="150" cy="148" r="8" fill="#9fd3a9" stroke="#1a120e" stroke-width="3"/>
+<circle cx="78" cy="160" r="8" fill="#9fd3a9" stroke="#1a120e" stroke-width="3"/>
+<polygon points="72.99498807150951,162.7824923316847 54.9949880715095,190.7824923316847 65.00501192849049,197.2175076683153 83.00501192849049,169.2175076683153" fill="#397f4b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="53" y="187" width="14" height="14" rx="2" fill="#9fd3a9" stroke="#1a120e" stroke-width="3"/>
+<polygon points="149.46312450780684,160.97938139851107 201.46312450780684,164.97938139851107 202.53687549219316,151.02061860148893 150.53687549219316,147.02061860148893" fill="#397f4b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="114" y="172" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">MO</text>
+<circle cx="168" cy="146" r="15" fill="#397f4b" stroke="#1a120e" stroke-width="3"/>
+<polygon points="155,142 143,117 166,138" fill="#9fd3a9" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="181,142 193,117 170,138" fill="#9fd3a9" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="174,144 198,152 172,160" fill="#397f4b" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="166" y="142" width="5.3" height="3.3" fill="#1a120e"/>
+<polygon points="180,154 188,160 178,160" fill="#1a120e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="194" y="150" width="16" height="16" rx="2" fill="#9fd3a9" stroke="#1a120e" stroke-width="3"/>
+<line x1="206.8" y1="156" x2="222" y2="146" stroke="#1a120e" stroke-width="3"/>
+<line x1="207.6" y1="160" x2="226" y2="160" stroke="#1a120e" stroke-width="3"/>
+<line x1="206.8" y1="164" x2="222" y2="172" stroke="#1a120e" stroke-width="3"/>
+</svg>

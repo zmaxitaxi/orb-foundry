@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Miner fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#f4d35e" stroke-width="4"/>
+<polygon points="58,160 34,200 70,200 86,160" fill="#78502e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="118,158 150,176 176,200 148,200 124,164" fill="#78502e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="50,114 172,96 156,168 58,168" fill="#78502e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="36" y="190" width="22" height="10" fill="#f4d35e" stroke="#1a120e" stroke-width="3"/>
+<rect x="140" y="190" width="20" height="10" fill="#f4d35e" stroke="#1a120e" stroke-width="3"/>
+<rect x="74" y="145" width="52" height="6" fill="#f4d35e" stroke="#1a120e" stroke-width="2"/>
+<polygon points="44.18647006788865,102.18647006788865 16.18647006788865,130.18647006788865 31.81352993211135,145.81352993211135 59.81352993211135,117.81352993211135" fill="#78502e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="24" cy="138" r="13" fill="#f4d35e" stroke="#1a120e" stroke-width="3"/>
+<polygon points="143.77396300935638,120.29392579096327 207.77396300935638,142.29392579096327 216.22603699064362,117.70607420903673 152.22603699064362,95.70607420903673" fill="#78502e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="100" y="130" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">MN</text>
+<polygon points="209,136 216,90 224,94 216,138" fill="#f4d35e" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="100" cy="88" r="16" fill="#78502e" stroke="#1a120e" stroke-width="3"/>
+<path d="M 84 88 A 16 16 0 0 0 116 88" fill="#f4d35e" stroke="#1a120e" stroke-width="3"/>
+<rect x="92.64" y="86.08" width="3.52" height="3.52" fill="#1a120e"/>
+<rect x="102.56" y="86.08" width="3.52" height="3.52" fill="#1a120e"/>
+<path d="M 96 93.12 L 105 91.84" stroke="#1a120e" stroke-width="2" fill="none"/>
+<circle cx="212" cy="130" r="15" fill="#f4d35e" stroke="#1a120e" stroke-width="3"/>
+</svg>

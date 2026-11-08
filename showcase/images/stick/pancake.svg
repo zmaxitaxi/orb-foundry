@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Pancake fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#fff1bd" stroke-width="4"/>
+<ellipse cx="108" cy="142" rx="50" ry="42" fill="#d6a15d" stroke="#1a120e" stroke-width="3"/>
+<polygon points="78,176 68,200 94,200 98,176" fill="#d6a15d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="140,168 196,154 204,170 154,182" fill="#d6a15d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="108" cy="146" r="16" fill="#fff1bd"/>
+<rect x="70" y="190" width="18" height="10" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+<rect x="186" y="160" width="18" height="10" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+<rect x="88" y="147" width="40" height="6" fill="#fff1bd" stroke="#1a120e" stroke-width="2"/>
+<polygon points="58.279986367439435,124.3228483790682 40.279986367439435,152.3228483790682 51.720013632560565,159.6771516209318 69.72001363256057,131.6771516209318" fill="#d6a15d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="46" cy="156" r="9" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+<polygon points="153.64808384839873,120.17160172010601 115.64808384839874,112.17160172010601 112.35191615160126,127.82839827989399 150.35191615160127,135.828398279894" fill="#d6a15d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="108" y="138" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">PC</text>
+<circle cx="108" cy="102" r="20" fill="#d6a15d" stroke="#1a120e" stroke-width="3"/>
+<rect x="98" y="68" width="20" height="14" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+<rect x="80" y="82" width="56" height="5" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+<rect x="98.8" y="99.6" width="4.4" height="4.4" fill="#1a120e"/>
+<rect x="111.2" y="99.6" width="4.4" height="4.4" fill="#1a120e"/>
+<path d="M 104 108.4 L 113 106.8" stroke="#1a120e" stroke-width="2" fill="none"/>
+<circle cx="114" cy="120" r="11" fill="#fff1bd" stroke="#1a120e" stroke-width="3"/>
+</svg>

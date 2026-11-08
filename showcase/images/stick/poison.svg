@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Poison fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#d8b4fe" stroke-width="4"/>
+<polygon points="60,150 40,200 62,200 76,150" fill="#8b5cf6" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="88,150 108,174 128,200 108,200 96,154" fill="#8b5cf6" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="74,100 112,96 106,154 78,154" fill="#8b5cf6" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="82,108 100,124 92,132 76,114" fill="#d8b4fe" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="42" y="190" width="16" height="10" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<rect x="112" y="190" width="16" height="10" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<circle cx="110" cy="94" r="8" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<circle cx="74" cy="98" r="8" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<rect x="80" y="135" width="26" height="6" fill="#d8b4fe" stroke="#1a120e" stroke-width="2"/>
+<polygon points="79.45113614266802,101.61512793758274 72.45113614266802,85.61512793758274 61.54886385733197,90.38487206241726 68.54886385733198,106.38487206241726" fill="#8b5cf6" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="60" y="81" width="14" height="14" rx="2" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<polygon points="114.77622775252007,105.11738687770008 129.77622775252007,91.11738687770008 120.22377224747993,80.88261312229992 105.22377224747993,94.88261312229992" fill="#8b5cf6" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="93" y="126" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">PS</text>
+<circle cx="94" cy="84" r="20" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<circle cx="94" cy="82" r="13" fill="#f0c4a4" stroke="#1a120e" stroke-width="3"/>
+<rect x="88.02" y="80.44" width="3" height="3" fill="#1a120e"/>
+<rect x="96.08" y="80.44" width="3" height="3" fill="#1a120e"/>
+<path d="M 90 86.16 L 99 85.12" stroke="#1a120e" stroke-width="2" fill="none"/>
+<rect x="116" y="77" width="18" height="18" rx="2" fill="#d8b4fe" stroke="#1a120e" stroke-width="3"/>
+<line x1="130.4" y1="84" x2="146" y2="74" stroke="#1a120e" stroke-width="3"/>
+<line x1="131.3" y1="88" x2="150" y2="88" stroke="#1a120e" stroke-width="3"/>
+<line x1="130.4" y1="92" x2="146" y2="100" stroke="#1a120e" stroke-width="3"/>
+</svg>

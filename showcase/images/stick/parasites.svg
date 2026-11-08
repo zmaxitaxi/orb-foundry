@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Parasites fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#d6e8a6" stroke-width="4"/>
+<polygon points="92,138 76,200 98,200 104,140" fill="#778d3d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="110,140 122,200 144,200 120,140" fill="#778d3d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="86,96 122,96 114,144 92,144" fill="#778d3d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="78" y="190" width="16" height="10" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<rect x="124" y="190" width="16" height="10" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<circle cx="120" cy="108" r="8" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<circle cx="84" cy="108" r="8" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<rect x="92" y="127" width="22" height="6" fill="#d6e8a6" stroke="#1a120e" stroke-width="2"/>
+<polygon points="80.42499147964965,111.70178023691763 62.42499147964965,139.70178023691764 69.57500852035035,144.29821976308236 87.57500852035035,116.29821976308237" fill="#778d3d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="59" y="135" width="14" height="14" rx="2" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<polygon points="118.37460115744476,118.72843299652433 182.37460115744477,140.72843299652433 185.62539884255523,131.27156700347567 121.62539884255524,109.27156700347567" fill="#778d3d" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="103" y="132" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="8" font-weight="700" fill="#1a120e">PS</text>
+<circle cx="104" cy="78" r="33" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<circle cx="104" cy="76" r="26" fill="#f0c4a4" stroke="#1a120e" stroke-width="3"/>
+<rect x="92.03999999999999" y="72.88" width="5.72" height="5.72" fill="#1a120e"/>
+<rect x="108.16" y="72.88" width="5.72" height="5.72" fill="#1a120e"/>
+<path d="M 100 84.32 L 109 82.24" stroke="#1a120e" stroke-width="2" fill="none"/>
+<rect x="176" y="128" width="16" height="16" rx="2" fill="#d6e8a6" stroke="#1a120e" stroke-width="3"/>
+<line x1="188.8" y1="134" x2="204" y2="124" stroke="#1a120e" stroke-width="3"/>
+<line x1="189.6" y1="138" x2="208" y2="138" stroke="#1a120e" stroke-width="3"/>
+<line x1="188.8" y1="142" x2="204" y2="150" stroke="#1a120e" stroke-width="3"/>
+</svg>

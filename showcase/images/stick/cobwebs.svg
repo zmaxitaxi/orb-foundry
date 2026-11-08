@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 216" role="img" aria-label="Cobwebs fighter">
+<rect width="250" height="216" fill="#f4f1ea"/>
+<rect y="172" width="250" height="44" fill="#e7e2da"/>
+<line x1="16" y1="200" x2="220" y2="200" stroke="#bdc4c9" stroke-width="4"/>
+<polygon points="60,150 40,200 62,200 76,150" fill="#f4f4f1" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="88,150 108,174 128,200 108,200 96,154" fill="#f4f4f1" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="74,100 112,96 106,154 78,154" fill="#f4f4f1" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<polygon points="82,108 100,124 92,132 76,114" fill="#bdc4c9" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<rect x="42" y="190" width="16" height="10" fill="#bdc4c9" stroke="#1a120e" stroke-width="3"/>
+<rect x="112" y="190" width="16" height="10" fill="#bdc4c9" stroke="#1a120e" stroke-width="3"/>
+<rect x="80" y="135" width="26" height="6" fill="#bdc4c9" stroke="#1a120e" stroke-width="2"/>
+<polygon points="79.45113614266802,101.61512793758274 72.45113614266802,85.61512793758274 61.54886385733197,90.38487206241726 68.54886385733198,106.38487206241726" fill="#f4f4f1" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<circle cx="67" cy="88" r="7" fill="#bdc4c9" stroke="#1a120e" stroke-width="3"/>
+<polygon points="114.77622775252007,105.11738687770008 129.77622775252007,91.11738687770008 120.22377224747993,80.88261312229992 105.22377224747993,94.88261312229992" fill="#f4f4f1" stroke="#1a120e" stroke-width="3" stroke-linejoin="round"/>
+<text x="93" y="126" text-anchor="middle" font-family="ui-sans-serif, sans-serif" font-size="12" font-weight="700" fill="#1a120e">CW</text>
+<circle cx="94" cy="84" r="20" fill="#bdc4c9" stroke="#1a120e" stroke-width="3"/>
+<circle cx="94" cy="82" r="13" fill="#f0c4a4" stroke="#1a120e" stroke-width="3"/>
+<rect x="88.02" y="80.44" width="3" height="3" fill="#1a120e"/>
+<rect x="96.08" y="80.44" width="3" height="3" fill="#1a120e"/>
+<path d="M 90 86.16 L 99 85.12" stroke="#1a120e" stroke-width="2" fill="none"/>
+<circle cx="125" cy="86" r="9" fill="#bdc4c9" stroke="#1a120e" stroke-width="3"/>
+<ellipse cx="145" cy="72" rx="14" ry="8" fill="none" stroke="#bdc4c9" stroke-width="3"/>
+</svg>
