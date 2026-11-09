@@ -208,46 +208,30 @@ Run a safe local publishing plan without rendering or uploading:
 npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
 ```
 
-The manual workflow in `.github/workflows/youtube-publishing.yml` can validate
-or run a batch on demand. The external scheduler should prepare four private
-uploads: one Short and one long-form at noon, and one Short and one long-form
-at 3 PM Pacific. Friday's 3 PM long-form is a 16-entrant whole-tournament
-recording titled `Who is the Best Orb?`. Saturday's 3 PM long-form is the Orb
-Race matchup Everyone VS Infinity, with every allowlisted race orb except
-Infinity on the left and every layer at the top long-form HP. One Short per
-day has a 50% chance to use the approved Orb Foundry black, outline-free
-portrait Short (`1080×1920`) with a large square arena. Classic / Orb Foundry
-is Shorts-only; long-form slots stay Orb Race.
-Configure credentials in the environment that actually runs each workflow, as
-documented in [`docs/YOUTUBE_PUBLISHING.md`](docs/YOUTUBE_PUBLISHING.md).
+The daily batch prepares two Orb Foundry Shorts for noon and 3 PM Pacific.
+It favors the nine newer fighters and can choose any Classic orb except
+Grappler. Use `--source=orb-race` for a manual Orb Racer Short. The GitHub
+workflow offers the same source choice. The daily batch uses one square
+and one circle. Use `--arena-shape=circle` or `--arena-shape=square` to
+pick the shape for a manual Orb Foundry run.
 
-Each batch enforces the quality contract: two-day orb cooldowns, optional
-multi-orb teams, 25-second Shorts, 60-second long-form videos, close deterministic
-matchups, 500-HP minimum layers, ascending layer health for short-form, and no
-more than three layers in an Orb Race Short. If a race ends before its
-action-duration minimum at normal speed, the same single matchup is recorded at
-a deterministic slow-motion rate so its live race action fills the duration.
-Long-form courses expand to 50 ascending layers; every regular battle video
-records exactly one matchup, then only a brief winner reveal. Friday's tournament
-records the entire bracket for at least two minutes and validates every match
-ID, champion, and one announcer sequence per match. Continuous tournament
-recordings keep that announcer proof when the next match starts. Orb Foundry Shorts preflight a single close
-Classic battle and verify the portrait Shorts frame, black theme, and large
-square arena before upload. A
-duration or matchup-count check rejects a regular battle if the action is short
-or a second matchup appears.
-If the capped search cannot find a battle inside the close-match gate, that
-slot keeps the closest finished candidate as a bounded fallback and still
-uploads it. Unfinished and runaway candidates are not promoted. The preflight
-uses the same normalized race options the exporter records, so a fast battle
-is slowed to the action minimum instead of being planned against a slower
-default. A finished battle that still cannot meet that duration is rejected.
-A slot that still cannot be planned does not cancel the other slots in the batch.
+Each Orb Foundry Short preflights one completed fight with distinct
+signature action and at least 25 seconds of live combat. A normal winner
+must finish at 40% HP or less. One Punch Man starts at 1 HP and qualifies
+through repeated dodges, late pressure, and varied landed attacks. The
+planner can tune starting HP to find an engaging matchup. The exported
+fight must match the preflight's winner, remaining HP, and finish time.
+
+Orb Racer Shorts preflight one matchup with up to three ascending layers
+of at least 500 HP. A finished race can play at a deterministic slower
+rate to reach the action minimum. The planner can use the closest valid
+finished race when it runs out of close candidates. Each slot reports its
+own result so a failed candidate in one slot leaves the other available.
 
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Orb Race matchup descriptions ask “Who
 will break the {layerHealth} HP layer first, {left} or {right}?” Orb Foundry
-Shorts and tournament videos use source-appropriate prompts; all include the
+Shorts use a fight-specific prompt; all include the
 required `#physics #shorts #simulation #satisfying` hashtags.
 
 Every battle recording also requires announcer coverage. Cue selection uses the

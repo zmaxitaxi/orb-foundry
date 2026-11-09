@@ -1,5 +1,27 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-09 — Two daily Orb Foundry Shorts
+
+- Scheduled Orb Foundry Shorts at noon and 3 PM Pacific. Each batch
+  alternates square and circle arenas. Manual runs can pin either shape
+  or use the Orb Racer Short path.
+- Gave the nine newer Classic fighters priority and opened the posting
+  pool to all 56 eligible Classic orbs. Grappler is excluded from both
+  posting lists. The planner rotates opponents with a two-day cooldown
+  and avoids using the same fighter twice in the batch.
+- Require a completed fight, at least 25 seconds of live action, and
+  signature moves. Ordinary winners must finish at 40% HP or less.
+  One Punch Man's showcase checks real dodges, late pressure, and varied
+  landed attacks while he starts at 1 HP.
+- Run live preflight in the same Chrome engine used by the exporter.
+  Compare the export's final result with preflight before upload. Fixed
+  a dodge tie across runtimes and a Shrapnel bounce during WDC's reserve.
+- Passed 221 Node tests. A 42-day dry run filled all 84 slots and every
+  matchup featured a newer fighter. Targeted checks found passing fights
+  for the five eligible orbs that the dry run did not pick. Playwright
+  verified the full playable roster and both arena shapes. A circle
+  MP4 passed the final upload checks with four spoken announcer cues.
+
 ## 2026-11-09 — Classic powers and breakable wall visuals
 
 - Added one separate power per fight to the 48 original Classic fighters.

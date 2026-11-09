@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLASSIC_ORB_IDS } from "../src/classic-orbs.js";
+import { foundryBattlePassesQuality } from "./youtube-foundry-matchup.mjs";
 import {
     ORB_RACE_MAX_LAYER_COUNT,
     ORB_RACE_MAX_LAYER_STRENGTH,
@@ -32,27 +33,7 @@ export const YOUTUBE_OAUTH_SCOPES = Object.freeze([
     "https://www.googleapis.com/auth/youtube.force-ssl",
 ]);
 export const YOUTUBE_ORB_FOUNDRY_EXCLUDED_IDS = Object.freeze([
-    "fairy",
-    "commander",
-    "jackpot",
-    "absorber",
     "grappler",
-    "monster",
-    "train",
-    "frost-ball",
-    "ying-yang",
-    "flash",
-    "poison",
-    "charger",
-    "wdc",
-    "one-punch-man",
-    "gojo",
-    "john-rod",
-    "one-above-all",
-    "knight",
-    "ben-10",
-    "darth-vader",
-    "luke-skywalker",
 ]);
 
 export async function loadYouTubePublishingConfig(configPath = YOUTUBE_CONFIG_PATH) {
@@ -99,41 +80,33 @@ export function validateYouTubePublishingConfig(config) {
         throw new Error("YouTube description hashtags must match the approved publishing contract.");
     }
     const expectedSlots = [
-        { id: "noon-short", contentType: "short", localTime: "12:00" },
-        { id: "noon-longform", contentType: "longform", localTime: "12:00" },
-        { id: "afternoon-short", contentType: "short", localTime: "15:00" },
-        { id: "afternoon-longform", contentType: "longform", localTime: "15:00" },
+        { id: "noon-short", localTime: "12:00" },
+        { id: "afternoon-short", localTime: "15:00" },
     ];
     if (!Array.isArray(config.schedule) || config.schedule.length !== expectedSlots.length
         || config.schedule.some((slot, index) => (
             slot?.id !== expectedSlots[index].id
-            || slot?.contentType !== expectedSlots[index].contentType
+            || slot?.contentType !== "short"
+            || slot?.contentSource !== "orb-foundry"
             || slot?.localTime !== expectedSlots[index].localTime
         ))) {
-        throw new Error("YouTube publishing schedule must contain one Short and one long-form slot at both 12:00 PM and 3:00 PM Pacific.");
-    }
-    const ids = new Set();
-    for (const slot of config.schedule) {
-        if (!slot || typeof slot.id !== "string" || ids.has(slot.id)) {
-            throw new Error("YouTube publishing schedule slot IDs must be unique strings.");
-        }
-        ids.add(slot.id);
-        if (!["short", "longform"].includes(slot.contentType)) {
-            throw new Error(`Unsupported YouTube content type for ${slot.id}.`);
-        }
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(slot.localTime)) {
-            throw new Error(`Invalid localTime for YouTube slot ${slot.id}.`);
-        }
+        throw new Error("YouTube publishing schedule must contain two Orb Foundry Shorts at 12:00 PM and 3:00 PM Pacific.");
     }
     validateYouTubeQuality(config.quality);
-    validateVideoReadySection(config.videoReady?.orbRace, "orbRace", ORB_RACER_IDS);
+    validateVideoReadySection(config.videoReady?.orbRace, "orbRace", ORB_RACER_IDS.filter((id) => id !== "grappler"));
     validateVideoReadySection(config.videoReady?.orbFoundry, "orbFoundry", CLASSIC_ORB_IDS);
     const expectedFoundryOrbs = CLASSIC_ORB_IDS.filter((id) => !YOUTUBE_ORB_FOUNDRY_EXCLUDED_IDS.includes(id));
     const actualFoundryOrbs = new Set(config.videoReady.orbFoundry.orbs);
     if (config.videoReady.orbFoundry.groups.length > 0
+        || actualFoundryOrbs.size !== config.videoReady.orbFoundry.orbs.length
         || actualFoundryOrbs.size !== expectedFoundryOrbs.length
         || expectedFoundryOrbs.some((id) => !actualFoundryOrbs.has(id))) {
         throw new Error("YouTube Orb Foundry allowlist must include every non-excluded Classic orb and no groups.");
+    }
+    const featured = config.quality.orbFoundryShort.featuredOrbs;
+    if (!Array.isArray(featured) || featured.length !== 9 || new Set(featured).size !== 9
+        || featured.some((id) => !actualFoundryOrbs.has(id))) {
+        throw new Error("YouTube Orb Foundry must feature nine unique eligible Classic orbs.");
     }
     return config;
 }
@@ -217,17 +190,27 @@ function validateYouTubeQuality(quality) {
     }
     const foundry = quality.orbFoundryShort;
     if (!foundry || foundry.shortsOnly !== true
-        || Number(foundry.dailyProbability) !== 0.5 || Number(foundry.maximumPerDay) !== 1
-        || Number(foundry.initialHealth) < 1
-        || !(Number(foundry.minimumWinnerHealthFraction) > 0 && Number(foundry.minimumWinnerHealthFraction) < 1)
         || !(Number(foundry.maximumSimulationSeconds) >= Number(durationSeconds.short) * 1.05)
         || Number(foundry.maximumSimulationSeconds) > YOUTUBE_SHORTS_MAX_SECONDS
         || foundry.format !== YOUTUBE_SHORTS_FORMAT || foundry.theme !== "black" || foundry.teamOutlines !== false
-        || foundry.arenaSize !== "large" || foundry.arenaShape !== "square") {
-        throw new Error("YouTube Orb Foundry is Shorts-only and must use the portrait Shorts layout, the approved 50% daily chance, and a black, outline-free large square arena.");
+        || foundry.arenaSize !== "large") {
+        throw new Error("YouTube Orb Foundry is Shorts-only and must use the portrait Shorts layout and a black, outline-free large arena.");
+    }
+    const arenaShapes = foundry.arenaShapes;
+    if (!Array.isArray(arenaShapes) || !arenaShapes.length || new Set(arenaShapes).size !== arenaShapes.length
+        || arenaShapes.some((shape) => !["square", "circle"].includes(shape))) {
+        throw new Error("YouTube Orb Foundry arenaShapes must contain square, circle, or both.");
+    }
+    const showcase = foundry.onePunchManShowcase;
+    if (!(foundry.maximumWinnerHealthFraction > 0 && foundry.maximumWinnerHealthFraction <= 0.4)
+        || !Number.isInteger(foundry.minimumSignatureMoments) || foundry.minimumSignatureMoments < 4
+        || !Number.isInteger(showcase?.minimumDodges) || showcase.minimumDodges < 4
+        || !(showcase.maximumSecondsSinceLastDodge > 0 && showcase.maximumSecondsSinceLastDodge <= 8)
+        || !Number.isInteger(showcase.minimumAttackVariety) || showcase.minimumAttackVariety < 2) {
+        throw new Error("YouTube Orb Foundry must require close finishes, signature action, and late dodge pressure for One Punch Man.");
     }
     const tournament = quality.fridayTournament;
-    if (!tournament || tournament.enabled !== true || Number(tournament.dayOfWeek) !== 5
+    if (!tournament || tournament.enabled !== false || Number(tournament.dayOfWeek) !== 5
         || tournament.slotId !== "afternoon-longform"
         || ![8, 16, 32, 64].includes(Number(tournament.entrants))
         || Number(tournament.minimumEntrants) !== 8 || Number(tournament.maximumEntrants) !== 64
@@ -245,7 +228,7 @@ function validateYouTubeQuality(quality) {
         previousTournamentLayer = health;
     }
     const saturday = quality.saturdayEveryoneVsInfinity;
-    if (!saturday || saturday.enabled !== true || Number(saturday.dayOfWeek) !== 6
+    if (!saturday || saturday.enabled !== false || Number(saturday.dayOfWeek) !== 6
         || saturday.slotId !== "afternoon-longform"
         || saturday.rightOrb !== "infinity"
         || saturday.everyoneLabel !== "EVERYONE"
@@ -333,9 +316,6 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
         const foundry = config.quality.orbFoundryShort;
         const orbIds = Array.isArray(plan.orbFoundryOrbs) ? plan.orbFoundryOrbs : [];
         const allowedOrbs = new Set(config.videoReady.orbFoundry.orbs);
-        const winnerHealthFraction = Number(plan.battleQuality?.winnerHealthFraction);
-        const simulatedSeconds = Number(plan.battleQuality?.simulatedSeconds);
-        const expectedDurationSeconds = Number(plan.minimumDurationSeconds) * 1.05;
         if (plan.videoKind !== "match" || plan.contentType !== "short"
             || orbIds.length !== 2 || new Set(orbIds).size !== 2
             || orbIds.some((id) => !allowedOrbs.has(id))
@@ -346,26 +326,21 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
             || plan.foundryStyle.theme !== foundry.theme
             || plan.foundryStyle.teamOutlines !== foundry.teamOutlines
             || plan.foundryStyle.arenaSize !== foundry.arenaSize
-            || plan.foundryStyle.arenaShape !== foundry.arenaShape
+            || !foundry.arenaShapes.includes(plan.foundryStyle.arenaShape)
             || plan.format !== YOUTUBE_SHORTS_FORMAT
             || plan.format !== foundry.format) {
-            throw new Error("YouTube generation blocked: Orb Foundry Shorts must use the portrait Shorts layout with a black, outline-free, large square arena.");
+            throw new Error("YouTube generation blocked: Orb Foundry Shorts must use the portrait Shorts layout with a black, outline-free large arena in an approved shape.");
         }
         if (Number(plan.battleQuality?.simulatedSeconds) > YOUTUBE_SHORTS_MAX_SECONDS) {
             throw new Error("YouTube generation blocked: Orb Foundry Shorts must stay within YouTube's 3-minute Shorts limit.");
         }
         const classicHealthValues = orbIds.map((id) => Number(plan.classicOrbOptions?.[id]?.health));
-        if (classicHealthValues.some((health) => !Number.isInteger(health) || health < 1)) {
+        if (classicHealthValues.some((health) => !Number.isInteger(health) || health < 1)
+            || (orbIds.includes("one-punch-man") && Number(plan.classicOrbOptions["one-punch-man"].health) !== 1)) {
             throw new Error("YouTube generation blocked: Orb Foundry health settings are invalid.");
         }
-        if (plan.battleQuality?.accepted !== true || plan.battleQuality?.finished !== true
-            || plan.battleQuality?.fallback === true
-            || !Number.isFinite(winnerHealthFraction)
-            || winnerHealthFraction > Number(foundry.minimumWinnerHealthFraction)
-            || !Number.isFinite(simulatedSeconds)
-            || simulatedSeconds + 0.05 < expectedDurationSeconds
-            || Number(plan.battleQuality.plannedActionDurationSeconds) + 0.05 < expectedDurationSeconds) {
-            throw new Error("YouTube generation blocked: the Orb Foundry matchup must be close and contain at least 25 seconds of live action.");
+        if (plan.battleQuality?.accepted !== true || !foundryBattlePassesQuality(plan.battleQuality, orbIds, config.quality)) {
+            throw new Error("YouTube generation blocked: the Orb Foundry matchup must pass the finish, signature action, and duration checks.");
         }
         const expectedMetadata = youtubeFoundryMetadata({ left: plan.left, right: plan.right, config });
         if (plan.title !== expectedMetadata.title || plan.description !== expectedMetadata.description) {
@@ -524,18 +499,31 @@ export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
     }
 
     if (plan.contentSource === "orb-foundry") {
-        const setting = exportResult.state?.settings || {};
+        const state = exportResult.state;
+        const setting = state?.settings || {};
         if (exportResult.gameplayMode !== "classic"
             || JSON.stringify(exportResult.orbFoundryOrbs) !== JSON.stringify(plan.orbFoundryOrbs)
             || JSON.stringify(setting.classicTeams) !== JSON.stringify(plan.classicTeams)
             || setting.classicBlackTheme !== true || setting.classicTeamColors !== false
             || setting.social?.format !== YOUTUBE_SHORTS_FORMAT
-            || setting.arenaSize !== "large" || setting.arenaShape !== "square"
+            || setting.arenaSize !== plan.foundryStyle.arenaSize || setting.arenaShape !== plan.foundryStyle.arenaShape
             || setting.hazardPreset !== "none"
-            || exportResult.state?.classicTournament != null
-            || Number(exportResult.state?.time) + 0.05 < Number(plan.minimumDurationSeconds)
+            || state?.classicTournament != null
+            || Number(state?.time) + 0.05 < Number(plan.minimumDurationSeconds)
             || recordedDuration > YOUTUBE_SHORTS_MAX_SECONDS) {
-            throw new Error("YouTube upload blocked: Orb Foundry export must be a portrait Short with a black, outline-free, large square arena and stay within YouTube's 3-minute Shorts limit.");
+            throw new Error("YouTube upload blocked: Orb Foundry export must match the approved portrait Short layout and arena shape and stay within YouTube's 3-minute Shorts limit.");
+        }
+        const winningId = plan.orbFoundryOrbs[plan.battleQuality.winnerTeamIndex];
+        const survivors = (state?.fighters || []).filter((fighter) => fighter.alive);
+        const winner = survivors.find(({ type }) => type === winningId);
+        const winnerFraction = winner?.health / plan.classicOrbOptions?.[winningId]?.health;
+        if (state?.finished !== true
+            || !Number.isFinite(state.time) || Math.abs(state.time - plan.battleQuality.simulatedSeconds) > 0.05
+            || !Number.isFinite(winnerFraction) || Math.abs(winnerFraction - plan.battleQuality.winnerHealthFraction) > 0.0001
+            || survivors.some(({ type }) => type !== winningId)
+            || plan.orbFoundryOrbs.some((id) => setting.classicOrbOptions?.[id]?.health !== plan.classicOrbOptions[id].health
+                || setting.classicOrbOptions?.[id]?.orbScale !== plan.classicOrbOptions[id].orbScale)) {
+            throw new Error("YouTube upload blocked: the Orb Foundry result does not match the approved preflight.");
         }
         validateRequiredAnnouncer(exportResult.announcer, quality.announcer, 1);
         return true;
@@ -828,6 +816,7 @@ function timeZoneOffsetMinutes(date, timeZone) {
 function titlePart(value, label) {
     if (typeof value !== "string" || !value.trim()) throw new Error(`YouTube title ${label} is required.`);
     const normalized = value.trim();
+    if (normalized === "WDC") return normalized;
     if (normalized !== normalized.toUpperCase() || !/[A-Z]/.test(normalized)) return normalized;
     return normalized.toLowerCase().replace(/(^|[\s/+×&^_-])([a-z])/g, (_match, prefix, letter) => `${prefix}${letter.toUpperCase()}`);
 }

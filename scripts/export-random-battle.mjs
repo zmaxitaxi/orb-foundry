@@ -21,6 +21,7 @@ const HASHTAGS = "#weaponballs #orb #simulation";
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
@@ -191,19 +192,8 @@ export async function exportSocialVideo(options = {}) {
 
   const caption = options.description || `${orbNames[0]} VS ${orbNames[1]}\n\n${HASHTAGS}`;
 
-  const server = await startStaticServer(ROOT);
-  const tempProfile = await mkdtemp(join(tmpdir(), "orb-foundry-chrome-"));
-  const chrome = launchChrome({
-    userDataDir: tempProfile,
-    url: `http://127.0.0.1:${server.port}/`,
-  });
-
-  try {
-    const page = await connectToPage(chrome);
-    await page.send("Page.enable");
-    await page.send("Runtime.enable");
+  return withBattleExportPage(async (page) => {
     await page.send("Page.setDownloadBehavior", { behavior: "allow", downloadPath: outputDir });
-    await page.waitForExpression("window.__ORB_FOUNDRY__ && document.readyState === 'complete'", 30_000);
     await page.evaluate(`window.__ORB_FOUNDRY__.record(${JSON.stringify(settings)})`, { awaitPromise: true, userGesture: true });
 
     const timeoutMs = Number(options.timeoutMs) || Number(process.env.BATTLE_EXPORT_TIMEOUT_MS) || 420_000;
@@ -260,9 +250,27 @@ export async function exportSocialVideo(options = {}) {
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
     await writeFile(join(outRoot, "latest.json"), JSON.stringify({ ...metadata, metadataPath }, null, 2));
     return { ...metadata, metadataPath };
+  });
+}
+
+export async function withBattleExportPage(run) {
+  const tempProfile = await mkdtemp(join(tmpdir(), "orb-foundry-chrome-"));
+  let server;
+  let chrome;
+  try {
+    server = await startStaticServer(ROOT);
+    chrome = launchChrome({
+      userDataDir: tempProfile,
+      url: `http://127.0.0.1:${server.port}/`,
+    });
+    const page = await connectToPage(chrome);
+    await page.send("Page.enable");
+    await page.send("Runtime.enable");
+    await page.waitForExpression("window.__ORB_FOUNDRY__ && document.readyState === 'complete'", 30_000);
+    return await run(page);
   } finally {
     await pageSafeClose(chrome);
-    await server.close();
+    await server?.close();
     await rm(tempProfile, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
   }
 }

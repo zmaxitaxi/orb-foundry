@@ -4776,6 +4776,20 @@ test("The Pulse Classics defend and damage real opponents in regular fights", ()
     assert.deepEqual(captureReplayFrame(wrap), captureReplayFrame(run("john-rod", "one-above-all", 10)));
 });
 
+test("Shrapnel still fires on a bounce while WDC is outside the arena", () => {
+    const sim = createSimulation({
+        classicTeams: [["shrapnel"], ["wdc"]], classicOpening: false, seed: 12, features: { replay: false },
+    });
+    const [shrapnel, wdc] = sim.fighters;
+    wdc.classicWdcReserve = true;
+    forceWallBounce(sim, shrapnel);
+    const volley = sim.events.find(({ type }) => type === "classic-shrapnel-volley");
+    const shots = sim.events.filter(({ type, projectileKind }) => type === "classic-projectile-fired" && projectileKind === "shrapnel");
+    assert.ok(volley.count > 0);
+    assert.equal(shots.length, volley.count);
+    assert.ok(shots.every(({ targetId }) => targetId === null));
+});
+
 test("Classic team duels circle before a real collision and replay the seeded opening", () => {
     const options = { classicTeams: [["unarmed"], ["slammy"]], seed: 67, arenaSize: "large", features: { replay: false } };
     const first = createSimulation(options);

@@ -6,9 +6,9 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261109-classic-signature2";
-import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261109-classic-signature2";
-import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
+} from "./classic-orbs.js?v=20261109-classic-publish1";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261109-classic-publish1";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",

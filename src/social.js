@@ -1,7 +1,7 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261109-classic-signature2";
-import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-signature2";
-import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261109-classic-signature2";
-import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
+import { CLASS_DEFS } from "./simulation.js?v=20261109-classic-publish1";
+import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
+import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261109-classic-publish1";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),

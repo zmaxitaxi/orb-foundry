@@ -3,7 +3,7 @@ import {
   updateClassicWdcDuel,
   WDC_DUEL_END,
   WDC_SUMMONS,
-} from "./classic-wdc-duel.js?v=20261109-classic-signature2";
+} from "./classic-wdc-duel.js?v=20261109-classic-publish1";
 import {
   WORLD_CUP_COUNTRIES,
   WORLD_CUP_MODE,
@@ -63,9 +63,9 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261109-classic-signature2";
-import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261109-classic-signature2";
-import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
+} from "./classic-orbs.js?v=20261109-classic-publish1";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261109-classic-publish1";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -8069,10 +8069,11 @@ function spawnClassicProjectile(sim, owner, target, {
   const bulletDoesNotRicochet = CLASSIC_NON_RICOCHET_BULLETS.has(kind);
   const bulletFamily = classicBulletFamilyForKind(kind);
   const startDistance = owner.radius + radius + 2;
+  const targetId = target?.id ?? null;
   const entity = addClassicEntity(sim, {
     kind,
     ownerId: owner.id,
-    targetId: target.id,
+    targetId,
     x: originX + Math.cos(firingAngle) * startDistance,
     y: originY + Math.sin(firingAngle) * startDistance,
     vx: Math.cos(firingAngle) * speed,
@@ -8116,7 +8117,7 @@ function spawnClassicProjectile(sim, owner, target, {
   });
   emitEvent(sim, "classic-projectile-fired", {
     fighterId: owner.id,
-    targetId: target.id,
+    targetId,
     entityId: entity.id,
     projectileKind: kind,
     damage: amount,
@@ -9312,8 +9313,9 @@ function spawnClassicBounceAbility(sim, fighter, wallContact = null) {
     return;
   }
   if (ability.kind === "shrapnel") {
+    const target = nearestClassicOpponent(sim, fighter);
     for (let index = 0; index < ability.count; index += 1) {
-      spawnClassicProjectile(sim, fighter, nearestClassicOpponent(sim, fighter), {
+      spawnClassicProjectile(sim, fighter, target, {
         kind: "shrapnel",
         damage: ability.damage,
         speed: 300,
@@ -11282,13 +11284,16 @@ function classicSidestep(sim, fighter, source) {
   const point = source || { x: fighter.x - fighter.vx, y: fighter.y - fighter.vy };
   const incoming = Math.atan2(fighter.y - point.y, fighter.x - point.x);
   const stride = fighter.radius * 2.3;
-  return [-1, 1].map((side) => {
+  const [left, right] = [-1, 1].map((side) => {
     const angle = incoming + side * Math.PI * 0.41;
     const escape = clampPointToArena(sim, fighter.x + Math.cos(angle) * stride, fighter.y + Math.sin(angle) * stride, fighter.radius);
     const dx = escape.x - fighter.x;
     const dy = escape.y - fighter.y;
     return { angle: Math.atan2(dy, dx), room: Math.hypot(dx, dy) };
-  }).sort((a, b) => b.room - a.room)[0];
+  });
+  // Open space gives both paths the same room. Ignore trig rounding noise
+  // so the planner and browser choose the same side on a tie.
+  return right.room - left.room > 1e-6 ? right : left;
 }
 
 function blockClassicPulseHit(sim, fighter, source, category, amount) {

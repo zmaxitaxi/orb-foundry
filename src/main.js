@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261109-classic-signature2";
+} from "./simulation.js?v=20261109-classic-publish1";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261109-classic-signature2";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261109-classic-signature2";
+} from "./audio.js?v=20261109-classic-publish1";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261109-classic-publish1";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261109-classic-signature2";
+} from "./social.js?v=20261109-classic-publish1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261109-classic-signature2";
+} from "./config.js?v=20261109-classic-publish1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -61,7 +61,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261109-classic-signature2";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261109-classic-publish1";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -109,7 +109,7 @@ import {
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261109-classic-signature2";
+} from "./classic-orbs.js?v=20261109-classic-publish1";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);

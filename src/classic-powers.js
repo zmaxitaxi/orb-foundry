@@ -1,4 +1,4 @@
-import { CLASSIC_LEGACY_POWERS } from "./classic-legacy-powers.js?v=20261109-classic-signature2";
+import { CLASSIC_LEGACY_POWERS } from "./classic-legacy-powers.js?v=20261109-classic-publish1";
 
 const power = (profile) => Object.freeze(profile);
 

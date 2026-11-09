@@ -14,9 +14,24 @@ on:
           - auto
           - batch
           - noon-short
-          - noon-longform
           - afternoon-short
-          - afternoon-longform
+      content_source:
+        description: "Choose the source for this manual Short run"
+        required: true
+        default: orb-foundry
+        type: choice
+        options:
+          - orb-foundry
+          - orb-race
+      arena_shape:
+        description: "Arena shape for Orb Foundry Shorts"
+        required: true
+        default: auto
+        type: choice
+        options:
+          - auto
+          - square
+          - circle
       run_date:
         description: "Optional local date override (YYYY-MM-DD)"
         required: false
@@ -79,11 +94,14 @@ jobs:
         shell: bash
         env:
           DISPATCH_SLOT: ${{ inputs.slot_id || 'auto' }}
+          DISPATCH_SOURCE: ${{ inputs.content_source || 'orb-foundry' }}
+          DISPATCH_SHAPE: ${{ inputs.arena_shape || 'auto' }}
           DISPATCH_DATE: ${{ inputs.run_date || '' }}
           DISPATCH_DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
           set -euo pipefail
-          args=()
+          args=("--source=$DISPATCH_SOURCE")
+          if [ "$DISPATCH_SHAPE" != "auto" ]; then args+=("--arena-shape=$DISPATCH_SHAPE"); fi
           if [ "$DISPATCH_SLOT" = "batch" ]; then
             args+=("--batch")
           elif [ "$DISPATCH_SLOT" != "auto" ]; then

@@ -1,4 +1,4 @@
-import { THEME_IDS } from "./presentation.js?v=20261109-classic-signature2";
+import { THEME_IDS } from "./presentation.js?v=20261109-classic-publish1";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
 import {
@@ -26,7 +26,7 @@ import {
     normalizeClassicTeamOptions,
     normalizeClassicTeams,
     normalizeClassicSpeedMode as normalizeRegistryClassicSpeedMode,
-} from "./classic-orbs.js?v=20261109-classic-signature2";
+} from "./classic-orbs.js?v=20261109-classic-publish1";
 
 export const ARENA_MODIFIER_IDS = Object.freeze(["standard", "tiny", "suddenDeath", "overdrive", "glassCannon"]);
 export const ARENA_SHAPE_IDS = Object.freeze(["square", "circle"]);
