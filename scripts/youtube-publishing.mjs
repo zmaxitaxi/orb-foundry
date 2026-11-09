@@ -44,6 +44,8 @@ export const YOUTUBE_ORB_FOUNDRY_EXCLUDED_IDS = Object.freeze([
     "flash",
     "poison",
     "charger",
+    "wdc",
+    "one-punch-man",
 ]);
 
 export async function loadYouTubePublishingConfig(configPath = YOUTUBE_CONFIG_PATH) {

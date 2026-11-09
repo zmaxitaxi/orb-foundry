@@ -32,6 +32,7 @@ const orb = (id, name, color, accent, {
     power = "DETERMINISTIC ABILITY",
     statLabel = "ABILITY",
     collisionDamage = 0,
+    defaultHealth = 100,
     collisionEnabled = false,
     ability = {},
     orbWeapon = weapon(0, 0, 0, 999, 0),
@@ -46,6 +47,7 @@ const orb = (id, name, color, accent, {
     weapon: orbWeapon,
     collision: collision(collisionDamage),
     defaultCollisionDamage: collisionEnabled,
+    defaultHealth,
     classicAbility: Object.freeze({ ...ability }),
 });
 
@@ -430,6 +432,25 @@ export const CLASSIC_ORBS = Object.freeze({
         statLabel: "DRONES",
         ability: { kind: "commander", interval: 2 },
     }),
+    wdc: orb("wdc", "WDC", "#2356e3", "#7494ff", {
+        power: "PORTAL SUMMONS · UNARMED, DISINTEGRATOR, EMERALD",
+        statLabel: "SUMMON",
+        defaultHealth: 90,
+        collisionDamage: 2,
+        collisionEnabled: true,
+        ability: { kind: "wdc", interval: 7.4, damage: 16 },
+    }),
+    "one-punch-man": orb("one-punch-man", "ONE PUNCH MAN", "#efd05d", "#fff0a0", {
+        power: "1 HP · SERIOUS SERIES PUNCH DEALS 100 DAMAGE",
+        statLabel: "SERIOUS SERIES",
+        defaultHealth: 1,
+        ability: {
+            kind: "boxer",
+            interval: 2.4,
+            damage: 100,
+            phaseDurations: Object.freeze({ retract: 0.12, extend: 0.12, impact: 0.08, recover: 0.22 }),
+        },
+    }),
 });
 
 export const CLASSIC_ORB_SIZE_PROFILES = Object.freeze({
@@ -449,7 +470,17 @@ export const CLASSIC_DEFAULT_TEAMS = Object.freeze([
     Object.freeze(["sword"]),
     Object.freeze(["orbital"]),
 ]);
+export const CLASSIC_WDC_DUEL_TEAMS = Object.freeze([
+    Object.freeze(["wdc"]),
+    Object.freeze(["one-punch-man"]),
+]);
 export const CLASSIC_MAX_ORB_COPIES = 50;
+
+export function isClassicWdcDuel(teams, options) {
+    return teams?.length === 2
+        && teams.every((team, index) => team.length === 1 && (options?.[index]?.[team[0]]?.count ?? 1) === 1)
+        && CLASSIC_WDC_DUEL_TEAMS.every(([id]) => teams.some(([member]) => member === id));
+}
 
 // Classic teams use the same compact naming language as Orb Race. Keep these
 // category IDs aligned with Orb Race's generated category clips so a Classic
@@ -633,7 +664,7 @@ export function normalizeClassicTeamOptions(value, teams = CLASSIC_DEFAULT_TEAMS
         const registryDefaultCollision = CLASSIC_ORBS[orbId]?.defaultCollisionDamage === true;
         return [orbId, {
             count: normalizeClassicOrbCount(raw.count, legacyOption.count),
-            health: normalizeClassicOrbHealth(raw.health, legacyOption.health),
+            health: normalizeClassicOrbHealth(raw.health, legacyOption.health ?? CLASSIC_ORBS[orbId]?.defaultHealth),
             orbScale: normalizeClassicOrbScale(raw.orbScale, legacyOption.orbScale ?? 1),
             speedMode: normalizeClassicSpeedMode(raw.speedMode ?? legacyOption.speedMode),
             fadingTrails: raw.fadingTrails == null

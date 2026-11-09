@@ -1823,3 +1823,26 @@ function arrangeHit(attacker, target) {
 }
 
 console.log("feature tests passed");
+
+
+// The recreation is a shareable Classic setup, alongside ordinary seeded bouts.
+{
+    const input = {
+        gameplayMode: "classic",
+        classicTeams: [["wdc"], ["one-punch-man"]],
+        classicReferenceDuel: true,
+        seed: 2406,
+    };
+    const settings = normalizeSettings(input);
+    assert.equal(settings.classicReferenceDuel, true);
+    assert.equal(settings.classicTeamOptions[0].wdc.health, 90);
+    assert.equal(settings.classicTeamOptions[1]["one-punch-man"].health, 1);
+    const url = settingsToUrl(settings, "https://example.test/orb-foundry/");
+    assert.deepEqual(settingsFromUrl(url.href), settings);
+    assert.equal(normalizeSettings({ ...input, classicTeams: [["wdc"], ["sword"]] }).classicReferenceDuel, false);
+    assert.equal(normalizeSettings({
+        ...input,
+        classicTeamOptions: [{ wdc: { count: 2 } }, {}],
+    }).classicReferenceDuel, false, "the reference scene requires a single fighter per side");
+    assert.equal(normalizeSettings({ ...input, classicReferenceDuel: undefined }).classicReferenceDuel, false);
+}

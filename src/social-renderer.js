@@ -22,14 +22,15 @@ import {
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261108-arena-cut1";
+} from "./simulation.js?v=20261108-wdc-duel3";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
   classicVisualColorFor,
+  drawClassicWdcDuel,
   drawMotionStreak,
-} from "./renderer.js?v=20261108-arena-cut1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261108-arena-cut1";
+} from "./renderer.js?v=20261108-wdc-duel3";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261108-wdc-duel3";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -53,7 +54,7 @@ import {
   CLASSIC_ORBS,
   classicTeamDisplayName,
   classicTeamOutlineColorFor,
-} from "./classic-orbs.js?v=20261108-arena-cut1";
+} from "./classic-orbs.js?v=20261108-wdc-duel3";
 import {
   TOURNAMENT_CONNECTOR_COLORS,
   TOURNAMENT_PRESENTATION_TIMING,
@@ -2264,6 +2265,11 @@ export class SocialBattleRenderer {
     const motion = presentation.options || {};
     this.reducedMotion = motion.reducedMotion === true;
     this.flashReduction = motion.flashReduction === true;
+    if (sim.classicWdcDuel) {
+      if (this.raceLongformCameraSimulation) this.resetRaceLongformCameras();
+      drawClassicWdcDuel(ctx, sim, width, height, motion);
+      return;
+    }
     const classicBlackTheme = sim.gameplayMode === "classic" && motion.classicBlackTheme === true;
     const classicTeamColors = sim.gameplayMode === "classic" && motion.classicTeamColors !== false;
     this.arenaRenderer.setOptions({

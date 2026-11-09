@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261108-arena-cut1";
+} from "./simulation.js?v=20261108-wdc-duel3";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261108-arena-cut1";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261108-arena-cut1";
+} from "./audio.js?v=20261108-wdc-duel3";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261108-wdc-duel3";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261108-arena-cut1";
+} from "./social.js?v=20261108-wdc-duel3";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261108-arena-cut1";
+} from "./config.js?v=20261108-wdc-duel3";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -61,7 +61,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261108-arena-cut1";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261108-wdc-duel3";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -101,13 +101,15 @@ import {
 import {
   CLASSIC_MAX_ORB_COPIES,
   CLASSIC_ORBS,
+  CLASSIC_WDC_DUEL_TEAMS,
+  isClassicWdcDuel,
   classicTeamOutlineColorFor,
   classicTeamMemberCount,
   normalizeClassicOrbCount,
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261108-arena-cut1";
+} from "./classic-orbs.js?v=20261108-wdc-duel3";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);
@@ -121,7 +123,7 @@ const elements = Object.fromEntries(
   [
     "matchStatus", "matchClock", "pauseButton", "setupDialog", "seedInput", "randomSeedButton",
     "launchButton", "soundButton", "copyLinkButton", "balanceButton", "developerButton",
-    "hazardPreset", "arenaModifierSelect", "arenaSizeSelect", "arenaShapeSelect", "hazardFieldset", "gameplayModeSelect", "raceLengthPicker", "shortFormRaceButton", "longFormRaceButton", "tournamentRaceButton", "countryFieldset", "countryGrid", "raceOrbFieldset", "raceTeamBuilder", "raceTeamOneGrid", "raceTeamTwoGrid", "raceTournamentPanel", "raceTournamentOptions", "raceTournamentPageIndicator", "raceTournamentWizardPage1", "raceTournamentWizardPage2", "raceTournamentWizardPage3", "raceTournamentWizardNext1", "raceTournamentWizardBack2", "raceTournamentWizardNext2", "raceTournamentWizardBack3", "raceTournamentTitle", "raceTournamentSize", "raceTournamentSeedingMode", "raceTournamentRecordingScope", "raceTournamentPresetSummary", "raceTournamentEntrants", "raceTournamentEntrantCount", "raceTournamentSeedList", "raceTournamentSeedHelp", "raceTournamentRoundSelection", "raceTournamentRoundList", "raceTournamentRecordRoundButton", "raceTournamentRecordTournamentButton", "raceTournamentLayerCount", "raceTournamentFinalLayerHealth", "raceTournamentLayerFields", "raceTournamentSaveButton", "raceTournamentResumeButton", "raceTournamentClearButton", "raceTournamentOpenBracketButton", "raceTournamentRecordMatchButton", "raceTournamentSavedMatch", "raceTournamentSavedMatchLabel", "raceTournamentSavedTitle", "raceTournamentStorageStatus", "raceTournamentBracketPreview", "raceTournamentPortraitPreviewButton", "raceTournamentLandscapePreviewButton", "raceTournamentZoomOut", "raceTournamentZoomReset", "raceTournamentZoomIn", "raceTournamentValidation", "nonTournamentSetupFields", "classicTeamOneGrid", "classicTeamTwoGrid", "raceLayerFields", "raceLayerToolbar", "raceCoursePreset", "raceOptionToolbar", "raceLayerCount", "raceFinalLayerHealthLabel", "raceFinalLayerHealth", "raceOrbScale", "raceTargetMessageToggle", "raceTargetAudioToggle", "raceMatchupAudioToggle", "raceTiltedLayerToggle", "raceTiltedLayerIndex", "raceTiltedLayerIndexLabel", "classFieldset", "classicBlackTheme", "classicTeamColors", "developerDialog", "featureToggles", "applyFeaturesButton",
+    "hazardPreset", "arenaModifierSelect", "arenaSizeSelect", "arenaShapeSelect", "hazardFieldset", "gameplayModeSelect", "raceLengthPicker", "shortFormRaceButton", "longFormRaceButton", "tournamentRaceButton", "countryFieldset", "countryGrid", "raceOrbFieldset", "raceTeamBuilder", "raceTeamOneGrid", "raceTeamTwoGrid", "raceTournamentPanel", "raceTournamentOptions", "raceTournamentPageIndicator", "raceTournamentWizardPage1", "raceTournamentWizardPage2", "raceTournamentWizardPage3", "raceTournamentWizardNext1", "raceTournamentWizardBack2", "raceTournamentWizardNext2", "raceTournamentWizardBack3", "raceTournamentTitle", "raceTournamentSize", "raceTournamentSeedingMode", "raceTournamentRecordingScope", "raceTournamentPresetSummary", "raceTournamentEntrants", "raceTournamentEntrantCount", "raceTournamentSeedList", "raceTournamentSeedHelp", "raceTournamentRoundSelection", "raceTournamentRoundList", "raceTournamentRecordRoundButton", "raceTournamentRecordTournamentButton", "raceTournamentLayerCount", "raceTournamentFinalLayerHealth", "raceTournamentLayerFields", "raceTournamentSaveButton", "raceTournamentResumeButton", "raceTournamentClearButton", "raceTournamentOpenBracketButton", "raceTournamentRecordMatchButton", "raceTournamentSavedMatch", "raceTournamentSavedMatchLabel", "raceTournamentSavedTitle", "raceTournamentStorageStatus", "raceTournamentBracketPreview", "raceTournamentPortraitPreviewButton", "raceTournamentLandscapePreviewButton", "raceTournamentZoomOut", "raceTournamentZoomReset", "raceTournamentZoomIn", "raceTournamentValidation", "nonTournamentSetupFields", "classicTeamOneGrid", "classicTeamTwoGrid", "raceLayerFields", "raceLayerToolbar", "raceCoursePreset", "raceOptionToolbar", "raceLayerCount", "raceFinalLayerHealthLabel", "raceFinalLayerHealth", "raceOrbScale", "raceTargetMessageToggle", "raceTargetAudioToggle", "raceMatchupAudioToggle", "raceTiltedLayerToggle", "raceTiltedLayerIndex", "raceTiltedLayerIndexLabel", "classFieldset", "classicBlackTheme", "classicTeamColors", "classicWdcPreset", "classicReferenceDuel", "developerDialog", "featureToggles", "applyFeaturesButton",
     "balanceDialog", "balanceScope", "balanceControls", "balanceValidation", "balanceResetButton",
     "balanceRandomButton", "balanceExportButton", "balanceImportButton", "balanceImportInput",
     "balanceApplyButton", "menuScreen", "profileScreen", "gameScreen", "orbMenu", "menuPlayButton",
@@ -1909,6 +1911,17 @@ function buildMenu() {
   });
 }
 
+function syncClassicReferenceDuel() {
+  const selected = [...elements.classFieldset.querySelectorAll('input[name="classicTeamOrb"]:checked')];
+  const singleFighters = selected.every((input) => {
+    const count = input.closest(".classic-team-orb")?.querySelector("[data-classic-count]");
+    return normalizeClassicOrbCount(count?.value) === 1;
+  });
+  const ready = singleFighters && isClassicWdcDuel(classicTeamSelectionOrder);
+  elements.classicReferenceDuel.disabled = !ready;
+  if (!ready) elements.classicReferenceDuel.checked = false;
+}
+
 function buildClassControls() {
   const grids = [elements.classicTeamOneGrid, elements.classicTeamTwoGrid];
   if (grids.some((grid) => !grid)) return;
@@ -1955,6 +1968,7 @@ function buildClassControls() {
   grids.forEach((grid, teamIndex) => {
     grid.innerHTML = validClasses.map((type) => optionMarkup(type, teamIndex)).join("");
     grid.addEventListener("change", (event) => {
+      if (event.target.matches("[data-classic-count]")) syncClassicReferenceDuel();
       if (!event.target.matches('input[name="classicTeamOrb"]')) return;
       const panelScrollTop = elements.setupDialog.querySelector(".setup-panel")?.scrollTop ?? 0;
       const input = event.target;
@@ -1964,6 +1978,7 @@ function buildClassControls() {
         ? [...order.filter((type) => type !== input.value), input.value]
         : order.filter((type) => type !== input.value);
       if (details) details.open = input.checked;
+      syncClassicReferenceDuel();
       restoreSetupDialogScroll(panelScrollTop);
     });
     grid.querySelectorAll("details.classic-orb-options").forEach((details) => {
@@ -2140,6 +2155,7 @@ function socialAnnouncerSequence() {
 }
 
 function playSocialMatchupAnnouncement(now) {
+  if (sim.classicWdcDuel && settings.social.requireAnnouncer !== true) return;
   if (settings.gameplayMode === WORLD_CUP_MODE) {
     audio.playWorldCupMatchup(sim.fighters[0]?.countryId, sim.fighters[1]?.countryId);
     return;
@@ -2294,6 +2310,7 @@ function consumeSocialEvents(now) {
 }
 
 function socialSimulationRate(now) {
+  if (sim.classicWdcDuel) return socialPresentation.started ? 1 : 0;
   // Normal previews still start gameplay while audio/recording initializes.
   // Duration-qualified Orb Race exports wait for the recorder so their one
   // matchup starts at the first captured action frame.
@@ -2322,6 +2339,7 @@ function socialSimulationRate(now) {
 }
 
 async function startSocialRecording({ transitionOverride = null } = {}) {
+  if (sim.classicWdcDuel) socialPresentation.started = false;
   const requireAnnouncer = settings.social.requireAnnouncer === true;
   if (requireAnnouncer) {
     const ready = await audio.ensureAnnouncerCues(socialAnnouncerSequence());
@@ -2555,6 +2573,7 @@ function simulationSettings(overrides = {}) {
     classicTeams: settings.classicTeams,
     classicTeamOptions: settings.classicTeamOptions,
     classicHydrogenHealth: settings.classicHydrogenHealth,
+    classicReferenceDuel: settings.classicReferenceDuel,
     seed: settings.seed,
     balance: settings.balance,
     hazardPreset: settings.hazardPreset,
@@ -2694,6 +2713,7 @@ function startSimulation({
   socialPresentation = createSocialPresentationState(
     continuousTransition ? false : settings.features.introCards,
   );
+  if (sim.classicWdcDuel) socialPresentation.started = true;
   updateSocialMetrics();
   socialRenderer.setTheme(settings.theme);
   socialRenderer.setFormat(settings.social.format);
@@ -3000,6 +3020,8 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
   });
   elements.classicBlackTheme.checked = settings.classicBlackTheme;
   elements.classicTeamColors.checked = settings.classicTeamColors;
+  elements.classicReferenceDuel.checked = settings.classicReferenceDuel;
+  syncClassicReferenceDuel();
   const selectedCountries = new Set(settings.countries);
   elements.setupDialog.querySelectorAll('input[name="countryType"]').forEach((input) => {
     input.checked = selectedCountries.has(input.value);
@@ -3211,9 +3233,7 @@ function readSetup() {
       classicTeamOptions,
       classicBlackTheme: elements.classicBlackTheme.checked,
       classicTeamColors: elements.classicTeamColors.checked,
-      // Health controls were removed from setup; every newly started Classic
-      // fighter uses the default 100 HP. The legacy field remains in settings
-      // only so older shared URLs can still be decoded without errors.
+      classicReferenceDuel: elements.classicReferenceDuel.checked,
       classicHydrogenHealth: 100,
       seed: Math.max(1, Number(elements.seedInput.value) || 2406),
       theme: elements.setupThemeSelect.value,
@@ -3362,6 +3382,33 @@ elements.profilePlayButton.addEventListener("click", () => {
 });
 elements.profilePreviousButton.addEventListener("click", () => stepProfile(-1));
 elements.profileNextButton.addEventListener("click", () => stepProfile(1));
+elements.classicWdcPreset.addEventListener("click", () => {
+  classicTeamSelectionOrder = CLASSIC_WDC_DUEL_TEAMS.map((team) => [...team]);
+  elements.setupDialog.querySelectorAll('input[name="classicTeamOrb"]').forEach((input) => {
+    const team = Number(input.dataset.classicTeam);
+    input.checked = CLASSIC_WDC_DUEL_TEAMS[team].includes(input.value);
+    const details = input.closest(".classic-team-orb")?.querySelector("details");
+    if (details) details.open = input.checked;
+    if (input.checked && details) {
+      details.querySelector("[data-classic-count]").value = "1";
+      details.querySelector("[data-classic-health]").value = String(CLASSIC_ORBS[input.value].defaultHealth);
+      details.querySelector("[data-classic-orb-scale]").value = String(CLASSIC_DEFAULT_ORB_SCALE);
+      details.querySelector("[data-classic-speed-mode]").value = "regular";
+    }
+  });
+  syncClassicReferenceDuel();
+  elements.classicReferenceDuel.checked = true;
+  elements.classicBlackTheme.checked = true;
+  elements.classicTeamColors.checked = false;
+  elements.arenaSizeSelect.value = "large";
+  elements.arenaShapeSelect.value = "square";
+  elements.arenaModifierSelect.value = "standard";
+  elements.hazardPreset.value = "none";
+  elements.socialFormatSelect.value = "portrait";
+  elements.setupDialog.querySelector('input[name="socialFps"][value="60"]').checked = true;
+  syncSetupModeVisibility();
+});
+
 elements.menuThemeSelect.addEventListener("change", () => applyTheme(elements.menuThemeSelect.value));
 elements.setupThemeSelect.addEventListener("change", () => applyTheme(elements.setupThemeSelect.value));
 elements.gameplayModeSelect.addEventListener("change", () => {
@@ -3696,6 +3743,15 @@ window.render_game_to_text = () => JSON.stringify({
     time: Number(sim.time.toFixed(2)),
     finished: sim.finished,
     winner: sim.winningRaceTeamName || sim.winner?.name || null,
+    referenceDuel: sim.classicWdcDuel ? {
+      summon: sim.classicWdcDuel.pose.summon?.id || null,
+      portal: Boolean(sim.classicWdcDuel.pose.portal),
+      punch: Boolean(sim.classicWdcDuel.pose.punch),
+      beam: sim.classicWdcDuel.pose.beam?.phase || null,
+      shop: sim.classicWdcDuel.pose.shop,
+      wallGapY: sim.classicWdcDuel.pose.wallGapY,
+      escaped: !sim.classicWdcDuel.pose.punchManVisible,
+    } : null,
     recorder: socialRecorder.machine.state,
     recordingResult: recordingResultSnapshot(),
     raceTournament: settings.gameplayMode === ORB_RACE_MODE ? {

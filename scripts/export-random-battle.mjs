@@ -163,6 +163,7 @@ export async function exportSocialVideo(options = {}) {
       classes,
       classicTeams,
       classicOrbOptions: options.classicOrbOptions || {},
+      classicReferenceDuel: options.classicReferenceDuel === true,
       classicBlackTheme: options.classicBlackTheme === true,
       classicTeamColors: options.classicTeamColors !== false,
       seed,

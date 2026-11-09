@@ -24,7 +24,7 @@ const CLASSIC_IDS = Object.freeze([
     "cobwebs", "apple", "absorber", "batman", "ying-yang", "trapper", "hive-ball", "zeus",
     "glass-ball", "pistol", "shotgun", "rifle", "sawball", "cutter", "trident", "lazer", "charger",
     "parasites", "grappler", "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
-    "commander",
+    "commander", "wdc", "one-punch-man",
 ]);
 
 test("Classic announcer registry covers the launch roster with valid generated or verified clips", () => {

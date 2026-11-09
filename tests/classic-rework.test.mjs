@@ -33,7 +33,7 @@ const EXPECTED_CLASSIC_IDS = [
     "trapper", "hive-ball", "zeus", "glass-ball", "pistol", "shotgun", "rifle",
     "sawball", "cutter", "trident", "lazer", "charger", "parasites", "grappler",
     "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
-    "commander",
+    "commander", "wdc", "one-punch-man",
 ];
 
 function step(sim, count = 1) {
@@ -4512,4 +4512,72 @@ test("Every Classic stable ID can launch a finite seeded simulation without a no
         assert.deepEqual(captureReplayFrame(first), captureReplayFrame(second), id);
         assert.deepEqual(first.events, second.events, `${id} seeded events`);
     }
+});
+
+
+test("WDC reference duel repeats the summon, strike, sale, and escape beats", () => {
+    const options = {
+        classicTeams: [["wdc"], ["one-punch-man"]],
+        classicReferenceDuel: true,
+        seed: 2406,
+        features: { replay: false },
+    };
+    const first = createSimulation(options);
+    const second = createSimulation(options);
+    assert.deepEqual(first.fighters.map(({ health }) => health), [90, 1]);
+    runSeconds(first, 15.13);
+    runSeconds(second, 15.13);
+    assert.equal(first.classicWdcDuel.pose.summon.id, "exoelectric");
+    assert.equal(first.classicWdcDuel.pose.beam.phase, "fire");
+    assert.deepEqual(captureReplayFrame(first), captureReplayFrame(second));
+    runSeconds(first, 21.1);
+    runSeconds(second, 21.1);
+    assert.deepEqual(first.events, second.events);
+    assert.deepEqual(first.events.filter(({ cue }) => cue === "summon").map(({ form }) => form),
+        ["unarmed", "exoelectric", "emerald"]);
+    assert.deepEqual(first.events.filter(({ cue }) => ["sell", "bag", "wall-break", "escape"].includes(cue))
+        .map(({ cue }) => cue), ["sell", "bag", "wall-break", "escape"]);
+    assert.equal(first.classicWdcDuel.pose.shop.coins, 100);
+    assert.equal(first.classicWdcDuel.pose.wallGapY, .58);
+    assert.equal(first.classicWdcDuel.pose.punchManVisible, false);
+    assert.equal(first.finished, true);
+    assert.equal(first.winner.type, "one-punch-man");
+});
+
+test("WDC cycles its real combat forms in ordinary Classic matches", () => {
+    const options = {
+        classicTeams: [["wdc"], ["hydrogen-bomb"]],
+        seed: 2406,
+        features: { replay: false },
+    };
+    const first = createSimulation(options);
+    const second = createSimulation(options);
+    runSeconds(first, 24);
+    runSeconds(second, 24);
+    assert.equal(first.classicWdcDuel, undefined);
+    const cues = first.events.filter(({ type }) => type === "classic-wdc-cue");
+    assert.deepEqual(cues.filter(({ cue }) => cue === "portal").map(({ form }) => form),
+        ["unarmed", "exoelectric", "emerald"]);
+    assert.ok(cues.some(({ cue }) => cue === "beam"));
+    assert.ok(cues.some(({ cue }) => cue === "sell"));
+    assert.deepEqual(captureReplayFrame(first), captureReplayFrame(second));
+});
+
+
+test("One Punch Man wins a regular bout with a real 100 damage glove contact", () => {
+    const sim = createSimulation({
+        classicTeams: [["one-punch-man"], ["hydrogen-bomb"]],
+        seed: 2406,
+        features: { replay: false },
+    });
+    const [punchMan, target] = sim.fighters;
+    Object.assign(punchMan, { x: 250, y: 300, vx: 0, vy: 1, baselineSpeed: 1, classicAbilityNextAt: 0 });
+    Object.assign(target, { x: 360, y: 301, vx: 0, vy: 1, baselineSpeed: 1 });
+    runSeconds(sim, 1);
+    const hit = sim.events.find(({ type }) => type === "classic-punch-hit");
+    assert.equal(punchMan.health, 1);
+    assert.equal(hit?.amount, 100);
+    assert.equal(hit?.targetId, target.id);
+    assert.equal(target.health, 0);
+    assert.equal(sim.winner, punchMan);
 });

@@ -1711,7 +1711,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20261108-arena-cut1/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261108-wdc-duel3/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -6537,3 +6537,13 @@ function run(sim, seconds = 120) {
 }
 
 console.log("social tests passed");
+
+
+// The reenactment mixes distinct event sounds through the Classic audio bus.
+{
+    const cue = (name) => soundPlanForEvent({ type: "classic-wdc-cue", gameplayMode: "classic", cue: name, id: 44 });
+    assert.equal(cue("portal").signature, "wdc-portal");
+    assert.equal(cue("beam").signature, "wdc-exoelectric-beam");
+    assert.ok(cue("beam").noises[0].duration > cue("wall-break").noises[0].duration);
+    assert.equal(cue("bag").category, "effects");
+}

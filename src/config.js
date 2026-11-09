@@ -1,4 +1,4 @@
-import { THEME_IDS } from "./presentation.js?v=20261108-arena-cut1";
+import { THEME_IDS } from "./presentation.js?v=20261108-wdc-duel3";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
 import {
@@ -20,12 +20,13 @@ import {
     CLASSIC_DEFAULT_TEAMS,
     CLASSIC_ORBS,
     CLASSIC_ORB_IDS,
+    isClassicWdcDuel,
     normalizeClassicClasses,
     normalizeClassicOrbHealth,
     normalizeClassicTeamOptions,
     normalizeClassicTeams,
     normalizeClassicSpeedMode as normalizeRegistryClassicSpeedMode,
-} from "./classic-orbs.js?v=20261108-arena-cut1";
+} from "./classic-orbs.js?v=20261108-wdc-duel3";
 
 export const ARENA_MODIFIER_IDS = Object.freeze(["standard", "tiny", "suddenDeath", "overdrive", "glassCannon"]);
 export const ARENA_SHAPE_IDS = Object.freeze(["square", "circle"]);
@@ -312,6 +313,7 @@ export function createDefaultSettings() {
     classicOrbOptions: normalizeClassicOrbOptions(null, classes),
     classicTeams,
     classicTeamOptions: normalizeClassicTeamOptions(null, classicTeams),
+    classicReferenceDuel: false,
     classicBlackTheme: true,
     classicTeamColors: true,
     classicHydrogenHealth: 100,
@@ -583,6 +585,9 @@ export function normalizeSettings(input = {}, validClasses = []) {
     classicOrbOptions,
     classicTeams,
     classicTeamOptions,
+    classicReferenceDuel: input.classicReferenceDuel === true
+      && gameplayMode === "classic"
+      && isClassicWdcDuel(classicTeams, classicTeamOptions),
     classicBlackTheme: input.classicBlackTheme == null
       ? defaults.classicBlackTheme
       : input.classicBlackTheme === true,
@@ -737,6 +742,7 @@ function compactSettings(settings) {
     ct: settings.gameplayMode === "classic" ? settings.classicTeams : undefined,
     ci: settings.gameplayMode === "classic" ? settings.classicTeamOptions : undefined,
     cb: settings.gameplayMode === "classic" && settings.classicBlackTheme ? 1 : undefined,
+    wd: settings.classicReferenceDuel ? 1 : undefined,
     tc: settings.gameplayMode === "classic" && !settings.classicTeamColors ? 0 : undefined,
     ch: settings.gameplayMode === "classic" && settings.classicHydrogenHealth !== 100
       ? settings.classicHydrogenHealth
@@ -828,6 +834,7 @@ function expandSettings(value) {
     classicTeams: value.ct,
     classicTeamOptions: value.ci,
     classicBlackTheme: value.cb == null ? undefined : value.cb === 1,
+    classicReferenceDuel: value.wd === 1,
     classicTeamColors: value.tc == null ? undefined : value.tc !== 0,
     classicHydrogenHealth: value.ch,
     seed: value.s,
@@ -877,7 +884,7 @@ export function normalizeClassicOrbScale(value, fallback = CLASSIC_DEFAULT_ORB_S
 export function classicOrbOptionDefaults(id) {
   const registryDefault = CLASSIC_ORBS[id]?.defaultCollisionDamage;
   return {
-    health: 100,
+    health: CLASSIC_ORBS[id]?.defaultHealth ?? 100,
     orbScale: CLASSIC_DEFAULT_ORB_SCALE,
     speedMode: "regular",
     fadingTrails: false,

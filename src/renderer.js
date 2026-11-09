@@ -6,9 +6,10 @@ import {
   classicOrbiterPosition,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261108-arena-cut1";
-import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261108-arena-cut1";
-import { themeById } from "./presentation.js?v=20261108-arena-cut1";
+} from "./simulation.js?v=20261108-wdc-duel3";
+import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261108-wdc-duel3";
+import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261108-wdc-duel3";
+import { themeById } from "./presentation.js?v=20261108-wdc-duel3";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
 import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";
@@ -1125,6 +1126,9 @@ export class ArenaRenderer {
     if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) {
       for (const fighter of sim.fighters) {
         if (fighter.alive && fighter.type === "snake") this.drawClassicSnakeTail(ctx, fighter, sim.time);
+        if (fighter.alive && fighter.classicWdcForm) {
+          drawClassicWdcFormEffects(ctx, fighter, sim.time, sim.arenaBounds, this.options.flashReduction);
+        }
       }
       for (const fighter of sim.fighters) {
         if (fighter.alive) this.drawWeapon(ctx, fighter, sim.time);
@@ -5722,6 +5726,19 @@ export class ArenaRenderer {
       ctx.stroke();
     }
 
+    if (fighter.type === "one-punch-man" && this.lastSim?.gameplayMode === "classic") {
+      const glove = fighter.classicPunchGloves?.find(({ punchingHand }) => punchingHand);
+      if (glove) {
+        const shoulder = { x: glove.x1 - fighter.x, y: glove.y1 - fighter.y };
+        const fist = {
+          x: (glove.hitX1 + glove.hitX2) / 2 - fighter.x,
+          y: (glove.hitY1 + glove.hitY2) / 2 - fighter.y,
+        };
+        wdcPunchArm(ctx, shoulder, fist, fighter.radius, fighter.classicPunchAngle, glove.active);
+      }
+    } else if (fighter.classicWdcForm?.id === "emerald") {
+      wdcPickaxe(ctx, 0, 0, fighter.radius, time * 3.6);
+    }
     this.drawClassicHealthText(ctx, fighter, fighter.radius);
 
     ctx.restore();
@@ -5781,7 +5798,8 @@ export class ArenaRenderer {
         : null;
       ctx.fillStyle = classicImpactFlash
         ? "#f7f0e5"
-        : flashColor || classicOrbColor || fighter.hillColor || country?.color || def.color;
+        : flashColor || WDC_SUMMONS[fighter.classicWdcForm?.id]?.color
+          || classicOrbColor || fighter.hillColor || country?.color || def.color;
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, TAU);
       ctx.fill();
@@ -6441,4 +6459,624 @@ function seededUnit(seed, index) {
   value = Math.imul(value, 0x7feb352d);
   value ^= value >>> 15;
   return (value >>> 0) / 4294967296;
+}
+
+// Classic WDC reference duel. All animated geometry is drawn from the
+// encounter clock, including the frames between simulation checkpoints.
+const WDC_DUEL_BOARD = Object.freeze({ x: 123, y: 423, size: 834 });
+const WDC_BLUE = "#2552dc";
+const WDC_YELLOW = "#efd05c";
+const WDC_TITLE_BLUE = "#5275dc";
+const WDC_TITLE_GOLD = "#e8ce7c";
+const WDC_PIXEL_GLYPHS = Object.freeze({
+    A: [14, 17, 17, 31, 17, 17, 17], B: [30, 17, 17, 30, 17, 17, 30], C: [15, 16, 16, 16, 16, 16, 15],
+    D: [30, 17, 17, 17, 17, 17, 30], E: [31, 16, 16, 30, 16, 16, 31], F: [31, 16, 16, 30, 16, 16, 16],
+    G: [15, 16, 16, 23, 17, 17, 15], H: [17, 17, 17, 31, 17, 17, 17], I: [31, 4, 4, 4, 4, 4, 31],
+    J: [7, 2, 2, 2, 18, 18, 12], K: [17, 18, 20, 24, 20, 18, 17], L: [16, 16, 16, 16, 16, 16, 31],
+    M: [17, 27, 31, 21, 17, 17, 17], N: [17, 25, 25, 21, 19, 19, 17], O: [14, 17, 17, 17, 17, 17, 14],
+    P: [30, 17, 17, 30, 16, 16, 16], Q: [14, 17, 17, 17, 21, 18, 13], R: [30, 17, 17, 30, 20, 18, 17],
+    S: [15, 16, 16, 14, 1, 1, 30], T: [31, 4, 4, 4, 4, 4, 4], U: [17, 17, 17, 17, 17, 17, 14],
+    V: [17, 17, 17, 17, 17, 10, 4], W: [17, 17, 17, 21, 21, 27, 17], X: [17, 17, 10, 4, 10, 17, 17],
+    Y: [17, 17, 10, 4, 4, 4, 4], Z: [31, 1, 2, 4, 8, 16, 31], ":": [0, 4, 4, 0, 4, 4, 0],
+});
+const wdcTitlePaths = new Map();
+
+function wdcPixelWidth(label) {
+    return [...label].reduce((width, letter) => width + (letter === " " ? 4 : 6), 0) - 1;
+}
+
+function wdcPixelText(ctx, label, x, y, scaleX, scaleY, color) {
+    if (!wdcTitlePaths.has(label)) {
+        const path = new Path2D();
+        let offset = 0;
+        for (const letter of label) {
+            WDC_PIXEL_GLYPHS[letter]?.forEach((row, y) => {
+                for (let x = 0; x < 5; x += 1) {
+                    if (row & (16 >> x)) path.rect(offset + x, y, 1.07, 1.03);
+                }
+            });
+            offset += letter === " " ? 4 : 6;
+        }
+        wdcTitlePaths.set(label, path);
+    }
+    ctx.save();
+    ctx.translate(x - wdcPixelWidth(label) * scaleX / 2, y - 3.5 * scaleY);
+    ctx.scale(scaleX, scaleY);
+    ctx.fillStyle = color;
+    ctx.fill(wdcTitlePaths.get(label));
+    ctx.restore();
+}
+
+function wdcPolygon(ctx, points, color, stroke = null, width = 1) {
+    ctx.beginPath();
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (const [x, y] of points.slice(1)) ctx.lineTo(x, y);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = width;
+        ctx.stroke();
+    }
+}
+
+function wdcDisc(ctx, x, y, radius, color, rim = null, lineWidth = 1) {
+    ctx.beginPath();
+    ctx.arc(x, y, Math.max(.01, radius), 0, TAU);
+    ctx.fillStyle = color;
+    ctx.fill();
+    if (rim) {
+        ctx.strokeStyle = rim;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+    }
+}
+
+function wdcOrb(ctx, point, radius, color, rim, health, darkNumber = false) {
+    wdcDisc(ctx, point.x, point.y, radius, color, rim, radius * .055);
+    ctx.save();
+    ctx.globalAlpha = .24;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = radius * .027;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, radius * .943, Math.PI * 1.14, Math.PI * 1.83);
+    ctx.stroke();
+    ctx.restore();
+    ctx.font = `800 ${radius * .62}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = radius * .055;
+    ctx.strokeStyle = darkNumber ? "#e0e0e0" : "#23221e";
+    ctx.fillStyle = darkNumber ? "#171717" : "#fffdf6";
+    const label = String(Math.ceil(health));
+    ctx.strokeText(label, point.x, point.y + radius * .055);
+    ctx.fillText(label, point.x, point.y + radius * .055);
+}
+
+function wdcPortal(ctx, x, y, radius, age, duration, reducedMotion = false) {
+    const open = Math.max(.001, Math.min(1, age / .24, (duration - age) / .27));
+    const bloom = 1 - (1 - open) ** 3;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(bloom, Math.max(.08, bloom));
+    ctx.globalAlpha *= Math.min(1, open * 2);
+    const rim = (scale, color, width, solid = false) => {
+        ctx.beginPath();
+        for (let index = 0; index <= 64; index += 1) {
+            const angle = TAU * index / 64;
+            const ripple = reducedMotion ? 0 : Math.sin(angle * 9 + age * 13) * .042 + Math.sin(angle * 17 - age * 7) * .026;
+            const px = Math.cos(angle) * radius * 1.05 * scale * (1 + ripple);
+            const py = Math.sin(angle) * radius * 2.94 * scale;
+            if (index) ctx.lineTo(px, py);
+            else ctx.moveTo(px, py);
+        }
+        ctx.closePath();
+        if (solid) {
+            ctx.fillStyle = "#08040b";
+            ctx.fill();
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width * radius;
+        ctx.stroke();
+    };
+    rim(1.12, "rgba(100,37,131,.17)", .35);
+    rim(1.06, "rgba(99,37,127,.35)", .20);
+    rim(1.02, "#3b1a52", .10);
+    rim(.95, "#9a5cbd", .044, true);
+    rim(.84, "rgba(139,53,179,.7)", .023);
+
+    for (let index = 0; index < 8; index += 1) {
+        const pos = (index - 3.5) / 3.5;
+        const px = Math.sin(index * 1.14 + age * 2) * radius * (.49 - .17 * Math.abs(pos));
+        const py = pos * radius * 2.03;
+        const eye = radius * (.205 + .045 * Math.cos(index * 4));
+        const blink = reducedMotion ? 1 : Math.max(.12, 1 - Math.exp(-((age - .31 - index * .027) ** 2) / .00052));
+        wdcPolygon(ctx, [[px - eye, py], [px - eye * .16, py - eye * .50 * blink],
+            [px + eye, py], [px + eye * .04, py + eye * .46 * blink]], "#f5d6de", "#341022", radius * .026);
+        wdcDisc(ctx, px, py, eye * .22 * blink, "#a9243a");
+    }
+    for (const side of [-1, 1]) {
+        const tip = side * radius * 2.91;
+        wdcPolygon(ctx, [[-radius * .28, tip + side * radius * .28], [-radius * .14, tip - side * radius * .26],
+            [radius * .05, tip + side * radius * .15], [radius * .20, tip - side * radius * .25],
+            [radius * .30, tip + side * radius * .29], [0, tip + side * radius * .18]], "#ac333f");
+    }
+    ctx.restore();
+}
+
+function wdcGlove(ctx, x, y, radius, angle, serious = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.scale(radius, radius);
+    const outline = [[-.83, -.42], [-.64, -.77], [-.27, -.94], [.01, -.87], [.25, -.99],
+        [.54, -.85], [.78, -.64], [.91, -.29], [.93, .19], [.65, .62], [.28, .76],
+        [.08, .53], [-.15, .65], [-.60, .54], [-.77, .24]];
+    wdcPolygon(ctx, outline, "#b73323", serious ? "#ffe6b8" : "#2f100c", .12);
+    wdcPolygon(ctx, [[-.72, -.39], [-.45, -.68], [-.06, -.71], [-.16, -.36], [-.54, -.12]], "#ed7752");
+    wdcPolygon(ctx, [[.01, -.75], [.31, -.87], [.57, -.72], [.76, -.42],
+        [.51, -.28], [.17, -.35]], "#e25434");
+    wdcPolygon(ctx, [[-.67, .20], [-.28, -.02], [.04, .14], [.25, .43],
+        [.65, .36], [.58, .61], [.27, .73], [.08, .52], [-.18, .62], [-.57, .50]], "#6f1a12");
+    ctx.strokeStyle = "#4b140f";
+    ctx.lineWidth = .09;
+    ctx.beginPath();
+    ctx.moveTo(-.20, -.76);
+    ctx.lineTo(-.26, -.31);
+    ctx.lineTo(.08, -.13);
+    ctx.moveTo(.26, -.85);
+    ctx.lineTo(.40, -.43);
+    ctx.lineTo(.72, -.32);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function wdcPunchArm(ctx, shoulder, fist, radius, angle, serious = false) {
+    const dx = fist.x - shoulder.x;
+    const dy = fist.y - shoulder.y;
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(shoulder.x, shoulder.y);
+    ctx.lineTo(shoulder.x + dx * .53 - Math.sin(angle) * radius * .17,
+        shoulder.y + dy * .53 + Math.cos(angle) * radius * .17);
+    ctx.lineTo(fist.x, fist.y);
+    ctx.strokeStyle = "#30230d";
+    ctx.lineWidth = radius * .40;
+    ctx.stroke();
+    ctx.strokeStyle = "#f5cc5c";
+    ctx.lineWidth = radius * .29;
+    ctx.stroke();
+    wdcGlove(ctx, fist.x, fist.y, radius * (serious ? .60 : .49), angle, serious);
+    ctx.restore();
+}
+
+function wdcDisintegrator(ctx, point, radius, size, beam, time, flashReduction = false) {
+    const { angle, phase, progress } = beam;
+    const x = point.x + Math.cos(angle) * radius * 1.03;
+    const y = point.y + Math.sin(angle) * radius * 1.03;
+    const fire = phase === "fire";
+    const length = size * (fire ? 1.53 * Math.min(1, .22 + progress * 12) : 1.2);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    if (fire) {
+        const opening = Math.min(1, .2 + progress * 8);
+        const fade = Math.min(1, (1 - progress) * 5);
+        const edge = (at) => (.018 + .31 * (1 - Math.exp(-at * 7.8)))
+            * size * opening * (1 + .023 * Math.sin(at * 53 - time * 32) + .012 * Math.sin(at * 113 + time * 25));
+        const ribbon = (inner, outer, color) => {
+            for (const side of [-1, 1]) {
+                ctx.beginPath();
+                for (let index = 0; index <= 36; index += 1) {
+                    const at = index / 36;
+                    const y = edge(at) * side * outer;
+                    if (index) ctx.lineTo(length * at, y);
+                    else ctx.moveTo(0, y);
+                }
+                for (let index = 36; index >= 0; index -= 1) {
+                    const at = index / 36;
+                    ctx.lineTo(length * at, edge(at) * side * inner);
+                }
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+        };
+        ctx.globalAlpha = fade * (flashReduction ? .66 : 1);
+        ribbon(0, 1.16, "rgba(80,15,12,.24)");
+        ribbon(.65, 1.11, "rgba(177,43,31,.33)");
+        ribbon(.61, 1.02, "#801e19");
+        ribbon(.63, .97, "#f15139");
+        ribbon(.80, .91, "#fff6ec");
+        ribbon(.57, .76, "rgba(215,56,42,.8)");
+        ctx.lineCap = "round";
+        for (let index = 0; index < 56; index += 1) {
+            const u = ((index * .61803399 + progress * 2.8) % 1) ** 1.26;
+            const spread = Math.sin(index * 10.27) * .84 * edge(u);
+            ctx.strokeStyle = index % 4 ? "#ef725e" : "#fff6ea";
+            ctx.globalAlpha = fade * (.20 + (index % 5) * .13);
+            ctx.lineWidth = size * (.0018 + (index % 3) * .0013);
+            ctx.beginPath();
+            ctx.moveTo(length * u, spread);
+            ctx.lineTo(length * u + size * (.014 + (index % 4) * .015), spread);
+            ctx.stroke();
+        }
+        ctx.globalAlpha = fade;
+        wdcDisc(ctx, 0, 0, radius * (.32 + Math.sin(time * 47) * .048), "#fffdf8");
+    } else {
+        ctx.strokeStyle = "rgba(227,109,102,.63)";
+        ctx.lineWidth = Math.max(1, size * .0017);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(length, 0);
+        ctx.stroke();
+        const glow = radius * (.16 + .21 * progress);
+        wdcDisc(ctx, 0, 0, glow * 1.9, "rgba(224,61,48,.27)");
+        wdcDisc(ctx, 0, 0, glow, "#ffe8db");
+        for (let index = 0; index < 10; index += 1) {
+            const a = index * 2.4 + time * .72;
+            const distance = radius * (1.3 + ((index * .372 + progress * 2.1) % 1) * 1.3);
+            const sx = Math.cos(a) * distance;
+            const sy = Math.sin(a) * distance;
+            ctx.strokeStyle = index % 3 ? "rgba(242,120,98,.46)" : "rgba(255,237,217,.73)";
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + Math.cos(a) * radius * .24, sy + Math.sin(a) * radius * .24);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function wdcPickaxe(ctx, x, y, radius, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.scale(radius / 17, radius / 17);
+    ctx.fillStyle = "#36261b";
+    ctx.fillRect(9, -2.5, 22, 5);
+    ctx.fillStyle = "#a17946";
+    ctx.fillRect(10, -1.4, 20, 2.9);
+    ctx.fillStyle = "#dab27c";
+    for (let step = 0; step < 6; step += 1) ctx.fillRect(11 + step * 3.1, -.9, 1.5, 1.5);
+    wdcPolygon(ctx, [[22, -9], [26, -12], [31, -12], [31, -10], [34, -10], [34, -7],
+        [36, -7], [36, 6], [34, 6], [34, 9], [31, 9], [31, 12], [27, 12], [27, 9],
+        [30, 8], [30, 5], [32, 5], [32, -5], [30, -5], [30, -8], [27, -8], [27, -6], [22, -6]],
+    "#b4b7b4", "#3e4241", 1.2);
+    ctx.fillStyle = "#f2f0e3";
+    ctx.fillRect(26, -11, 5, 1.8);
+    ctx.fillRect(33, -6.5, 2.2, 11);
+    ctx.restore();
+}
+
+function wdcMarket(ctx, x, y, size, shop, time) {
+    const appear = Math.min(1, shop.age / .36);
+    ctx.save();
+    ctx.translate(x, y + size * .024 * (1 - appear));
+    ctx.scale(size / 1040, size / 1040);
+    ctx.globalAlpha = appear;
+    wdcPolygon(ctx, [[-146, 36], [0, -2], [146, 36], [151, 101], [106, 88], [0, 59], [-110, 89], [-151, 101]],
+        "#a9c5eb", "#3c4c65", 6);
+    for (let stripe = 0; stripe < 8; stripe += 1) {
+        const a = -146 + stripe * 36.5;
+        const b = a + 34.5;
+        const roofY = (value) => Math.abs(value) * .26;
+        wdcPolygon(ctx, [[a, roofY(a) + 5], [b, roofY(b) + 5], [b + (b > 0 ? 3 : -3), roofY(b) + 56],
+            [a + (a > 0 ? 3 : -3), roofY(a) + 56]],
+        stripe % 2 ? "#c1d4f1" : "#7f9bc6");
+        ctx.fillStyle = stripe % 2 ? "#f2f4ff" : "#a6bce6";
+        ctx.fillRect(a, roofY(a) + 50, 32, 9);
+    }
+    wdcPolygon(ctx, [[-142, 34], [0, -5], [142, 34], [142, 43], [0, 7], [-142, 43]], "#e5ecfb");
+    wdcPolygon(ctx, [[-137, 103], [0, 63], [137, 103], [137, 113], [0, 79], [-137, 114]], "#b28054");
+    ctx.fillStyle = "#735030";
+    ctx.fillRect(-119, 97, 17, 157);
+    ctx.fillRect(102, 97, 17, 157);
+    ctx.fillStyle = "#caa66a";
+    ctx.fillRect(-121, 103, 9, 152);
+    ctx.fillRect(105, 103, 10, 152);
+
+    if (shop.merchant) {
+        const bob = Math.sin(time * 4.4) * 2;
+        ctx.fillStyle = "#3f2722";
+        ctx.fillRect(-21, 126 + bob, 41, 44);
+        ctx.fillStyle = "#dfaa7b";
+        ctx.fillRect(-15, 140 + bob, 30, 30);
+        ctx.fillStyle = "#f0c9a0";
+        ctx.fillRect(-9, 142 + bob, 20, 19);
+        ctx.fillStyle = "#29202a";
+        ctx.fillRect(-7, 149 + bob, 4, 5);
+        ctx.fillRect(6, 149 + bob, 4, 5);
+        ctx.fillStyle = "#563f71";
+        ctx.fillRect(-25, 171 + bob, 50, 40);
+        ctx.fillStyle = "#eee1c5";
+        ctx.fillRect(-11, 176 + bob, 25, 35);
+        ctx.fillRect(-31, 187 + bob, 16, 12);
+        ctx.fillRect(19, 186 - bob, 15, 12);
+    }
+    for (const side of [-1, 1]) {
+        const sx = side * 95;
+        ctx.fillStyle = "#b99c65";
+        ctx.fillRect(sx - 22, 192, 44, 53);
+        ctx.fillStyle = "#dfc98a";
+        ctx.fillRect(sx - 24, 183, 48, 16);
+        ctx.fillStyle = "#527045";
+        ctx.fillRect(sx - 8, 169, 15, 17);
+        ctx.fillStyle = "#d89959";
+        ctx.fillRect(sx + 9, 161, 11, 27);
+    }
+    ctx.fillStyle = "#694627";
+    ctx.fillRect(-105, 224, 210, 33);
+    ctx.fillStyle = "#be975d";
+    ctx.fillRect(-115, 218, 230, 12);
+    for (let slat = -95; slat < 96; slat += 23) ctx.fillRect(slat, 231, 14, 25);
+    ctx.fillStyle = "#180e08";
+    ctx.fillRect(-162, 258, 324, 49);
+    ctx.strokeStyle = "#e79750";
+    ctx.lineWidth = 7;
+    ctx.strokeRect(-162, 258, 324, 49);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#eca460";
+    ctx.font = "900 35px Arial, sans-serif";
+    ctx.fillText("SELL", 0, 284);
+    ctx.fillStyle = "#f6dda5";
+    ctx.font = "700 24px Arial, sans-serif";
+    ctx.fillText(`COINS ${shop.coins}`, 0, 335);
+    ctx.restore();
+}
+
+function wdcGroceries(ctx, x, y, size, time) {
+    ctx.save();
+    ctx.translate(x, y + Math.sin(time * 12) * size * .025);
+    ctx.scale(size / 30, size / 30);
+    wdcPolygon(ctx, [[-11, 4], [-14, -15], [-10, -22], [-5, -20], [0, 5]], "#c7984d", "#604024", .7);
+    ctx.fillStyle = "#f6ca7b";
+    ctx.fillRect(-11, -18, 4, 5);
+    ctx.fillRect(-9, -11, 4, 4);
+    wdcPolygon(ctx, [[0, 4], [-1, -12], [5, -19], [10, -14], [12, 4]], "#97bba4", "#3f6452", .8);
+    wdcPolygon(ctx, [[3, 6], [6, -7], [12, -11], [15, -4], [12, 6]], "#5e913d");
+    wdcPolygon(ctx, [[-13, -1], [14, -1], [12, 23], [-11, 23]], "#d5ac69", "#a77e45", .8);
+    wdcPolygon(ctx, [[9, 0], [14, -1], [12, 23], [8, 22]], "#b58b4f");
+    ctx.fillStyle = "#e1b97d";
+    ctx.fillRect(-10, 1, 18, 4);
+    ctx.restore();
+}
+
+function drawClassicWdcFormEffects(ctx, fighter, time, bounds, flashReduction) {
+    const { at, beam } = fighter.classicWdcForm;
+    if (time - at < .80) wdcPortal(ctx, fighter.x, fighter.y, fighter.radius * .72, time - at, .8);
+    if (!beam || time >= beam.endsAt) return;
+    const fired = beam.fired === true;
+    const startsAt = fired ? beam.firesAt : beam.startsAt;
+    const endsAt = fired ? beam.endsAt : beam.firesAt;
+    const progress = Math.max(0, Math.min(1, (time - startsAt) / (endsAt - startsAt)));
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    ctx.clip();
+    wdcDisintegrator(ctx, fighter, fighter.radius, bounds.width,
+        { angle: beam.angle, phase: fired ? "fire" : "charge", progress }, time, flashReduction);
+    ctx.restore();
+}
+
+function wdcArenaFrame(ctx, board, gap) {
+    const { x, y, size } = board;
+    const right = x + size;
+    const bottom = y + size;
+    ctx.strokeStyle = "#b8b8b8";
+    ctx.lineWidth = 5.25;
+    ctx.beginPath();
+    ctx.moveTo(right, gap == null ? bottom : y + size * (gap + .124));
+    if (gap != null) ctx.lineTo(right - 12, y + size * (gap + .115));
+    if (gap != null) {
+        ctx.moveTo(right, y + size * (gap + .124));
+        ctx.lineTo(right, bottom);
+    }
+    ctx.lineTo(x, bottom);
+    ctx.lineTo(x, y);
+    ctx.lineTo(right, y);
+    ctx.lineTo(right, gap == null ? bottom : y + size * (gap - .124));
+    if (gap != null) ctx.lineTo(right - 12, y + size * (gap - .115));
+    ctx.stroke();
+}
+
+function wdcDuelMeter(ctx, x, y, width, progress, label, health, fill, border) {
+    const height = 36;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 10);
+    ctx.clip();
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(x, y, width, height);
+    ctx.fillStyle = fill;
+    if (progress > 0) {
+        ctx.beginPath();
+        ctx.roundRect(x + 3, y + 3, Math.max(2, (width - 6) * progress), height - 6, 7);
+        ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 10);
+    ctx.stroke();
+    wdcPixelText(ctx, label, x + width / 2, y + height / 2, 1.72, 1.58, "#fff8e9");
+    ctx.font = "700 16px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "#fff8ec";
+    ctx.fillText(`HP ${Math.ceil(health)}`, x + width / 2, y + height + 12);
+}
+
+function wdcDuelEffects(ctx, effects, time, flashReduction) {
+    for (const effect of effects) {
+        const point = wdcStagePoint(effect);
+        const age = time - effect.at;
+        const shatter = effect.cue === "wall-break";
+        const strike = effect.cue === "serious" || effect.cue === "punch";
+        const gem = effect.cue === "mine" || effect.cue === "sell" || effect.cue === "pay";
+        const summon = effect.cue === "summon" || effect.cue === "recall";
+        if (!shatter && !strike && !gem && !summon) continue;
+        const lifetime = shatter ? .72 : strike ? .28 : gem ? .60 : .44;
+        if (age > lifetime) continue;
+        const progress = age / lifetime;
+        const color = shatter ? "#f5f5f3" : strike ? "#fff0b6" : gem ? "#d4f999" : "#bfc4ff";
+        const spread = shatter ? 126 : strike ? 78 : gem ? 60 : 99;
+        const count = shatter ? 15 : strike ? 11 : gem ? 7 : 10;
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * (flashReduction ? .58 : .94);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = shatter ? 3 : 2;
+        if (!gem) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, spread * (.28 + progress * .90), 0, TAU);
+            ctx.stroke();
+        }
+        for (let index = 0; index < count; index += 1) {
+            const angle = index * 2.399963 + effect.at;
+            const distance = spread * (.36 + (index % 6) * .055 + progress * .74);
+            const x = point.x + Math.cos(angle) * distance;
+            const y = point.y + Math.sin(angle) * distance + (shatter ? progress ** 2 * 77 : -progress * 16);
+            if (shatter) {
+                wdcPolygon(ctx, [[x, y], [x + 11 * Math.cos(angle), y + 17], [x - 8, y + 7]], color);
+            } else if (gem) {
+                ctx.fillStyle = index % 2 ? "#93df76" : "#ffdd72";
+                ctx.fillRect(x, y, 5 + index % 3, 5 + index % 3);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + Math.cos(angle) * 14, y + Math.sin(angle) * 14);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+}
+
+function wdcStagePoint({ x, y }) {
+    return { x: WDC_DUEL_BOARD.x + x * WDC_DUEL_BOARD.size, y: WDC_DUEL_BOARD.y + y * WDC_DUEL_BOARD.size };
+}
+
+function wdcDuelTitle(ctx, summonName) {
+    const left = summonName || "WDC";
+    const right = "ONE PUNCH MAN";
+    const natural = [wdcPixelWidth(left) * 7.5, wdcPixelWidth("VS") * 5, wdcPixelWidth(right) * 7.5];
+    const gap = 24;
+    const maxWidth = left.length > 12 ? 995 : 790;
+    const scale = Math.min(1, maxWidth / (natural.reduce((sum, width) => sum + width, 0) + gap * 2));
+    const [leftWidth, vsWidth, rightWidth] = natural.map((width) => width * scale);
+    const spacing = gap * scale;
+    const start = 540 - (leftWidth + vsWidth + rightWidth + spacing * 2) / 2;
+    const y = 384 + (1 - scale) * 10;
+    wdcPixelText(ctx, left, start + leftWidth / 2, y, 7.5 * scale, 5.45 * scale, WDC_TITLE_BLUE);
+    wdcPixelText(ctx, "VS", start + leftWidth + spacing + vsWidth / 2, y + 2, 5 * scale, 3.8 * scale, "#f3f3f3");
+    wdcPixelText(ctx, right, start + leftWidth + vsWidth + spacing * 2 + rightWidth / 2, y, 7.5 * scale, 5.45 * scale, WDC_TITLE_GOLD);
+}
+
+export function drawClassicWdcDuel(ctx, sim, width, height, { flashReduction = false, reducedMotion = false } = {}) {
+    const duel = sim.classicWdcDuel;
+    const pose = duel.pose;
+    const time = sim.time;
+    const wdc = sim.fighters.find(({ id }) => id === duel.wdcId);
+    const punchMan = sim.fighters.find(({ id }) => id === duel.punchManId);
+    const board = WDC_DUEL_BOARD;
+    const scale = Math.min(width / 1080, height / 1920);
+    const wdcRadius = board.size * .069 * (wdc.classicSizeScale || 1);
+    const punchRadius = board.size * .069 * (punchMan.classicSizeScale || 1);
+    const summon = pose.summon ? WDC_SUMMONS[pose.summon.id] : null;
+    const summonPoint = summon && wdcStagePoint(pose.summon);
+    const punchPoint = wdcStagePoint(pose.punchMan);
+
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, width, height);
+    ctx.save();
+    ctx.translate((width - 1080 * scale) / 2, (height - 1920 * scale) / 2);
+    ctx.scale(scale, scale);
+    wdcArenaFrame(ctx, board, pose.wallGapY);
+    wdcDuelTitle(ctx, summon?.name);
+    for (const x of pose.dots) {
+        const point = wdcStagePoint({ x, y: .064 });
+        wdcDisc(ctx, point.x, point.y, 4.3, "#f6f6f6", "#858585", 1);
+    }
+
+    if (pose.shop) wdcMarket(ctx, 540, board.y + 13, board.size, pose.shop, time);
+    if (pose.portal) {
+        const point = wdcStagePoint(pose.portal);
+        wdcPortal(ctx, point.x, point.y, wdcRadius * 1.03, pose.portal.age, pose.portal.duration, reducedMotion);
+    }
+    if (pose.beam && summonPoint) {
+        ctx.save();
+        if (pose.beam.phase === "fire") {
+            ctx.beginPath();
+            ctx.rect(board.x, board.y, board.size, board.size);
+            ctx.clip();
+        }
+        wdcDisintegrator(ctx, summonPoint, board.size * summon.radius, board.size, pose.beam, time, flashReduction);
+        ctx.restore();
+    }
+    if (summon) {
+        const radius = board.size * summon.radius;
+        if (!reducedMotion) {
+            for (let index = pose.summon.trail.length - 1; index >= 0; index -= 1) {
+                const point = wdcStagePoint(pose.summon.trail[index]);
+                ctx.save();
+                ctx.globalAlpha = .58 * (1 - index / pose.summon.trail.length) ** 2;
+                wdcDisc(ctx, point.x, point.y, radius, summon.color, "#282828", 2.3);
+                ctx.restore();
+            }
+        }
+        wdcOrb(ctx, summonPoint, radius, summon.color, summon.rim, 100, summon === WDC_SUMMONS.unarmed);
+        if (pose.shop) {
+            const angle = pose.shop.selling ? -.87 : time * 3.6;
+            wdcPickaxe(ctx, summonPoint.x, summonPoint.y, radius, angle);
+            wdcDisc(ctx, summonPoint.x - radius * .25, summonPoint.y - radius * 1.60, 6, "#80ca63", "#3c792c", 2);
+            ctx.fillStyle = "#f1f8e7";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.font = "700 21px Arial, sans-serif";
+            ctx.fillText(String(pose.shop.gems), summonPoint.x - radius * .03, summonPoint.y - radius * 1.60);
+        }
+    }
+    wdcOrb(ctx, wdcStagePoint(pose.wdc), wdcRadius, WDC_BLUE, "#1a3290", wdc.health);
+    if (pose.punchManVisible) {
+        if (!reducedMotion) {
+            for (let index = pose.punchManTrail.length - 1; index >= 0; index -= 1) {
+                const point = wdcStagePoint(pose.punchManTrail[index]);
+                ctx.save();
+                ctx.globalAlpha = .13 * (1 - index / pose.punchManTrail.length);
+                wdcDisc(ctx, point.x, point.y, punchRadius * (.88 + .12 * (1 - index / 6)), WDC_YELLOW);
+                ctx.restore();
+            }
+        }
+        if (pose.punch?.flyingFist) {
+            const point = wdcStagePoint(pose.punch.flyingFist);
+            wdcGlove(ctx, point.x, point.y, punchRadius * .80, pose.punch.angle, true);
+        } else if (pose.punch?.extension > .02 && !pose.punch.detached) {
+            const { angle, reach, extension, serious } = pose.punch;
+            const distance = punchRadius * .8 + (reach * board.size - punchRadius * .8) * extension;
+            const shoulder = {
+                x: punchPoint.x + Math.cos(angle) * punchRadius * .43,
+                y: punchPoint.y + Math.sin(angle) * punchRadius * .43,
+            };
+            const fist = { x: punchPoint.x + Math.cos(angle) * distance, y: punchPoint.y + Math.sin(angle) * distance };
+            wdcPunchArm(ctx, shoulder, fist, punchRadius, angle, serious);
+        }
+        wdcOrb(ctx, punchPoint, punchRadius, WDC_YELLOW, "#bda047", punchMan.health);
+        if (pose.shop?.carrying) {
+            wdcGroceries(ctx, punchPoint.x + punchRadius * 1.58, punchPoint.y - punchRadius * .16, punchRadius * 1.41, time);
+        } else if (pose.shop?.paymentAge != null && pose.shop.paymentAge < .35) {
+            wdcDisc(ctx, punchPoint.x - punchRadius * .59, punchPoint.y - punchRadius * .58, punchRadius * .22, "#e8ae50", "#994916", 3);
+        }
+    }
+    wdcDuelEffects(ctx, duel.effects, time, flashReduction || reducedMotion);
+    wdcDuelMeter(ctx, 145, 1285, 275, pose.shop?.selling || summon ? .96 : .90,
+        "SUMMON: UNARMED", wdc.health, "#23489e", "#7194e4");
+    wdcDuelMeter(ctx, 659, 1285, 275, pose.charge,
+        "SERIOUS SERIES", punchMan.health, "#aa8d34", "#e7cd7c");
+    ctx.restore();
 }

@@ -1,5 +1,17 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-08 — WDC vs One Punch Man
+
+- Added both Classic fighters with their own starting HP and normal seeded
+  combat abilities. The opt-in reference sequence uses an authored 36-second
+  fight clock, followed by the existing recorder tail.
+- Rebuilt the portrait frame and pixel titles, the three summon entrances,
+  glove strikes and ghost trails, charge and beam, Emerald's market and gem
+  count, and the grocery escape with a permanent break in the right wall.
+  All effects and original synthesized audio are driven by simulation cues.
+- Verified 202 tests and the Playwright setup and canvas checks. The exported
+  portrait MP4 runs 37.405 seconds with 2,240 video frames and AAC audio.
+
 ## 2026-11-08 — Arena motion and course pass
 
 - Added Sprint, Power Gate, and Bank Shot as setup presets. The course still

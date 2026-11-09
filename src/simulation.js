@@ -1,4 +1,10 @@
 import {
+  createClassicWdcDuel,
+  updateClassicWdcDuel,
+  WDC_DUEL_END,
+  WDC_SUMMONS,
+} from "./classic-wdc-duel.js?v=20261108-wdc-duel3";
+import {
   WORLD_CUP_COUNTRIES,
   WORLD_CUP_MODE,
   WORLD_CUP_PICKUPS,
@@ -56,7 +62,7 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261108-arena-cut1";
+} from "./classic-orbs.js?v=20261108-wdc-duel3";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -1462,7 +1468,7 @@ function applyClassicAnnouncementPose(fighter, fighters) {
   const isGun = CLASSIC_GUN_ORBS.has(fighter.type);
   const isSword = fighter.type === "sword" || fighter.type === "draftmaster";
   const isTrident = fighter.type === "trident";
-  const isPuncher = fighter.type === "boxer" || fighter.type === "monster";
+  const isPuncher = CLASS_DEFS[fighter.type]?.classicAbility?.kind === "boxer";
   fighter.classicAnnouncementActive = true;
   fighter.classicAnnouncementAimAngle = targetAngle;
   fighter.classicAimAngle = isSword || isTrident ? upright : targetAngle;
@@ -1545,6 +1551,7 @@ export function createSimulation({
   classicTeams = null,
   classicTeamOptions = null,
   classicHydrogenHealth = 100,
+  classicReferenceDuel = false,
   social = null,
   raceLongform = null,
   raceTournament = null,
@@ -1663,7 +1670,7 @@ export function createSimulation({
   const normalizedClassicOrbOptions = Object.fromEntries(selectedClasses.map((orbId) => {
     const raw = classicOrbOptions?.[orbId] || {};
     return [orbId, Object.freeze({
-      health: normalizeClassicOrbHealth(raw.health),
+      health: normalizeClassicOrbHealth(raw.health, CLASSIC_ORBS[orbId]?.defaultHealth),
       speedMode: normalizeClassicSpeedMode(raw.speedMode),
       orbScale: normalizeClassicOrbScale(raw.orbScale),
       fadingTrails: raw.fadingTrails === true,
@@ -1806,6 +1813,7 @@ export function createSimulation({
           && legacyHydrogenHealth !== 100
           ? legacyHydrogenHealth
           : classicOptions?.health,
+        def.defaultHealth,
       )
       : Math.round(100 * modifier.healthScale);
     const raceTravelSpeed = raceOrb
@@ -2672,7 +2680,7 @@ export function createSimulation({
       classicBoss: classicOptions?.boss === true,
       classicAbilityKind: def.classicAbility?.kind || null,
       classicAbilityUses: 0,
-      classicAbilityNextAt: type === "sword" ? 0 : def.classicAbility?.interval || 0,
+      classicAbilityNextAt: type === "sword" ? 0 : type === "wdc" ? 2.2 : def.classicAbility?.interval || 0,
       classicReactorCharge: 0,
       classicReactorChargePercent: 0,
       classicReactorColor: type === "reactor" ? CLASSIC_REACTOR_START_COLOR : null,
@@ -2782,19 +2790,19 @@ export function createSimulation({
       classicRecoilStartedAt: 0,
       classicRecoilUntil: 0,
       classicRecoilCount: 0,
-      classicPunchPhase: type === "boxer" || type === "monster" ? "idle" : "inactive",
+      classicPunchPhase: def.classicAbility?.kind === "boxer" ? "idle" : "inactive",
       classicPunchStartedAt: 0,
       classicPunchPhaseUntil: 0,
       classicPunchAngle: angle,
       classicPunchTargetId: null,
-      classicPunchHand: type === "boxer" || type === "monster" ? "left" : null,
+      classicPunchHand: def.classicAbility?.kind === "boxer" ? "left" : null,
       classicPunchImpactResolved: false,
       classicPunchImpactEventEmitted: false,
       classicPunchHitTargetIds: [],
       classicPunchGloves: [],
       classicPunchActiveHands: [],
       classicPunchReach: 0,
-      classicPunchableRadius: type === "boxer" || type === "monster"
+      classicPunchableRadius: def.classicAbility?.kind === "boxer"
         ? fighterRadius * CLASSIC_PUNCH_MAX_DISTANCE_SCALE
         : 0,
       classicPunchCount: 0,
@@ -2978,7 +2986,7 @@ export function createSimulation({
     ),
   }));
 
-  return {
+  const sim = {
     seed,
     spawnSeed,
     selectedClasses,
@@ -3095,6 +3103,8 @@ export function createSimulation({
     replayAccumulator: REPLAY_INTERVAL,
     overtimeStarted: false,
   };
+  if (modernClassic && classicReferenceDuel) sim.classicWdcDuel = createClassicWdcDuel(sim);
+  return sim;
 }
 
 export function createHazards(
@@ -3414,6 +3424,17 @@ export function stepSimulation(sim, dt) {
     return;
   }
   sim.time += dt;
+  if (sim.classicWdcDuel) {
+    updateClassicWdcDuel(sim, sim.classicWdcDuel, dt, (type, detail) => emitEvent(sim, type, detail));
+    if (sim.time >= WDC_DUEL_END) {
+      sim.finished = true;
+      sim.winner = sim.fighters.find(({ id }) => id === sim.classicWdcDuel.punchManId);
+      sim.analytics = buildMatchAnalytics(sim);
+      emitEvent(sim, "victory", { winnerId: sim.winner.id, reason: "arena-escape" });
+    }
+    recordReplay(sim, dt);
+    return;
+  }
   if (sim.gameplayMode === ORB_RACE_MODE) {
     if (sim.raceTournament) {
       const presentation = advanceRaceTournamentSession(sim);
@@ -9415,6 +9436,7 @@ function classicBoxerClosestHand(fighter, target, angle) {
 }
 
 function classicBoxerGloveVisualFootprint(fighter) {
+  if (fighter.type === "one-punch-man") return { length: fighter.radius, width: fighter.radius };
   const variant = fighter.type === "monster" ? "monster" : "boxer";
   return {
     length: fighter.radius * CLASSIC_PUNCH_GLOVE_LENGTH_SCALE[variant] * CLASSIC_PUNCH_GLOVE_RENDER_SCALE,
@@ -10603,6 +10625,65 @@ function updateClassicTurretState(sim, fighter, ability) {
   });
 }
 
+const CLASSIC_WDC_FORM_IDS = Object.freeze(Object.keys(WDC_SUMMONS));
+
+function updateClassicWdcForm(sim, fighter, ability, target, suppressed) {
+  const cue = (name) => emitEvent(sim, "classic-wdc-cue", {
+    fighterId: fighter.id,
+    cue: name,
+    form: fighter.classicWdcForm.id,
+    x: fighter.x,
+    y: fighter.y,
+  });
+  if (sim.time >= fighter.classicAbilityNextAt) {
+    const index = fighter.classicAbilityUses % CLASSIC_WDC_FORM_IDS.length;
+    fighter.classicAbilityUses += 1;
+    fighter.classicWdcForm = {
+      id: CLASSIC_WDC_FORM_IDS[index],
+      at: sim.time,
+      bounces: fighter.classicBounces,
+      gems: 0,
+      coins: 0,
+    };
+    fighter.damage = fighter.classicWdcForm.id === "unarmed" ? 7 : 2;
+    fighter.classicAbilityNextAt = sim.time + ability.interval;
+    cue("portal");
+  }
+
+  const form = fighter.classicWdcForm;
+  if (!form || suppressed) return;
+  if (form.id === "emerald" && fighter.classicBounces > form.bounces) {
+    form.gems += 5 * (fighter.classicBounces - form.bounces);
+    form.bounces = fighter.classicBounces;
+    cue("mine");
+    if (form.gems >= 10) {
+      form.gems -= 10;
+      form.coins += 100;
+      fighter.health = Math.min(fighter.maxHealth, fighter.health + 10);
+      syncClassicHealthState(fighter);
+      cue("sell");
+    }
+  }
+
+  if (form.id !== "exoelectric") return;
+  if (!form.beam && target?.alive && sim.time - form.at >= 0.7) {
+    form.beam = {
+      angle: Math.atan2(target.y - fighter.y, target.x - fighter.x),
+      startsAt: sim.time,
+      firesAt: sim.time + 0.84,
+      endsAt: sim.time + 1.48,
+      fired: false,
+    };
+    cue("charge");
+  }
+  const beam = form.beam;
+  if (!beam || beam.fired || sim.time < beam.firesAt) return;
+  beam.fired = true;
+  cue("beam");
+  const contact = classicBlueSunRayContact(sim, fighter, beam.angle, fighter.radius * 0.38);
+  if (contact.target) damage(sim, contact.target, ability.damage, fighter.id, "exoelectric disintegrator", "classic-ability");
+}
+
 function updateClassicAbilities(sim, dt) {
   if (sim.gameplayMode !== "classic" || sim.legacyClassicRules) return;
   const bounds = arenaBounds(sim);
@@ -10689,6 +10770,10 @@ function updateClassicAbilities(sim, dt) {
     }
     if (CLASSIC_HOMING_FIGHTERS.has(fighter.type) && liveTarget) {
       setClassicHomingVelocity(fighter, liveTarget, sim.time);
+    }
+    if (ability.kind === "wdc") {
+      updateClassicWdcForm(sim, fighter, ability, liveTarget, vampireLatchSuppressesAttack);
+      continue;
     }
     if (ability.kind === "boxer") {
       updateClassicBoxerPunchState(sim, fighter, liveTarget);
@@ -25061,6 +25146,9 @@ export function captureReplayFrame(sim) {
     time: sim.time,
     finished: sim.finished,
     winnerId: sim.winner?.id ?? null,
+    ...(sim.classicWdcDuel ? {
+      classicWdcDuel: { ...sim.classicWdcDuel, effects: [...sim.classicWdcDuel.effects] },
+    } : {}),
     winningRaceTeamIndex: sim.winningRaceTeamIndex ?? null,
     raceTournament: snapshotOrbRaceTournament(sim.raceTournament),
     raceTournamentMatchRecorded: sim.raceTournamentMatchRecorded === true,
@@ -25328,6 +25416,9 @@ export function captureReplayFrame(sim) {
       classicRecoilStartedAt: fighter.classicRecoilStartedAt,
       classicRecoilUntil: fighter.classicRecoilUntil,
       classicRecoilCount: fighter.classicRecoilCount,
+      ...(fighter.classicWdcForm ? {
+        classicWdcForm: { ...fighter.classicWdcForm, beam: fighter.classicWdcForm.beam && { ...fighter.classicWdcForm.beam } },
+      } : {}),
       classicPunchPhase: fighter.classicPunchPhase,
       classicPunchStartedAt: fighter.classicPunchStartedAt,
       classicPunchPhaseUntil: fighter.classicPunchPhaseUntil,

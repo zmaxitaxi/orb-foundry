@@ -6,7 +6,7 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261108-arena-cut1";
+} from "./classic-orbs.js?v=20261108-wdc-duel3";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -57,6 +57,8 @@ export const ANNOUNCER_NAMES = Object.freeze({
   monster: "Monster",
   fairy: "Fairy",
   commander: "Commander",
+  wdc: "WDC",
+  "one-punch-man": "One Punch Man",
 });
 
 export const ANNOUNCER_TYPES = Object.freeze(Object.keys(ANNOUNCER_NAMES));
@@ -303,7 +305,7 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20260825-tsar-all-in-one1";
+export const ANNOUNCER_ASSET_VERSION = "20261108-wdc-announcer1";
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
@@ -406,6 +408,8 @@ export const INTRO_ANNOUNCER_ASSETS = Object.freeze({
       .filter(([, asset]) => Boolean(asset)),
   ),
   ...CLASSIC_OVERHAUL_ANNOUNCER_ASSETS,
+  "intro-wdc": "classic-local/wdc.mp3",
+  "intro-one-punch-man": "classic-local/one-punch-man.mp3",
 });
 
 const WORLD_CUP_ANNOUNCER_ASSET_OVERRIDES = Object.freeze({
@@ -702,6 +706,24 @@ const ORB_SIGNATURES = Object.freeze({
     layers: [[210, 84, 0.2, 0.024, "sine"], [980, 420, 0.1, 0.016, "triangle"]],
     noises: [[0.11, 0.018, 760, 1.2, "lowpass"]],
   },
+});
+
+const WDC_CUE_SOUNDS = Object.freeze({
+  bounce: { signature: "wdc-bounce", rateLimit: .04, layers: [[305, 146, .054, .15, "sine"], [1180, 450, .024, .028, "triangle"]] },
+  portal: { signature: "wdc-portal", layers: [[122, 330, .41, .075, "triangle"], [390, 672, .32, .045, "sine"]], noises: [[.39, .034, 720, 1.2, "bandpass"]] },
+  summon: { signature: "wdc-summon", layers: [[850, 320, .20, .094, "sine"], [510, 180, .18, .040, "triangle"]] },
+  recall: { signature: "wdc-recall", layers: [[438, 155, .20, .10, "sine"]] },
+  windup: { signature: "wdc-punch-windup", noises: [[.115, .055, 1410, .9, "bandpass"]] },
+  punch: { signature: "wdc-punch", layers: [[168, 49, .135, .29, "sine"], [290, 83, .075, .12, "triangle"]], noises: [[.105, .13, 1830, 1.1, "bandpass"]] },
+  serious: { signature: "wdc-serious-punch", layers: [[122, 39, .28, .34, "sine"], [460, 78, .18, .12, "triangle"]], noises: [[.23, .18, 1360, .65, "bandpass"]] },
+  charge: { signature: "wdc-exoelectric-charge", layers: [[119, 392, .69, .085, "triangle"], [390, 1320, .62, .040, "sine"]], noises: [[.58, .036, 1800, 1.7, "bandpass"]] },
+  beam: { signature: "wdc-exoelectric-beam", layers: [[186, 48, .73, .25, "sawtooth"], [95, 38, .67, .18, "sine"]], noises: [[.75, .18, 760, .9, "lowpass"], [.31, .072, 2330, 1, "bandpass"]] },
+  mine: { signature: "wdc-mine", layers: [[990, 556, .12, .13, "triangle"], [1520, 892, .11, .045, "sine"]] },
+  sell: { signature: "wdc-sell", layers: [[980, 980, .13, .13, "sine"], [1490, 1490, .23, .085, "sine"], [2010, 1910, .18, .045, "triangle"]] },
+  pay: { signature: "wdc-pay", layers: [[1390, 1160, .12, .11, "triangle"]] },
+  bag: { signature: "wdc-bag", noises: [[.24, .074, 1660, .65, "highpass"]] },
+  "wall-break": { signature: "wdc-wall-break", layers: [[156, 61, .21, .17, "sine"]], noises: [[.32, .22, 2070, .8, "bandpass"], [.25, .085, 4700, 1.6, "highpass"]] },
+  escape: { signature: "wdc-escape", layers: [[440, 880, .22, .085, "triangle"]], noises: [[.15, .030, 1190, 1.2, "bandpass"]] },
 });
 
 const EVENT_SOUNDS = Object.freeze({
@@ -1096,6 +1118,7 @@ export const CLASSIC_AUDIO_POLICY = Object.freeze({
       "classic-trident-recall",
       "classic-freeze",
       "classic-apple-collected",
+      "classic-wdc-cue",
       "classic-sword-deflect",
       "classic-slice-hit",
       "classic-zeus-thunder",
@@ -1354,13 +1377,15 @@ function contactPanForEvent(event) {
 }
 
 export function soundPlanForEvent(event = {}) {
-  if (event.gameplayMode === "classic") return null;
+  if (event.gameplayMode === "classic" && event.type !== "classic-wdc-cue") return null;
   if (!classicAudioEventEnabled(event)) return null;
-  const base = event.type === "weapon-hit"
-    ? { signature: "metal-weapon-hit", metal: true }
-    : event.type === "classic-body-hit" && event.fighterType === "slammy"
-      ? EVENT_SOUNDS["classic-slam"]
-      : EVENT_SOUNDS[event.type];
+  const base = event.type === "classic-wdc-cue"
+    ? WDC_CUE_SOUNDS[event.cue]
+    : event.type === "weapon-hit"
+      ? { signature: "metal-weapon-hit", metal: true }
+      : event.type === "classic-body-hit" && event.fighterType === "slammy"
+        ? EVENT_SOUNDS["classic-slam"]
+        : EVENT_SOUNDS[event.type];
   if (!base) return null;
   const id = Number(event.id) || 1;
   const hash = hashValue(id);
@@ -2542,7 +2567,9 @@ export class CombatAudio {
     source.connect(filter);
     filter.connect(gain);
     this.connectVoice(gain, category, pan);
-    source.start(now, Math.min(noise.offset, this.noiseBuffer.duration - noise.duration));
+    const availableOffset = Math.max(0, this.noiseBuffer.duration - noise.duration);
+    source.loop = noise.duration > this.noiseBuffer.duration;
+    source.start(now, Math.min(noise.offset, availableOffset));
     source.stop(now + noise.duration + 0.025);
   }
 

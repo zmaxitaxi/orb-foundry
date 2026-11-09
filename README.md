@@ -29,6 +29,12 @@ each lane independently and keep wall progress and the Hydrogen Bomb fuse
 visible. Classic matches show the current ability below the arena, including
 Sword's attack phase and Orbital's live satellite count.
 
+In Classic setup, **Load WDC vs One Punch Man** selects both fighters and
+prepares a portrait recreation of the reference Short. The reference sequence
+uses authored timing for the three summons, the shop, and the wall escape.
+Clear **Play the reference sequence** to use the same roster in a seeded duel.
+The reference option is saved with share links.
+
 ## Visual Language
 
 Every visible orb uses the flat Social Battle treatment:

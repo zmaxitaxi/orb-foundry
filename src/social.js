@@ -1,4 +1,4 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261108-arena-cut1";
+import { CLASS_DEFS } from "./simulation.js?v=20261108-wdc-duel3";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),
