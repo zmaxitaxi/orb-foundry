@@ -3,7 +3,7 @@ import {
   updateClassicWdcDuel,
   WDC_DUEL_END,
   WDC_SUMMONS,
-} from "./classic-wdc-duel.js?v=20261108-wdc-duel3";
+} from "./classic-wdc-duel.js?v=20261109-classic-signature2";
 import {
   WORLD_CUP_COUNTRIES,
   WORLD_CUP_MODE,
@@ -47,6 +47,7 @@ import {
   selectOrbRacers,
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
+  CLASSIC_ALIENS,
   CLASSIC_ORBS,
   CLASSIC_ORB_IDS,
   CLASSIC_DEFAULT_CLASSES,
@@ -62,7 +63,9 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261108-wdc-duel3";
+} from "./classic-orbs.js?v=20261109-classic-signature2";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261109-classic-signature2";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -565,6 +568,7 @@ const CLASSIC_SAWBALL_DISC_RADIUS_SCALE = 1.6;
 const CLASSIC_SAWBALL_DISC_CENTER_SCALE = 1 + CLASSIC_SAWBALL_DISC_RADIUS_SCALE;
 const CLASSIC_MINION_KINDS = new Set([
   "necromancer-soldier",
+  "wdc-summon",
   "artist-monster",
   "artist-fairy",
   "artist-soldier",
@@ -573,6 +577,20 @@ const CLASSIC_MINION_KINDS = new Set([
   // from the host orb's health display.
   "classic-parasite",
 ]);
+const CLASSIC_PULSE_FIRST_MOVE = Object.freeze({
+  wdc: 1.4,
+  "one-punch-man": 0.55,
+  gojo: 2.16,
+  "john-rod": 2.55,
+  "one-above-all": 2.94,
+  knight: 1.8,
+  "ben-10": 0.46,
+  "darth-vader": 0.86,
+  "luke-skywalker": 0.57,
+});
+const CLASSIC_WDC_FORM_IDS = Object.freeze(Object.keys(WDC_SUMMONS));
+const CLASSIC_WDC_PORTAL_SECONDS = 0.62;
+const CLASSIC_WDC_RETURN_SECONDS = 0.36;
 const CLASSIC_MINION_RADIUS_SCALE = 0.55;
 const CLASSIC_BLUE_SUN_ORBIT_SPEED = TAU / 3.6;
 // Blue Sun keeps its existing half-second per-ray cadence. Each contact now
@@ -1552,6 +1570,8 @@ export function createSimulation({
   classicTeamOptions = null,
   classicHydrogenHealth = 100,
   classicReferenceDuel = false,
+  classicOpening = null,
+  classicPowerMoves = null,
   social = null,
   raceLongform = null,
   raceTournament = null,
@@ -2680,7 +2700,7 @@ export function createSimulation({
       classicBoss: classicOptions?.boss === true,
       classicAbilityKind: def.classicAbility?.kind || null,
       classicAbilityUses: 0,
-      classicAbilityNextAt: type === "sword" ? 0 : type === "wdc" ? 2.2 : def.classicAbility?.interval || 0,
+      classicAbilityNextAt: type === "sword" ? 0 : (CLASSIC_PULSE_FIRST_MOVE[type] ?? def.classicAbility?.interval ?? 0),
       classicReactorCharge: 0,
       classicReactorChargePercent: 0,
       classicReactorColor: type === "reactor" ? CLASSIC_REACTOR_START_COLOR : null,
@@ -3104,6 +3124,16 @@ export function createSimulation({
     overtimeStarted: false,
   };
   if (modernClassic && classicReferenceDuel) sim.classicWdcDuel = createClassicWdcDuel(sim);
+  if (modernClassic && !sim.classicWdcDuel && (classicPowerMoves ?? classicTeamLayoutEnabled)) {
+    for (const [index, fighter] of fighters.entries()) {
+      const profile = CLASSIC_POWER_MOVES[fighter.type];
+      if (profile) fighter.classicPowerReadyAt = profile.ready + (index % 5) * 0.12;
+    }
+  }
+  if (modernClassic && !sim.classicWdcDuel && fighters.length === 2 && (classicOpening ?? classicTeamLayoutEnabled)) {
+    initializeClassicOpening(sim);
+    if (classicAnnouncementEnabled) updateClassicAnnouncementPose(sim);
+  }
   return sim;
 }
 
@@ -3206,6 +3236,49 @@ function createClassicTeamSpawnSlots(assignments, bounds, radius, arenaShape = "
       y: clamp(centerY + yOffset, bounds.y + radius, bounds.y + bounds.height - radius),
     };
   });
+}
+
+function initializeClassicOpening(sim) {
+  const bounds = sim.arenaBounds;
+  const random = new SeededRandom(mixSpawnSeed(sim.spawnSeed));
+  const extent = Math.min(bounds.width, bounds.height);
+  const [a, b] = sim.fighters;
+  const tilt = random.range(0.19, 0.72) * (random.next() < 0.5 ? -1 : 1);
+  const orbit = Math.max((a.radius + b.radius) * 0.75, extent * random.range(0.20, 0.23));
+  const centerX = bounds.x + bounds.width * random.range(0.46, 0.54);
+  const centerY = bounds.y + bounds.height * random.range(0.46, 0.54);
+  const dx = Math.cos(tilt) * orbit;
+  const dy = Math.sin(tilt) * orbit;
+  Object.assign(a, clampPointToArena(sim, centerX - dx, centerY - dy, a.radius));
+  Object.assign(b, clampPointToArena(sim, centerX + dx, centerY + dy, b.radius));
+  sim.classicOpening = {
+    phase: "orbit", until: 2.15, bankAt: random.range(0.48, 0.60),
+    turn: random.next() < 0.5 ? -1 : 1, clashAt: null,
+  };
+  updateClassicOpening(sim);
+}
+
+function updateClassicOpening(sim) {
+  const opening = sim.classicOpening;
+  if (!opening || opening.phase === "clash" || opening.phase === "released") return;
+  const [a, b] = sim.fighters;
+  const { time } = sim;
+  if (time >= opening.until || !a.alive || !b.alive || a.classicWdcReserve || b.classicWdcReserve) {
+    opening.phase = "released";
+    return;
+  }
+  const inward = clamp((time - opening.bankAt) / 0.68, 0, 1);
+  opening.phase = inward > 0 ? "converge" : "orbit";
+  const bearing = Math.atan2(b.y - a.y, b.x - a.x);
+  const bank = (1.52 - inward * 1.38) * opening.turn;
+  for (const [fighter, direction] of [[a, bearing], [b, bearing + Math.PI]]) {
+    if (time < fighter.stunUntil || time < (fighter.classicPulseLaunchUntil || 0)
+      || time < (fighter.classicHeldUntil || 0) || time < (fighter.classicRecoilUntil || 0)
+      || fighter.classicFrostFrozen || classicFighterActionLocked(sim, fighter)) continue;
+    const speed = classicMovementTargetSpeed(fighter, time);
+    fighter.vx = Math.cos(direction + bank) * speed;
+    fighter.vy = Math.sin(direction + bank) * speed;
+  }
 }
 
 function createSpawnSlots(total, bounds, radius, rng, arenaShape = "square") {
@@ -3471,8 +3544,12 @@ export function stepSimulation(sim, dt) {
   }
 
   const frozenIds = getFrozenFighters(sim);
+  syncClassicAbilityHolds(sim);
+  updateClassicOpening(sim);
   for (const fighter of sim.fighters) {
-    if (!fighter.alive || frozenIds.has(fighter.id) || sim.time < fighter.stunUntil) continue;
+    if (!fighter.alive || fighter.classicWdcReserve || frozenIds.has(fighter.id)
+      || sim.time < fighter.stunUntil || classicAbilityHeld(fighter, sim.time)) continue;
+    if (advanceClassicCannonWrap(sim, fighter)) continue;
 
     updateStatus(sim, fighter, dt);
     fighter.cooldown = Math.max(0, fighter.cooldown - dt);
@@ -3504,7 +3581,11 @@ export function stepSimulation(sim, dt) {
     }
 
     const modernClassic = sim.gameplayMode === "classic" && !sim.legacyClassicRules;
-    const trailLimit = modernClassic && fighter.classicSolidTrailsEnabled
+    const rushTrail = modernClassic && sim.time < (fighter.classicPulseLaunchUntil || 0)
+      && (fighter.type === "ben-10" || fighter.type === "luke-skywalker");
+    const orbitTrail = sim.classicOpening?.phase === "orbit" || sim.classicOpening?.phase === "converge"
+      || sim.time < Math.max(fighter.classicCollisionKick?.until || 0, fighter.classicWallThrow?.until || 0);
+    const trailLimit = rushTrail ? 24 : orbitTrail ? 18 : modernClassic && fighter.classicSolidTrailsEnabled
       ? 32
       : modernClassic && fighter.classicFadingTrailsEnabled ? 16 : 8;
     const trailLife = modernClassic && fighter.classicSolidTrailsEnabled
@@ -3552,6 +3633,7 @@ export function stepSimulation(sim, dt) {
   updateProjectiles(sim, dt);
   updateWorldCupProjectiles(sim, dt);
   updateClassicCombatQueues(sim);
+  syncClassicAbilityHolds(sim);
   updateEffects(sim, dt);
   updateKingOfHill(sim, dt);
   if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) {
@@ -3901,13 +3983,15 @@ function classicBlueSunVisibleTargetFor(sim, owner, ray, startX, startY, endX, e
 function collideWalls(sim, fighter) {
   const bounds = arenaBounds(sim);
   const modernClassic = sim.gameplayMode === "classic" && !sim.legacyClassicRules;
+  if (modernClassic && startClassicCannonWrap(sim, fighter)) return;
+  const radius = modernClassic ? classicCannonRollRadius(fighter, sim.time) : fighter.radius;
   const wallRestitution = modernClassic ? CLASSIC_WALL_RESTITUTION : ORB_WALL_RESTITUTION;
   if (sim.arenaShape === "circle") {
     const circle = circleArenaMetrics(bounds);
     const dx = fighter.x - circle.x;
     const dy = fighter.y - circle.y;
     const distance = Math.hypot(dx, dy);
-    const maxDistance = Math.max(0, circle.radius - fighter.radius);
+    const maxDistance = Math.max(0, circle.radius - radius);
     if (distance <= maxDistance) return;
     const nx = distance > 0 ? dx / distance : 1;
     const ny = distance > 0 ? dy / distance : 0;
@@ -3933,10 +4017,10 @@ function collideWalls(sim, fighter) {
     wallSpark(sim, fighter);
     return;
   }
-  const minX = bounds.x + fighter.radius;
-  const maxX = bounds.x + bounds.width - fighter.radius;
-  const minY = bounds.y + fighter.radius;
-  const maxY = bounds.y + bounds.height - fighter.radius;
+  const minX = bounds.x + radius;
+  const maxX = bounds.x + bounds.width - radius;
+  const minY = bounds.y + radius;
+  const maxY = bounds.y + bounds.height - radius;
 
   if (fighter.x < minX || fighter.x > maxX) {
     fighter.x = Math.max(minX, Math.min(maxX, fighter.x));
@@ -4095,6 +4179,8 @@ function spawnClassicDuplicate(sim, parent) {
 function applyClassicBounceProgression(sim, fighter, wallContact = null) {
   if (sim.gameplayMode !== "classic" || sim.legacyClassicRules || !fighter.alive) return;
   fighter.classicBounces += 1;
+  if (wallContact) resolveClassicThrownWallImpact(sim, fighter, wallContact);
+  if (!fighter.alive) return;
   if (fighter.type === "duplicator") {
     fighter.classicBounceSinceDuplicate += 1;
     if (fighter.classicBounceSinceDuplicate >= 10) {
@@ -5021,7 +5107,7 @@ function updateClassicLatches(sim) {
 }
 
 function resolveFighterCollisions(sim) {
-  const living = sim.fighters.filter((fighter) => fighter.alive);
+  const living = sim.fighters.filter((fighter) => fighter.alive && !fighter.classicWdcReserve && !fighter.classicCannonOutside);
   for (let i = 0; i < living.length; i += 1) {
     for (let j = i + 1; j < living.length; j += 1) {
       const a = living[i];
@@ -5037,10 +5123,15 @@ function resolveFighterCollisions(sim) {
       const nx = dx / distance;
       const ny = dy / distance;
       const overlap = minDistance - distance;
-      a.x -= nx * overlap * 0.5;
-      a.y -= ny * overlap * 0.5;
-      b.x += nx * overlap * 0.5;
-      b.y += ny * overlap * 0.5;
+      const heldA = classicAbilityHeld(a, sim.time);
+      const heldB = classicAbilityHeld(b, sim.time);
+      if (heldA && heldB) continue;
+      const shareA = heldA ? 0 : heldB ? 1 : 0.5;
+      const shareB = 1 - shareA;
+      a.x -= nx * overlap * shareA;
+      a.y -= ny * overlap * shareA;
+      b.x += nx * overlap * shareB;
+      b.y += ny * overlap * shareB;
 
       const relativeNormal = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
       const modernClassic = sim.gameplayMode === "classic" && !sim.legacyClassicRules;
@@ -5052,13 +5143,17 @@ function resolveFighterCollisions(sim) {
         : modernClassic ? 0 : 0.5;
       if (relativeNormal < 0) {
         const impulse = Math.max(
-          -relativeNormal * ((1 + collisionRestitution) * 0.5),
+          -relativeNormal * (1 + collisionRestitution) * (heldA || heldB ? 1 : 0.5),
           Math.min(a.baselineSpeed, b.baselineSpeed) * minimumImpulseScale,
         );
-        a.vx -= impulse * nx;
-        a.vy -= impulse * ny;
-        b.vx += impulse * nx;
-        b.vy += impulse * ny;
+        if (!heldA) {
+          a.vx -= impulse * nx;
+          a.vy -= impulse * ny;
+        }
+        if (!heldB) {
+          b.vx += impulse * nx;
+          b.vy += impulse * ny;
+        }
       } else if (!modernClassic) {
         const separationImpulse = Math.min(a.baselineSpeed, b.baselineSpeed) * (
           sim.gameplayMode === WORLD_CUP_MODE ? WORLD_CUP_SEPARATION_IMPULSE_SCALE : 0.45
@@ -5076,6 +5171,9 @@ function resolveFighterCollisions(sim) {
       }
       a.lastOrbCollisionAt = sim.time;
       b.lastOrbCollisionAt = sim.time;
+      if (sim.classicOpening && a === sim.fighters[0] && b === sim.fighters[1] && !heldA && !heldB) {
+        bankClassicBodyClash(sim, a, b, nx, ny, relativeNormal);
+      }
       if (sim.gameplayMode === KING_OF_HILL_MODE) {
         const contested = isInsideHill(sim, a) && isInsideHill(sim, b);
         applyHillCollisionResistance(sim, a, contested);
@@ -5113,11 +5211,40 @@ function resolveFighterCollisions(sim) {
   }
 }
 
+function bankClassicBodyClash(sim, a, b, nx, ny, approach) {
+  const opening = sim.classicOpening;
+  const first = opening.phase === "orbit" || opening.phase === "converge";
+  if (first) {
+    opening.phase = "clash";
+    opening.clashAt = sim.time;
+  }
+  const steep = Math.abs(ny) >= 0.78 && Math.abs(a.vx) < a.baselineSpeed * 0.56
+    && Math.abs(b.vx) < b.baselineSpeed * 0.56;
+  const lastKick = Math.max(a.classicCollisionKick?.until || 0, b.classicCollisionKick?.until || 0);
+  if (!first && (!steep || sim.time < lastKick || approach > -Math.min(a.baselineSpeed, b.baselineSpeed) * 0.29)) return;
+  const side = Math.abs(nx) > 0.002 ? Math.sign(nx) : 1;
+  const bankY = clamp(ny * 0.39 + nx * 0.13 * opening.turn, -0.45, 0.45);
+  const bankX = side * Math.sqrt(1 - bankY * bankY);
+  const kick = { at: sim.time, until: sim.time + (first ? 0.47 : 0.31), boost: first ? 1.10 : 0.63 };
+  a.classicCollisionKick = kick;
+  b.classicCollisionKick = kick;
+  const aSpeed = classicMovementTargetSpeed(a, sim.time);
+  const bSpeed = classicMovementTargetSpeed(b, sim.time);
+  a.vx = -bankX * aSpeed;
+  a.vy = -bankY * aSpeed;
+  b.vx = bankX * bSpeed;
+  b.vy = bankY * bSpeed;
+  emitClassicPulseCue(sim, a, "lateral-clash", {
+    x: (a.x + b.x) / 2, y: (a.y + b.y) / 2,
+  }, { targetId: b.id, angle: Math.atan2(bankY, bankX), opening: first, multiplier: 1 + kick.boost });
+}
+
 function resolveClassicBodyHit(sim, attacker, target, x, y) {
   if (
     sim.gameplayMode !== "classic"
     || sim.legacyClassicRules
     || !attacker.alive
+    || classicAbilityHeld(attacker, sim.time)
     || !target.alive
     || attacker.classicTeamIndex === target.classicTeamIndex
     || !attacker.classicCollisionDamageEnabled
@@ -5179,7 +5306,7 @@ function resolveClassicFighterMinionCollisionDamage(sim) {
     && entity.movementCollision !== false
   ));
   if (minions.length === 0) return;
-  for (const fighter of sim.fighters.filter(({ alive }) => alive)) {
+  for (const fighter of sim.fighters.filter((entry) => entry.alive && !entry.classicWdcReserve)) {
     const amount = classicFighterCollisionDamageFor(fighter);
     if (amount <= 0) continue;
     const cooldown = Math.max(0.001, Number(CLASS_DEFS[fighter.type]?.collision?.hitCooldown) || 0.42);
@@ -6779,7 +6906,7 @@ function applyWeaponClashRebound(a, b) {
 }
 
 function resolveWeaponHits(sim) {
-  const living = sim.fighters.filter((fighter) => fighter.alive);
+  const living = sim.fighters.filter((fighter) => fighter.alive && !fighter.classicWdcReserve);
   for (const attacker of living) {
     if (classicVampireLatchBlocksAttacker(sim, attacker)) continue;
     if (
@@ -8492,6 +8619,7 @@ function resolveClassicContactAbility(sim, attacker, target, x, y, contactSource
   if (sim.time - lastAt < 0.42) return;
   const ability = classicAbilityDefinition(attacker);
   if (attacker.type === "vampire") {
+    if (sim.time < (attacker.classicPowerMove?.endAt || 0)) return;
     const angle = Math.atan2(target.y - attacker.y, target.x - attacker.x);
     const teeth = classicVampireTeethSegment(attacker, angle);
     const fang = teeth.fangs.find((candidate) => classicSegmentHitsFighter(candidate, target));
@@ -9154,6 +9282,28 @@ function updateClassicWallLineForBounce(sim, fighter, ability, wallContact) {
 
 function spawnClassicBounceAbility(sim, fighter, wallContact = null) {
   const ability = classicAbilityDefinition(fighter);
+  if (ability.kind === "avalanche") {
+    if (classicFighterActionLocked(sim, fighter) || classicVampireLatchBlocksAttacker(sim, fighter)) return;
+    const target = nearestClassicOpponent(sim, fighter);
+    if (!target) return;
+    if (fighter.classicBounces % ability.bounces !== 0) {
+      emitClassicPulseCue(sim, fighter, "snow-pack", fighter, { charge: fighter.classicBounces % ability.bounces });
+      return;
+    }
+    const angle = classicPulseAim(fighter, target, 0.18);
+    for (const offset of [-0.52, -0.26, 0, 0.26, 0.52]) {
+      const shard = spawnClassicProjectile(sim, fighter, target, {
+        kind: "snow-shard", damage: ability.damage, speed: 525,
+        angle: angle + offset, radius: fighter.radius * 0.22, maxWallBounces: 2,
+      });
+      Object.assign(shard, clampPointToArena(sim, shard.x, shard.y, shard.radius));
+      shard.expiresAt = sim.time + 2.15;
+    }
+    fighter.classicAbilityUses += 1;
+    fighter.classicAbilityActiveUntil = sim.time + 0.44;
+    emitClassicPulseCue(sim, fighter, "snow-release", fighter, { angle });
+    return;
+  }
   const bounds = arenaBounds(sim);
   if (fighter.type === "turret") {
     // Modern Classic Turret deployment is timer-driven. This guard is kept
@@ -9171,6 +9321,11 @@ function spawnClassicBounceAbility(sim, fighter, wallContact = null) {
         radius: 5,
       });
     }
+    emitEvent(sim, "classic-shrapnel-volley", {
+      fighterId: fighter.id, count: ability.count, wallContact,
+      x: wallContact?.x ?? fighter.x, y: wallContact?.y ?? fighter.y,
+      angle: Math.atan2(fighter.vy, fighter.vx),
+    });
     return;
   }
   if (fighter.type === "train") {
@@ -9365,7 +9520,8 @@ function spawnClassicBounceAbility(sim, fighter, wallContact = null) {
 }
 
 function classicMovementTargetSpeed(fighter, time) {
-  if (fighter?.classicFrostFrozen === true) return 0;
+  if (fighter?.classicFrostFrozen === true || classicAbilityHeld(fighter, time)) return 0;
+  if (time < (fighter.classicWallThrow?.until || 0)) return fighter.classicWallThrow.speed;
   const frostSlowScale = time < (fighter.classicFrostSlowUntil || 0)
     ? clamp(Number(fighter.classicFrostSlowFactor) || CLASSIC_FROST_SLOW_FACTOR, 0.05, 1)
     : 1;
@@ -9374,7 +9530,10 @@ function classicMovementTargetSpeed(fighter, time) {
     : time < (fighter.classicSlowUntil || 0) ? 0.65 : 1;
   const flashScale = fighter.type === "flash" && time < (fighter.classicAbilityActiveUntil || 0) ? 2 : 1;
   const yingYangScale = fighter.type === "ying-yang" && fighter.classicYingYangPhase === "speed" ? 1.35 : 1;
-  return Math.max(1, fighter.baselineSpeed * slowScale * flashScale * yingYangScale);
+  const launchScale = time < (fighter.classicPulseLaunchUntil || 0) ? fighter.classicPulseLaunchScale : 1;
+  const kick = fighter.classicCollisionKick;
+  const kickScale = kick && time < kick.until ? 1 + kick.boost * ((kick.until - time) / (kick.until - kick.at)) ** 1.38 : 1;
+  return Math.max(1, fighter.baselineSpeed * slowScale * flashScale * yingYangScale * Math.max(launchScale, kickScale));
 }
 
 function setClassicHomingVelocity(fighter, target, time = 0) {
@@ -9400,6 +9559,8 @@ function setClassicEntityHomingVelocity(entity, target, fallbackSpeed = 300) {
 }
 
 function classicBoxerPhaseDurations(fighter) {
+  if (fighter.classicPunchVariant === "barrage") return { retract: 0.10, extend: 0.06, impact: 0.33, recover: 0.20 };
+  if (fighter.classicPunchVariant === "shockwave") return { retract: 0.20, extend: 0.10, impact: 0.10, recover: 0.17 };
   const configured = classicAbilityDefinition(fighter).phaseDurations;
   return {
     ...CLASSIC_BOXER_PUNCH_DEFAULT_PHASES,
@@ -9436,7 +9597,10 @@ function classicBoxerClosestHand(fighter, target, angle) {
 }
 
 function classicBoxerGloveVisualFootprint(fighter) {
-  if (fighter.type === "one-punch-man") return { length: fighter.radius, width: fighter.radius };
+  if (fighter.type === "one-punch-man") {
+    const scale = fighter.classicPunchSerious ? 2.9 : 1;
+    return { length: fighter.radius * scale, width: fighter.radius * scale };
+  }
   const variant = fighter.type === "monster" ? "monster" : "boxer";
   return {
     length: fighter.radius * CLASSIC_PUNCH_GLOVE_LENGTH_SCALE[variant] * CLASSIC_PUNCH_GLOVE_RENDER_SCALE,
@@ -9486,10 +9650,9 @@ function classicBoxerGloves(
     const tipLocalY = y2 - fighter.y;
     const tipAlong = tipLocalX * forwardX + tipLocalY * forwardY;
     const tipAcross = tipLocalX * normalX + tipLocalY * normalY;
-    const gloveCenterAlong = Math.max(
-      fighter.radius * 1.5,
-      tipAlong - visualFootprint.length * 0.38,
-    );
+    const gloveCenterAlong = fighter.type === "one-punch-man"
+      ? Math.max(fighter.radius * 0.72, tipAlong - visualFootprint.length * 0.14)
+      : Math.max(fighter.radius * 1.5, tipAlong - visualFootprint.length * 0.38);
     const centerX = fighter.x + forwardX * gloveCenterAlong + normalX * tipAcross;
     const centerY = fighter.y + forwardY * gloveCenterAlong + normalY * tipAcross;
     const hitStartX = centerX - forwardX * visualFootprint.length * 0.5;
@@ -9511,7 +9674,7 @@ function classicBoxerGloves(
       hitY2: hitEndY,
       hitWidth: visualFootprint.width,
       hitboxShape: "capsule",
-      damage: Number(classicAbilityDefinition(fighter).damage) || 5,
+      damage: classicPunchDamageFor(fighter),
       active: punchingHand && fighter.classicPunchPhase === "impact",
       punchingHand,
     };
@@ -9538,34 +9701,71 @@ function classicPunchableRadiusFor(fighter) {
   );
 }
 
-function classicPunchTargetIsInRange(fighter, target) {
+function classicPunchDamageFor(fighter) {
+  const ability = classicAbilityDefinition(fighter);
+  if (fighter.classicPunchVariant === "jab") return ability.normalDamage;
+  if (fighter.classicPunchVariant === "barrage") return ability.barrageDamage;
+  return Number(ability.damage) || 5;
+}
+
+function classicPunchTargetIsInRange(fighter, target, time) {
   if (
     !target
     || target.alive === false
     || (Number.isFinite(Number(target.health)) && Number(target.health) <= 0)
   ) return false;
   const targetDistance = Math.hypot(target.x - fighter.x, target.y - fighter.y);
-  return targetDistance <= classicPunchableRadiusFor(fighter) + (Number(target.radius) || 0);
+  const charged = fighter.type === "one-punch-man" && time >= (fighter.classicSeriousReadyAt || 0);
+  const waitsForCloseRange = time - Math.max(fighter.classicSeriousReadyAt || 0, fighter.classicAbilityNextAt || 0)
+    < (fighter.classicPunchLastCharged === "shockwave" ? 1.65 : 0.75);
+  const reach = charged && !waitsForCloseRange ? fighter.radius * 8.6 : classicPunchableRadiusFor(fighter);
+  return targetDistance <= reach + (Number(target.radius) || 0);
 }
 
 function startClassicBoxerPunch(sim, fighter, target) {
   if (
-    !classicPunchTargetIsInRange(fighter, target)
+    !classicPunchTargetIsInRange(fighter, target, sim.time)
     || fighter.classicPunchPhase !== "idle"
   ) return false;
   const targetDistance = Math.hypot(target.x - fighter.x, target.y - fighter.y);
+  if (fighter.type === "one-punch-man") {
+    const charged = sim.time >= (fighter.classicSeriousReadyAt || 0);
+    let variant = "jab";
+    if (charged) {
+      const gap = (targetDistance - target.radius) / fighter.radius;
+      variant = pickClassicPulseMove(sim, [
+        { id: "serious", weight: gap <= 5.1 ? 4 : 0 },
+        { id: "barrage", weight: gap <= 4.55 ? 3 : 0 },
+        { id: "shockwave", weight: gap > 4.15 ? 5 : gap > 2.4 ? 1.2 : 0 },
+      ], fighter.classicPunchLastCharged);
+      fighter.classicPunchLastCharged = variant;
+      fighter.classicSeriousReadyAt = sim.time + classicAbilityDefinition(fighter).seriousInterval * sim.rng.range(0.93, 1.07);
+    }
+    fighter.classicPunchVariant = variant;
+    fighter.classicPunchSerious = variant === "serious";
+    fighter.classicPulsePunchIndex = -1;
+    emitClassicPulseCue(sim, fighter, charged ? `${variant}-windup` : "windup", fighter, { variant });
+  }
   const durations = classicBoxerPhaseDurations(fighter);
   const total = durations.retract + durations.extend + durations.impact + durations.recover;
   fighter.classicPunchPhase = "retract";
   fighter.classicPunchStartedAt = sim.time;
   fighter.classicPunchPhaseUntil = sim.time + total;
   fighter.classicPunchAngle = Math.atan2(target.y - fighter.y, target.x - fighter.x);
+  let aimDistance = targetDistance;
+  if (fighter.type === "one-punch-man") {
+    const lead = fighter.classicPunchVariant === "shockwave" ? 0.32 : 0.17;
+    const origin = clampPointToArena(sim, fighter.x + fighter.vx * lead, fighter.y + fighter.vy * lead, fighter.radius);
+    const aim = clampPointToArena(sim, target.x + target.vx * lead, target.y + target.vy * lead, target.radius);
+    fighter.classicPunchAngle = Math.atan2(aim.y - origin.y, aim.x - origin.x);
+    aimDistance = Math.hypot(aim.x - origin.x, aim.y - origin.y);
+  }
   // A punch is a committed physical swing, not a homing beam. Capture the
   // complete distance to the target at launch and carry the fist all the way
   // there, even if the target moves after launch. This keeps the visual
   // endpoint and impact capsule stable without overshooting close targets.
   fighter.classicPunchReach = clamp(
-    targetDistance - target.radius * 0.58,
+    fighter.classicPunchVariant === "shockwave" ? fighter.radius * 2.1 : aimDistance - target.radius * 0.58,
     fighter.radius * CLASSIC_PUNCH_MIN_REACH_SCALE,
     fighter.radius * CLASSIC_PUNCH_MAX_REACH_SCALE,
   );
@@ -9587,6 +9787,7 @@ function startClassicBoxerPunch(sim, fighter, target) {
     phaseUntil: fighter.classicPunchPhaseUntil,
     angle: fighter.classicPunchAngle,
     doublePunch: fighter.classicPunchDouble,
+    ...(fighter.classicPunchVariant ? { variant: fighter.classicPunchVariant } : {}),
     gloves: fighter.classicPunchGloves.map((glove) => ({ ...glove })),
   });
   return true;
@@ -9595,7 +9796,7 @@ function startClassicBoxerPunch(sim, fighter, target) {
 function resolveClassicBoxerPunchImpact(sim, fighter, target) {
   if (fighter.classicPunchImpactResolved) return;
   const targets = new Map();
-  if (target?.alive) targets.set(target.id, target);
+  if (classicCombatantIsEnemy(sim, fighter, target)) targets.set(target.id, target);
   for (const candidate of classicCombatTargets(sim, fighter)) {
     if (candidate?.alive) targets.set(candidate.id, candidate);
   }
@@ -9639,22 +9840,46 @@ function resolveClassicBoxerPunchImpact(sim, fighter, target) {
     const hitKey = `${glove.hand}:${punchTarget.id}`;
     if (fighter.classicPunchHitTargetIds.includes(hitKey)) continue;
     fighter.classicPunchHitTargetIds.push(hitKey);
-    const dealt = damage(sim, punchTarget, glove.damage, fighter.id, `${fighter.name.toLowerCase()} ${glove.hand} punch`, "classic-ability");
+    const punchMan = fighter.type === "one-punch-man";
+    const serious = punchMan && fighter.classicPunchSerious;
+    const barrage = fighter.classicPunchVariant === "barrage";
+    const reason = serious ? "serious series" : barrage ? "punch barrage" : `${fighter.name.toLowerCase()} ${glove.hand} punch`;
+    const dealt = damage(sim, punchTarget, glove.damage, fighter.id, reason, "classic-ability");
+    const contactPoint = closestPointOnSegment(punchTarget.x, punchTarget.y, gloveHitbox);
+    if (punchMan && (dealt > 0 || punchTarget.classicPulseBlockedAt === sim.time)) {
+      emitClassicPulseCue(sim, fighter, serious ? "serious" : barrage ? "barrage-hit" : "punch", contactPoint, {
+        targetId: punchTarget.id, amount: dealt, blocked: dealt === 0,
+      });
+      if (serious) {
+        classicPulseBurst(sim, "serious-punch", contactPoint, fighter.radius, 0.50, {
+          angle: fighter.classicPunchAngle, blocked: dealt === 0, fighterId: fighter.id,
+        });
+      } else {
+        classicPulseBurst(sim, "punch", contactPoint, fighter.radius * (barrage ? 0.70 : 0.9), 0.24, {
+          angle: fighter.classicPunchAngle,
+        });
+      }
+      fighter.classicPunchImpactResolved = true;
+    }
     if (dealt <= 0) continue;
     hitCount += 1;
     hitDamage += dealt;
     const dx = punchTarget.x - fighter.x;
     const dy = punchTarget.y - fighter.y;
     const distance = Math.hypot(dx, dy) || 1;
-    punchTarget.vx = dx / distance * punchTarget.baselineSpeed;
-    punchTarget.vy = dy / distance * punchTarget.baselineSpeed;
-    const contactPoint = closestPointOnSegment(punchTarget.x, punchTarget.y, gloveHitbox);
+    if (punchMan) {
+      if (punchTarget.alive) launchClassicPulseTarget(sim, punchTarget, Math.atan2(dy, dx), serious ? 2.35 : barrage ? 1.12 : 1.7);
+    } else {
+      punchTarget.vx = dx / distance * punchTarget.baselineSpeed;
+      punchTarget.vy = dy / distance * punchTarget.baselineSpeed;
+    }
     emitEvent(sim, "classic-punch-hit", {
       fighterId: fighter.id,
       targetId: punchTarget.id,
       hand: glove.hand,
       amount: dealt,
       critical: doublePunch,
+      ...(punchMan ? { serious: Boolean(serious), variant: fighter.classicPunchVariant } : {}),
       x: contactPoint.x,
       y: contactPoint.y,
     });
@@ -9711,6 +9936,8 @@ function updateClassicBoxerPunchState(sim, fighter, liveTarget) {
     fighter.classicPunchGloves = [];
     fighter.classicPunchActiveHands = [];
     fighter.classicPunchReach = 0;
+    fighter.classicPunchSerious = false;
+    fighter.classicPunchVariant = null;
     fighter.classicAbilityActiveUntil = 0;
     emitEvent(sim, "classic-boxer-phase", { fighterId: fighter.id, phase: "idle" });
     return;
@@ -9725,7 +9952,23 @@ function updateClassicBoxerPunchState(sim, fighter, liveTarget) {
   const extendStart = durations.retract;
   const impactStart = durations.retract + durations.extend;
   const recoverStart = impactStart + durations.impact;
-  const extension = nextPhase === "retract"
+  const barrage = fighter.classicPunchVariant === "barrage" && nextPhase === "impact";
+  const pulseAge = barrage ? elapsed - impactStart : 0;
+  const pulseIndex = Math.min(2, Math.floor(pulseAge / 0.11));
+  const pulseProgress = (pulseAge - pulseIndex * 0.11) / 0.11;
+  if (barrage && pulseIndex !== fighter.classicPulsePunchIndex) {
+    fighter.classicPulsePunchIndex = pulseIndex;
+    fighter.classicPunchImpactResolved = false;
+    fighter.classicPunchHitTargetIds = [];
+    if (pulseIndex > 0) fighter.classicPunchHand = fighter.classicPunchHand === "left" ? "right" : "left";
+    if (target && classicCombatantIsAlive(sim, target)) {
+      const aim = classicPulseAim(fighter, target, 0.035);
+      const delta = Math.atan2(Math.sin(aim - fighter.classicPunchAngle), Math.cos(aim - fighter.classicPunchAngle));
+      fighter.classicPunchAngle += clamp(delta, -0.54, 0.54);
+    }
+    emitClassicPulseCue(sim, fighter, "barrage-swing");
+  }
+  const extension = barrage ? 0.30 + 0.70 * Math.sin(Math.PI * pulseProgress) : nextPhase === "retract"
     ? 0.18 + elapsed / Math.max(0.001, durations.retract) * 0.12
     : nextPhase === "extend"
       ? 0.3 + clamp(
@@ -9764,7 +10007,12 @@ function updateClassicBoxerPunchState(sim, fighter, liveTarget) {
     });
   }
   if (nextPhase === "impact" && !fighter.classicPunchImpactResolved) {
-    resolveClassicBoxerPunchImpact(sim, fighter, target);
+    if (fighter.classicPunchVariant === "shockwave") {
+      fighter.classicPunchImpactResolved = true;
+      launchClassicPunchWave(sim, fighter);
+    } else if (!barrage || (pulseProgress >= 0.32 && pulseProgress <= 0.69)) {
+      resolveClassicBoxerPunchImpact(sim, fighter, target);
+    }
   }
 }
 
@@ -10625,64 +10873,1646 @@ function updateClassicTurretState(sim, fighter, ability) {
   });
 }
 
-const CLASSIC_WDC_FORM_IDS = Object.freeze(Object.keys(WDC_SUMMONS));
+function emitClassicPulseCue(sim, fighter, cue, point = fighter, detail = {}) {
+  return emitEvent(sim, "classic-pulse-cue", { fighterId: fighter.id, cue, x: point.x, y: point.y, ...detail });
+}
 
-function updateClassicWdcForm(sim, fighter, ability, target, suppressed) {
-  const cue = (name) => emitEvent(sim, "classic-wdc-cue", {
-    fighterId: fighter.id,
-    cue: name,
-    form: fighter.classicWdcForm.id,
-    x: fighter.x,
-    y: fighter.y,
+function classicPulseBurst(sim, style, point, radius, life, detail = {}) {
+  sim.effects.push({ kind: "classic-pulse-burst", style, x: point.x, y: point.y, radius, life, maxLife: life, ...detail });
+}
+
+const CLASSIC_ACTION_BURSTS = Object.freeze({
+  "lateral-clash": [0.37, 2.18, "#f2f6ff"],
+  "snow-pack": [0.24, 1.12, "#bcf5ff"],
+  "snow-release": [0.48, 1.9, "#a5f1ff"],
+  "snow-bank": [0.29, 0.68, "#a5f1ff"],
+  "snow-hit": [0.33, 0.90, "#daffff"],
+  "omnitrix-transform": [0.59, 2.22, "#9dff59"],
+  "omnitrix-reset": [0.32, 1.12, "#ff855d"],
+  xlr8: [0.31, 1.84, "#40dfff"],
+  "xlr8-dodge": [0.40, 1.75, "#7ef3ff"],
+  "xlr8-tornado-hit": [0.31, 1.38, "#90f4ff"],
+  heatblast: [0.35, 1.68, "#ff9e44"],
+  "heatblast-hit": [0.39, 1.20, "#ffbe50"],
+  diamondhead: [0.34, 1.44, "#9affe1"],
+  "diamond-guard": [0.46, 1.62, "#b0fff1"],
+  "diamond-charge-hit": [0.51, 1.79, "#83ffd7"],
+  "four-arms": [0.43, 3.10, "#ff6264"],
+  "four-arms-grab": [0.31, 1.14, "#ffb28b"],
+  "four-arms-throw": [0.36, 1.63, "#ff876d"],
+  "four-arms-wall-hit": [0.50, 2.16, "#ffe0b5"],
+  cannonbolt: [0.33, 1.46, "#ffd85b"],
+  "cannonbolt-exit": [0.58, 1.8, "#ffce65"],
+  "cannonbolt-enter": [0.53, 1.8, "#fff0ab"],
+  "roll-hit": [0.40, 1.58, "#ffd873"],
+  "force-vault": [0.39, 1.68, "#a3ff9f"],
+  "saber-lunge": [0.38, 1.63, "#71ff80"],
+  "luke-evade": [0.32, 1.14, "#a4ffd4"],
+  "force-release": [0.45, 1.58, "#cb82ff"],
+  "force-choke-tick": [0.28, 1.16, "#d88eff"],
+  "saber-hit": [0.37, 1.1],
+  "vader-heavy-hit": [0.46, 1.79, "#ff8168"],
+  "saber-catch": [0.26, 1.0, "#ff6d77"],
+});
+
+function addClassicActionBurst(sim, event, fighter) {
+  if (!fighter) return;
+  const { projectileKind } = event;
+  let cue = event.type === "classic-pulse-cue" ? event.cue : null;
+  if (cue === "saber-hit" && event.move === "vader-sweep") cue = "vader-heavy-hit";
+  if (event.type === "classic-projectile-wall-bounce" && projectileKind === "snow-shard") cue = "snow-bank";
+  if (event.type === "classic-projectile-hit" && event.amount > 0) {
+    if (projectileKind === "snow-shard") cue = "snow-hit";
+  }
+  const shape = CLASSIC_ACTION_BURSTS[cue];
+  if (!shape) return;
+  const [life, scale, color = fighter.type === "darth-vader" ? "#ff495c" : "#a6ff83"] = shape;
+  const projectile = event.entityId && sim.classicEntities.find(({ id }) => id === event.entityId);
+  sim.effects.push({
+    kind: "classic-action-burst", cue, life, maxLife: life, color,
+    x: event.x, y: event.y, angle: event.angle ?? projectile?.angle ?? 0, radius: event.radius ?? fighter.radius * scale,
   });
-  if (sim.time >= fighter.classicAbilityNextAt) {
-    const index = fighter.classicAbilityUses % CLASSIC_WDC_FORM_IDS.length;
-    fighter.classicAbilityUses += 1;
+}
+
+function launchClassicPulseTarget(sim, target, angle, scale) {
+  target.classicPulseLaunchUntil = sim.time + 0.37;
+  target.classicPulseLaunchScale = scale;
+  const speed = Number.isFinite(target.baselineSpeed)
+    ? classicMovementTargetSpeed(target, sim.time)
+    : (Math.hypot(target.vx || 0, target.vy || 0) || target.moveSpeed || 180) * scale;
+  target.vx = Math.cos(angle) * speed;
+  target.vy = Math.sin(angle) * speed;
+}
+
+function launchClassicPunchWave(sim, fighter) {
+  const glove = fighter.classicPunchGloves.find(({ punchingHand }) => punchingHand);
+  const angle = fighter.classicPunchAngle;
+  const velocity = Math.max(940, fighter.baselineSpeed * 2.45);
+  const radius = fighter.radius * 0.69;
+  const origin = clampPointToArena(sim, (glove.hitX1 + glove.hitX2) / 2, (glove.hitY1 + glove.hitY2) / 2, radius);
+  const wave = addClassicEntity(sim, {
+    kind: "pulse-punch-wave",
+    ownerId: fighter.id,
+    ...origin,
+    angle,
+    radius,
+    vx: Math.cos(angle) * velocity,
+    vy: Math.sin(angle) * velocity,
+    damage: classicAbilityDefinition(fighter).shockwaveDamage,
+    expiresAt: sim.time + 0.58,
+  });
+  emitClassicPulseCue(sim, fighter, "shockwave", wave, { entityId: wave.id });
+}
+
+function updateClassicPunchWave(sim, fighter, wave, dt) {
+  const nextX = wave.x + wave.vx * dt;
+  const nextY = wave.y + wave.vy * dt;
+  const end = clampPointToArena(sim, nextX, nextY, wave.radius);
+  const path = { x1: wave.x, y1: wave.y, x2: end.x, y2: end.y, width: wave.radius * 2 };
+  const target = classicCombatTargets(sim, fighter)
+    .filter((candidate) => classicSegmentHitsFighter(path, candidate))
+    .sort((a, b) => Math.hypot(a.x - wave.x, a.y - wave.y) - Math.hypot(b.x - wave.x, b.y - wave.y))[0];
+  wave.x = end.x;
+  wave.y = end.y;
+  if (target) {
+    wave.expiresAt = sim.time;
+    const amount = damage(sim, target, wave.damage, fighter.id, "punch shockwave", "classic-ability");
+    classicPulseBurst(sim, "shockwave", wave, wave.radius * 1.25, 0.43, { angle: wave.angle });
+    emitClassicPulseCue(sim, fighter, "shockwave-hit", wave, { targetId: target.id, amount, blocked: amount === 0 });
+    if (target.alive && amount > 0) launchClassicPulseTarget(sim, target, wave.angle, 1.98);
+  } else if (end.x !== nextX || end.y !== nextY) {
+    wave.expiresAt = sim.time;
+    classicPulseBurst(sim, "shockwave", end, wave.radius * 0.68, 0.25, { angle: wave.angle });
+    emitClassicPulseCue(sim, fighter, "shockwave-wall", end);
+  }
+}
+
+function emitClassicWdcCue(sim, fighter, form, cue, point = fighter, detail = {}) {
+  emitEvent(sim, "classic-wdc-cue", {
+    fighterId: fighter.id, cue, form: form.id, x: point.x, y: point.y, ...detail,
+  });
+}
+
+function pickClassicPulseMove(sim, choices, previous) {
+  const eligible = choices.filter(({ weight }) => weight > 0);
+  const weightFor = ({ id, weight }) => id === previous ? weight * 0.12 : weight;
+  let roll = sim.rng.range(0, eligible.reduce((sum, choice) => sum + weightFor(choice), 0));
+  for (const choice of eligible) {
+    roll -= weightFor(choice);
+    if (roll < 0) return choice.id;
+  }
+  return eligible.at(-1)?.id;
+}
+
+function updateClassicWdcForm(sim, fighter, ability, suppressed, dt) {
+  const time = sim.time;
+  const form = fighter.classicWdcForm;
+  if (!form) {
+    if (suppressed || time < fighter.classicAbilityNextAt || classicFighterActionLocked(sim, fighter)) return;
+    if (!fighter.classicWdcFormsLeft?.length) fighter.classicWdcFormsLeft = [...CLASSIC_WDC_FORM_IDS];
+    const id = pickClassicPulseMove(sim, fighter.classicWdcFormsLeft.map((id) => ({
+      id, weight: id === fighter.classicWdcLastForm && fighter.classicWdcFormsLeft.length > 1 ? 0 : 1,
+    })));
+    const radius = fighter.radius;
+    const portal = clampPointToArena(sim, fighter.x - Math.sign(fighter.vx) * radius, fighter.y, radius * 1.18);
     fighter.classicWdcForm = {
-      id: CLASSIC_WDC_FORM_IDS[index],
-      at: sim.time,
-      bounces: fighter.classicBounces,
+      id,
+      phase: "portal",
+      at: time,
+      portal,
       gems: 0,
       coins: 0,
     };
-    fighter.damage = fighter.classicWdcForm.id === "unarmed" ? 7 : 2;
-    fighter.classicAbilityNextAt = sim.time + ability.interval;
-    cue("portal");
+    fighter.classicAbilityUses += 1;
+    fighter.classicAbilityNextAt = time + ability.interval;
+    emitClassicWdcCue(sim, fighter, fighter.classicWdcForm, "portal", portal);
+    return;
   }
 
-  const form = fighter.classicWdcForm;
-  if (!form || suppressed) return;
-  if (form.id === "emerald" && fighter.classicBounces > form.bounces) {
-    form.gems += 5 * (fighter.classicBounces - form.bounces);
-    form.bounces = fighter.classicBounces;
-    cue("mine");
-    if (form.gems >= 10) {
-      form.gems -= 10;
-      form.coins += 100;
-      fighter.health = Math.min(fighter.maxHealth, fighter.health + 10);
-      syncClassicHealthState(fighter);
-      cue("sell");
+  if (form.phase === "portal") {
+    if (time < form.at + CLASSIC_WDC_PORTAL_SECONDS) return;
+    if (classicFighterActionLocked(sim, fighter) || suppressed) {
+      fighter.classicWdcForm = null;
+      fighter.classicAbilityUses -= 1;
+      fighter.classicAbilityNextAt = time + 0.85;
+      return;
+    }
+    const direction = sim.rng.range(0, TAU);
+    const speed = fighter.baselineSpeed * 1.05;
+    const summon = addClassicEntity(sim, {
+      kind: "wdc-summon",
+      type: "wdc-summon",
+      formId: form.id,
+      name: WDC_SUMMONS[form.id].name,
+      color: WDC_SUMMONS[form.id].color,
+      ownerId: fighter.id,
+      classicTeamIndex: fighter.classicTeamIndex,
+      ...form.portal,
+      radius: fighter.radius,
+      vx: Math.cos(direction) * speed,
+      vy: Math.sin(direction) * speed,
+      baselineSpeed: speed,
+      moveSpeed: speed,
+      health: 100,
+      maxHealth: 100,
+      alive: true,
+      physical: true,
+      solid: true,
+      collisionMode: "enemy-minion",
+      expiresAt: time + 5.85,
+      nextAttackAt: time + 0.56,
+      trail: [],
+    });
+    fighter.trail = [];
+    fighter.classicWdcFormsLeft = fighter.classicWdcFormsLeft.filter((id) => id !== form.id);
+    fighter.classicWdcLastForm = form.id;
+    fighter.classicWdcReserve = true;
+    form.reserveAt = time;
+    form.reserveX = fighter.x;
+    form.reserveY = fighter.y;
+    form.phase = "summon";
+    form.entityId = summon.id;
+    fighter.classicAbilityActiveUntil = summon.expiresAt;
+    classicPulseBurst(sim, "summon", summon, summon.radius, 0.44);
+    emitClassicWdcCue(sim, fighter, form, "summon", summon, { entityId: summon.id });
+    return;
+  }
+
+  if (form.phase === "recall") {
+    if (time < form.returnAt + CLASSIC_WDC_RETURN_SECONDS) return;
+    Object.assign(fighter, form.entry);
+    fighter.classicWdcReserve = false;
+    fighter.classicWdcForm = null;
+    fighter.classicAbilityActiveUntil = 0;
+    if (form.backlash > 0 && form.lastSourceId) {
+      damage(sim, fighter, form.backlash, form.lastSourceId, "summon backlash", "classic-ability");
+    }
+    return;
+  }
+
+  const summon = classicCombatantById(sim, form.entityId);
+  if (!classicMinionIsAlive(sim, summon)) {
+    const point = clampPointToArena(sim, summon?.x ?? form.portal.x, summon?.y ?? form.portal.y, fighter.radius);
+    form.phase = "recall";
+    form.returnAt = time;
+    form.backlash = Math.floor((100 - (summon?.health ?? 0)) * 0.18);
+    form.entry = { ...point, vx: summon?.vx || fighter.vx, vy: summon?.vy || fighter.vy };
+    fighter.classicAbilityNextAt = Math.min(fighter.classicAbilityNextAt, time + 1.05);
+    classicPulseBurst(sim, "summon", point, fighter.radius, 0.40, { recall: true });
+    emitClassicWdcCue(sim, fighter, form, "recall", point);
+    return;
+  }
+
+  updateClassicWdcSummon(sim, fighter, form, summon, ability, dt);
+}
+
+function updateClassicWdcSummon(sim, fighter, form, summon, ability, dt) {
+  if (classicMinionIsLatched(sim, summon) || summon.classicFrostFrozen || classicAbilityHeld(summon, sim.time)
+    || sim.time < (summon.classicWallThrow?.until || 0)) return;
+  const { time } = sim;
+  summon.flash = Math.max(0, (summon.flash || 0) - dt);
+  summon.trail = [{ x: summon.x, y: summon.y }, ...summon.trail.slice(0, 21)];
+  setClassicConstantSpeed(summon, time);
+  summon.x += summon.vx * dt;
+  summon.y += summon.vy * dt;
+  const point = clampPointToArena(sim, summon.x, summon.y, summon.radius);
+  const wallX = summon.x - point.x;
+  const wallY = summon.y - point.y;
+  const overlap = Math.hypot(wallX, wallY);
+  if (overlap > 0.0001) {
+    const nx = wallX / overlap;
+    const ny = wallY / overlap;
+    const normalSpeed = summon.vx * nx + summon.vy * ny;
+    summon.x = point.x;
+    summon.y = point.y;
+    if (normalSpeed > 0) {
+      summon.vx -= 2 * normalSpeed * nx;
+      summon.vy -= 2 * normalSpeed * ny;
+      sim.collisions += 1;
+      const contact = { x: point.x + nx * summon.radius, y: point.y + ny * summon.radius };
+      if (form.id === "emerald") {
+        form.gems += 5;
+        classicPulseBurst(sim, "mine", contact, summon.radius, 0.62, { angle: Math.atan2(-ny, -nx) });
+        emitClassicWdcCue(sim, fighter, form, "mine", contact, { gems: form.gems });
+        if (form.gems >= 10 && !form.sellAt) form.sellAt = time + 0.32;
+      } else {
+        emitClassicWdcCue(sim, fighter, form, "bounce", contact);
+      }
     }
   }
-
-  if (form.id !== "exoelectric") return;
-  if (!form.beam && target?.alive && sim.time - form.at >= 0.7) {
-    form.beam = {
-      angle: Math.atan2(target.y - fighter.y, target.x - fighter.x),
-      startsAt: sim.time,
-      firesAt: sim.time + 0.84,
-      endsAt: sim.time + 1.48,
-      fired: false,
-    };
-    cue("charge");
+  const opponents = classicCombatTargets(sim, fighter);
+  const target = opponents.reduce((nearest, enemy) => (
+    !nearest || Math.hypot(enemy.x - summon.x, enemy.y - summon.y)
+      < Math.hypot(nearest.x - summon.x, nearest.y - summon.y) ? enemy : nearest
+  ), null);
+  if (form.id === "emerald") {
+    if (form.sellAt && time >= form.sellAt) {
+      form.gems -= 10;
+      form.coins += 100;
+      form.soldAt = time;
+      form.sellAt = form.gems >= 10 ? time + 0.32 : null;
+      summon.health = Math.min(summon.maxHealth, summon.health + 16);
+      healClassicFighter(sim, fighter, 8, summon.id, "emerald sale");
+      const bounds = arenaBounds(sim);
+      emitClassicWdcCue(sim, fighter, form, "sell", { x: bounds.x + bounds.width / 2, y: bounds.y }, { coins: form.coins });
+    }
+    if (!target || time < summon.nextAttackAt) return;
+    const swing = classicPulseBlade(summon, time);
+    const victim = opponents.find((enemy) => classicSegmentHitsFighter(swing, enemy));
+    if (victim) {
+      summon.nextAttackAt = time + 0.62;
+      damage(sim, victim, 11, fighter.id, "emerald pickaxe", "classic-weapon");
+      const contact = closestPointOnSegment(victim.x, victim.y, swing);
+      classicPulseBurst(sim, "mine", contact, summon.radius * 0.65, 0.32, { angle: swing.angle });
+      emitClassicWdcCue(sim, fighter, form, "pickaxe", contact, { targetId: victim.id });
+    }
+    return;
   }
-  const beam = form.beam;
-  if (!beam || beam.fired || sim.time < beam.firesAt) return;
-  beam.fired = true;
-  cue("beam");
-  const contact = classicBlueSunRayContact(sim, fighter, beam.angle, fighter.radius * 0.38);
-  if (contact.target) damage(sim, contact.target, ability.damage, fighter.id, "exoelectric disintegrator", "classic-ability");
+
+  if (form.id === "unarmed") {
+    if (summon.strike && time >= summon.strike.at + 0.48) summon.strike = null;
+    if (!summon.strike && target && time >= summon.nextAttackAt) {
+      const distance = Math.hypot(target.x - summon.x, target.y - summon.y);
+      if (distance <= summon.radius * 4.35 + target.radius) {
+        summon.strike = {
+          at: time,
+          reach: clamp(distance - target.radius * 0.28, summon.radius, summon.radius * 4.35),
+          angle: Math.atan2(target.y - summon.y, target.x - summon.x),
+        };
+        summon.nextAttackAt = time + 0.82;
+        emitClassicWdcCue(sim, fighter, form, "windup", summon);
+      }
+    }
+    const punch = classicWdcSummonPunchPose(summon, time);
+    if (!punch?.active || summon.strike.contact) return;
+    const victim = opponents.find((enemy) => Math.hypot(enemy.x - punch.x, enemy.y - punch.y) <= enemy.radius + punch.radius);
+    if (!victim) return;
+    summon.strike.contact = true;
+    const amount = damage(sim, victim, 14, fighter.id, "unarmed summon punch", "classic-ability");
+    if (amount > 0 && victim.alive) launchClassicPulseTarget(sim, victim, punch.angle, 1.65);
+    if (amount > 0) {
+      classicPulseBurst(sim, "punch", punch, summon.radius, 0.24, { angle: punch.angle });
+      emitClassicWdcCue(sim, fighter, form, "punch", punch, { targetId: victim.id, amount });
+    }
+    return;
+  }
+
+  if (!summon.beam && target && time >= summon.nextAttackAt) {
+    summon.beam = {
+      startsAt: time, firesAt: time + 0.76, endsAt: time + 1.40,
+      angle: Math.atan2(target.y - summon.y, target.x - summon.x), hits: [],
+    };
+    emitClassicWdcCue(sim, fighter, form, "charge", summon);
+  }
+  const beam = summon.beam;
+  if (!beam) return;
+  if (time >= beam.endsAt) {
+    summon.beam = null;
+    summon.nextAttackAt = time + 1.2;
+    return;
+  }
+  if (!beam.fired && target && time < beam.firesAt - 0.15) {
+    beam.angle = Math.atan2(target.y - summon.y, target.x - summon.x);
+  }
+  if (time < beam.firesAt) return;
+  if (!beam.fired) {
+    beam.fired = true;
+    beam.origin = { x: summon.x, y: summon.y };
+    emitClassicWdcCue(sim, fighter, form, "beam", beam.origin);
+  }
+  const size = arenaBounds(sim).width;
+  const elapsed = time - beam.firesAt;
+  const progress = elapsed / (beam.endsAt - beam.firesAt);
+  const reach = size * 1.53 * Math.min(1, 0.22 + progress * 12);
+  const opening = Math.min(1, 0.2 + progress * 8);
+  const dx = Math.cos(beam.angle);
+  const dy = Math.sin(beam.angle);
+  for (const enemy of opponents) {
+    if (beam.hits.includes(enemy.id)) continue;
+    const ox = enemy.x - beam.origin.x - dx * summon.radius * 1.03;
+    const oy = enemy.y - beam.origin.y - dy * summon.radius * 1.03;
+    const along = ox * dx + oy * dy;
+    if (along < 0 || along > reach + enemy.radius) continue;
+    const halfWidth = (0.018 + 0.31 * (1 - Math.exp(-along / reach * 7.8))) * size * opening;
+    if (Math.abs(ox * dy - oy * dx) > enemy.radius + halfWidth) continue;
+    const amount = damage(sim, enemy, ability.damage, fighter.id, "exoelectric disintegrator", "classic-ability");
+    if (enemy.type !== "one-punch-man" || amount > 0) beam.hits.push(enemy.id);
+    if (amount > 0) {
+      classicPulseBurst(sim, "disintegrator", enemy, summon.radius, 0.34, { angle: beam.angle });
+      emitClassicWdcCue(sim, fighter, form, "beam-hit", enemy, { targetId: enemy.id, amount });
+    }
+  }
 }
+
+export function classicWdcSummonPunchPose(summon, time) {
+  const strike = summon.strike;
+  if (!strike) return null;
+  const age = time - strike.at;
+  const extend = age < 0.12 ? 0.25 : age < 0.27
+    ? 0.25 + 0.75 * Math.min(1, (age - 0.12) / 0.11)
+    : Math.max(0.25, 1 - (age - 0.27) / 0.21);
+  const length = summon.radius * 0.55 + (strike.reach - summon.radius * 0.55) * extend;
+  return {
+    x: summon.x + Math.cos(strike.angle) * length,
+    y: summon.y + Math.sin(strike.angle) * length,
+    angle: strike.angle,
+    radius: summon.radius * 0.49,
+    active: age >= 0.155 && age <= 0.30,
+  };
+}
+
+export function classicPulseBlade(fighter, time) {
+  const emerald = fighter.formId === "emerald";
+  const angle = emerald ? time * 3.6 : fighter.classicPulseMove?.angle ?? time * 3.45 + fighter.weaponAngle;
+  const start = fighter.radius * (emerald ? 0.54 : 0.94);
+  const end = fighter.radius * (emerald ? 2.12 : 3.15);
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  return {
+    x1: fighter.x + start * dx,
+    y1: fighter.y + start * dy,
+    x2: fighter.x + end * dx,
+    y2: fighter.y + end * dy,
+    width: fighter.radius * (emerald ? 0.46 : 0.32),
+    angle,
+  };
+}
+
+function classicSidestep(sim, fighter, source) {
+  const point = source || { x: fighter.x - fighter.vx, y: fighter.y - fighter.vy };
+  const incoming = Math.atan2(fighter.y - point.y, fighter.x - point.x);
+  const stride = fighter.radius * 2.3;
+  return [-1, 1].map((side) => {
+    const angle = incoming + side * Math.PI * 0.41;
+    const escape = clampPointToArena(sim, fighter.x + Math.cos(angle) * stride, fighter.y + Math.sin(angle) * stride, fighter.radius);
+    const dx = escape.x - fighter.x;
+    const dy = escape.y - fighter.y;
+    return { angle: Math.atan2(dy, dx), room: Math.hypot(dx, dy) };
+  }).sort((a, b) => b.room - a.room)[0];
+}
+
+function blockClassicPulseHit(sim, fighter, source, category, amount) {
+  if (sim.gameplayMode !== "classic" || sim.legacyClassicRules) return false;
+  const { time } = sim;
+  if (fighter.type === "one-punch-man") {
+    if (time >= (fighter.classicDodgeUntil || 0)) {
+      const escape = classicSidestep(sim, fighter, source);
+      fighter.classicDodgeUntil = time + 0.16;
+      const step = Math.min(escape.room, fighter.radius * 0.46);
+      fighter.x += Math.cos(escape.angle) * step;
+      fighter.y += Math.sin(escape.angle) * step;
+      launchClassicPulseTarget(sim, fighter, escape.angle, 2.85);
+      fighter.classicPulseLaunchUntil = fighter.classicDodgeUntil;
+      classicPulseBurst(sim, "dodge", fighter, fighter.radius, 0.34, { angle: escape.angle });
+      emitClassicPulseCue(sim, fighter, "dodge", fighter, { sourceId: source?.id ?? null, amountBlocked: amount });
+    }
+    fighter.classicPulseBlockedAt = time;
+    return true;
+  }
+  if (["classic-dot", "classic-hydrogen", "classic-slice", "burn", "poison"].includes(category)) return false;
+  if (tryClassicReactivePower(sim, fighter, source, amount)) return true;
+  let cue;
+  const omnitrix = fighter.classicOmnitrix;
+  const xlr8 = omnitrix?.phase === "alien" && omnitrix.form === "xlr8";
+  if (xlr8) {
+    if (time < (fighter.classicDodgeUntil || 0)) return true;
+    if (
+      time < (fighter.classicDodgeReadyAt || 0)
+      || fighter.classicFrostFrozen
+      || classicFighterActionLocked(sim, fighter)
+      || classicVampireLatchBlocksAttacker(sim, fighter)
+    ) return false;
+    const escape = classicSidestep(sim, fighter, source);
+    if (escape.room < fighter.radius * 0.64) return false;
+    fighter.classicDodgeUntil = time + 0.16;
+    fighter.classicDodgeReadyAt = time + 0.97;
+    launchClassicPulseTarget(sim, fighter, escape.angle, 3.05);
+    fighter.classicPulseLaunchUntil = fighter.classicDodgeUntil;
+    omnitrix.rush = null;
+    const step = Math.min(escape.room, fighter.radius * 0.46);
+    fighter.x += Math.cos(escape.angle) * step;
+    fighter.y += Math.sin(escape.angle) * step;
+    cue = "xlr8-dodge";
+  } else if (fighter.type === "luke-skywalker" && time < (fighter.classicDodgeUntil || 0)) {
+    if (fighter.classicPulseBlockedAt !== time) {
+      emitClassicPulseCue(sim, fighter, "luke-evade", fighter, { sourceId: source.id });
+    }
+    fighter.classicPulseBlockedAt = time;
+    return true;
+  } else if (omnitrix?.phase === "alien" && omnitrix.form === "diamondhead" && omnitrix.guard > 0) {
+    omnitrix.guard -= 1;
+    cue = "diamond-guard";
+  } else if (fighter.type === "gojo") {
+    const charges = fighter.classicPulseGuardCharges ?? 2;
+    if (charges <= 0) return false;
+    fighter.classicPulseGuardCharges = charges - 1;
+    fighter.classicPulseGuardUntil = time + 0.49;
+    const angle = Math.atan2(source.y - fighter.y, source.x - fighter.x);
+    const point = {
+      x: fighter.x + Math.cos(angle) * fighter.radius * 3.2,
+      y: fighter.y + Math.sin(angle) * fighter.radius * 3.2,
+    };
+    classicPulseBurst(sim, "limitless", point, fighter.radius, 0.54, { angle });
+    cue = "limitless";
+  } else if (fighter.type === "knight" && time < (fighter.classicPulseGuardUntil || 0)) {
+    fighter.classicPulseGuardUntil = 0;
+    classicPulseBurst(sim, "shield", fighter, fighter.radius, 0.52);
+    cue = "shield-block";
+  } else {
+    return false;
+  }
+  fighter.classicPulseBlockedAt = time;
+  emitClassicPulseCue(sim, fighter, cue, fighter, { sourceId: source.id });
+  return true;
+}
+
+function startClassicPulseMove(sim, fighter, target, ability, duration) {
+  const aim = Math.atan2(target.y - fighter.y, target.x - fighter.x);
+  const move = { at: sim.time, until: sim.time + duration, angle: aim, targetId: target.id, phase: "charge" };
+  fighter.classicPulseMove = move;
+  fighter.classicAbilityUses += 1;
+  fighter.classicAbilityNextAt = sim.time + ability.interval * sim.rng.range(0.91, 1.11);
+  fighter.classicAbilityActiveUntil = move.until;
+  return move;
+}
+
+function classicPulseAim(fighter, target, lead = 0) {
+  return Math.atan2(target.y + target.vy * lead - fighter.y, target.x + target.vx * lead - fighter.x);
+}
+
+function updateClassicGojo(sim, fighter, target, ability) {
+  const radius = fighter.radius;
+  fighter.classicPulseField = Boolean(target && (fighter.classicPulseGuardCharges ?? 2) > 0
+    && Math.hypot(target.x - fighter.x, target.y - fighter.y) <= radius * 4.45);
+  let move = fighter.classicPulseMove;
+  if (!move && target && sim.time >= fighter.classicAbilityNextAt) {
+    move = startClassicPulseMove(sim, fighter, target, ability, 1.56);
+    move.firesAt = sim.time + 0.94;
+    move.hits = [];
+    emitClassicPulseCue(sim, fighter, "purple-merge");
+  }
+  if (!move) return;
+  if (move.phase === "charge" && target && sim.time < move.firesAt - 0.095) {
+    move.angle = classicPulseAim(fighter, target, 0.12);
+  }
+  if (sim.time < move.firesAt) return;
+  const dx = Math.cos(move.angle);
+  const dy = Math.sin(move.angle);
+  if (move.phase === "charge") {
+    move.phase = "fire";
+    move.x = fighter.x + dx * radius;
+    move.y = fighter.y + dy * radius;
+    move.length = classicRayToArenaBoundary(sim, move.x, move.y, dx, dy).distance;
+    move.width = radius * 1.85;
+    fighter.classicPulseGuardCharges = 2;
+    emitClassicPulseCue(sim, fighter, "hollow-purple", move);
+  }
+  const reach = Math.min(1, (sim.time - move.firesAt) / 0.16 + 0.04) * move.length;
+  const beam = {
+    x1: move.x, y1: move.y, x2: move.x + dx * reach, y2: move.y + dy * reach, width: move.width,
+  };
+  for (const enemy of classicCombatTargets(sim, fighter)) {
+    if (move.hits.includes(enemy.id) || !classicSegmentHitsFighter(beam, enemy)) continue;
+    const amount = damage(sim, enemy, ability.damage, fighter.id, "hollow purple", "classic-ability");
+    if (enemy.type !== "one-punch-man" || amount > 0) move.hits.push(enemy.id);
+    if (amount > 0) {
+      classicPulseBurst(sim, "purple", enemy, radius, 0.40, { angle: move.angle });
+      emitClassicPulseCue(sim, fighter, "purple-hit", enemy, { targetId: enemy.id, amount });
+      if (enemy.alive) launchClassicPulseTarget(sim, enemy, move.angle, 1.62);
+    }
+  }
+}
+
+function updateClassicJohnRod(sim, fighter, target, ability) {
+  let move = fighter.classicPulseMove;
+  if (!move && target && sim.time >= fighter.classicAbilityNextAt) {
+    move = startClassicPulseMove(sim, fighter, target, ability, 1.39);
+    move.radius = fighter.radius * 2.72;
+    move.x = target.x;
+    move.y = target.y;
+    move.lockAt = sim.time + 0.69;
+    move.firesAt = sim.time + 0.99;
+    emitClassicPulseCue(sim, fighter, "rod-cycle");
+  }
+  if (!move) return;
+  if (sim.time < move.lockAt) {
+    const victim = classicCombatantById(sim, move.targetId);
+    if (classicCombatantIsAlive(sim, victim)) {
+      const center = clampPointToArena(sim, victim.x + victim.vx * 0.17, victim.y + victim.vy * 0.17, victim.radius);
+      Object.assign(move, center);
+    }
+    return;
+  }
+  if (move.phase === "charge") {
+    move.phase = "wrap";
+    emitClassicPulseCue(sim, fighter, "wrap", move);
+  }
+  if (move.phase !== "wrap" || sim.time < move.firesAt) return;
+  move.phase = "impact";
+  classicPulseBurst(sim, "wrap", move, fighter.radius, 0.45);
+  for (const enemy of classicCombatTargets(sim, fighter)) {
+    if (Math.abs(enemy.x - move.x) > move.radius * 0.70 + enemy.radius
+      || Math.abs(enemy.y - move.y) > move.radius * 0.70 + enemy.radius) continue;
+    const amount = damage(sim, enemy, ability.damage, fighter.id, "final wrap", "classic-ability");
+    if (amount > 0) emitClassicPulseCue(sim, fighter, "wrap-hit", enemy, { targetId: enemy.id, amount });
+  }
+}
+
+function updateClassicOneAboveAll(sim, fighter, target, ability) {
+  let move = fighter.classicPulseMove;
+  if (!move && target && sim.time >= fighter.classicAbilityNextAt) {
+    move = startClassicPulseMove(sim, fighter, target, ability, 2.08);
+    move.lockAt = sim.time + 1.15;
+    move.firesAt = sim.time + 1.56;
+    move.x = target.x;
+    move.y = target.y;
+    move.radius = fighter.radius * 2.64;
+    emitClassicPulseCue(sim, fighter, "convergence");
+  }
+  if (!move) return;
+  if (sim.time < move.lockAt) {
+    const victim = classicCombatantById(sim, move.targetId);
+    if (classicCombatantIsAlive(sim, victim)) {
+      const point = clampPointToArena(sim, victim.x + victim.vx * 0.24, victim.y + victim.vy * 0.24, victim.radius);
+      Object.assign(move, point);
+    }
+    return;
+  }
+  if (move.phase === "charge") {
+    move.phase = "edit";
+    emitClassicPulseCue(sim, fighter, "convergence-lock", move);
+  }
+  if (move.phase !== "edit" || sim.time < move.firesAt) return;
+  move.phase = "impact";
+  classicPulseBurst(sim, "convergence", move, fighter.radius, 0.54);
+  for (const enemy of classicCombatTargets(sim, fighter)) {
+    if (Math.hypot(enemy.x - move.x, enemy.y - move.y) > move.radius + enemy.radius) continue;
+    const amount = damage(sim, enemy, ability.damage, fighter.id, "convergence ring", "classic-ability");
+    if (amount > 0) {
+      classicPulseBurst(sim, "edit-pixels", enemy, enemy.radius, 0.56);
+      emitClassicPulseCue(sim, fighter, "convergence-hit", enemy, { targetId: enemy.id, amount });
+    }
+  }
+}
+
+function updateClassicKnight(sim, fighter, target, ability) {
+  let move = fighter.classicPulseMove;
+  if (!move && target && sim.time >= fighter.classicAbilityNextAt
+    && (sim.time - fighter.classicAbilityNextAt >= 1.55
+      || Math.hypot(target.x - fighter.x, target.y - fighter.y) <= fighter.radius * 5.6 + target.radius)) {
+    move = startClassicPulseMove(sim, fighter, target, ability, 0.68);
+    move.angle = classicPulseAim(fighter, target, 0.18);
+    move.firesAt = sim.time + 0.22;
+    fighter.classicPulseGuardUntil = sim.time + 0.86;
+    emitClassicPulseCue(sim, fighter, "shield-ready");
+  }
+  if (move?.phase === "charge" && sim.time >= move.firesAt) {
+    move.phase = "bash";
+    launchClassicPulseTarget(sim, fighter, move.angle, 1.65);
+    classicPulseBurst(sim, "shield", fighter, fighter.radius, 0.47, { angle: move.angle });
+    emitClassicPulseCue(sim, fighter, "shield-bash");
+  }
+  if (move?.phase === "bash") {
+    const enemy = classicCombatTargets(sim, fighter).find((candidate) => (
+      Math.hypot(candidate.x - fighter.x, candidate.y - fighter.y) <= fighter.radius * 2.05 + candidate.radius
+      && Math.cos(Math.atan2(candidate.y - fighter.y, candidate.x - fighter.x) - move.angle) > 0.28
+    ));
+    if (enemy) {
+      move.phase = "impact";
+      const amount = damage(sim, enemy, ability.damage, fighter.id, "shield bash", "classic-ability");
+      if (amount > 0) {
+        classicPulseBurst(sim, "shield-crack", enemy, fighter.radius, 0.57, { angle: move.angle });
+        emitClassicPulseCue(sim, fighter, "steel-hit", enemy, { targetId: enemy.id, amount });
+        if (enemy.alive) launchClassicPulseTarget(sim, enemy, move.angle, 1.9);
+      }
+    }
+  }
+  if (move || sim.time < (fighter.classicPulseBladeReadyAt || 0)) return;
+  const blade = classicPulseBlade(fighter, sim.time);
+  const enemy = classicCombatTargets(sim, fighter).find((candidate) => classicSegmentHitsFighter(blade, candidate));
+  if (!enemy) return;
+  fighter.classicPulseBladeReadyAt = sim.time + 0.62;
+  const amount = damage(sim, enemy, ability.swordDamage, fighter.id, "knight blade", "classic-weapon");
+  if (amount > 0) {
+    const point = closestPointOnSegment(enemy.x, enemy.y, blade);
+    classicPulseBurst(sim, "steel", point, fighter.radius, 0.31, { angle: blade.angle });
+    emitClassicPulseCue(sim, fighter, "steel-hit", point, { targetId: enemy.id, amount });
+  }
+}
+
+function classicAbilityHit(sim, owner, target, amount, cue, point, detail = {}, category = "classic-ability") {
+  const dealt = damage(sim, target, amount, owner.id, cue, category);
+  if (dealt > 0) emitClassicPulseCue(sim, owner, cue, point, { targetId: target.id, amount: dealt, ...detail });
+  return dealt;
+}
+
+function classicPowerOffset(point, angle, distance) {
+  return { x: point.x + Math.cos(angle) * distance, y: point.y + Math.sin(angle) * distance };
+}
+
+function classicPowerLane(sim, point, angle, reach, width, forwardsOnly = false) {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const forward = classicRayToArenaBoundary(sim, point.x, point.y, dx, dy);
+  const backward = classicRayToArenaBoundary(sim, point.x, point.y, -dx, -dy);
+  const end = Math.min(reach, forward.distance);
+  const start = forwardsOnly ? 0 : Math.min(reach, backward.distance);
+  return { shape: "lane", x1: point.x - dx * start, y1: point.y - dy * start, x2: point.x + dx * end, y2: point.y + dy * end, width };
+}
+
+function classicPowerCue(sim, fighter, phase, point, detail = {}) {
+  emitEvent(sim, "classic-power-cue", { fighterId: fighter.id, phase, x: point.x, y: point.y, ...detail });
+}
+
+function classicPowerMark(sim, fighter, target, lead) {
+  return clampPointToArena(
+    sim, target.x + (target.vx || 0) * lead, target.y + (target.vy || 0) * lead, fighter.radius * 0.25,
+  );
+}
+
+function classicPowerBlueprint(sim, fighter, power, profile) {
+  const r = fighter.radius;
+  const count = profile.count || 1;
+  const { angle, center } = power;
+  const points = [];
+  const spread = (profile.spread || 2) * r;
+  if (profile.kind === "lanes") {
+    const posts = sim.classicEntities.filter((entity) => entity.ownerId === fighter.id && entity.kind === "turret" && entity.alive !== false);
+    for (let i = 0; i < count; i += 1) {
+      const index = i - (count - 1) / 2;
+      if (profile.layout === "drop") {
+        const mark = classicPowerOffset(center, angle + Math.PI / 2, index * spread);
+        const point = clampPointToArena(sim, mark.x, mark.y, r * 0.25);
+        const wall = classicWallContactFor(sim, { ...point, radius: r * 0.06 });
+        const socket = clampPointToArena(sim, wall.x, wall.y, r * 0.06);
+        const aim = Math.atan2(point.y - socket.y, point.x - socket.x);
+        points.push({ ...classicPowerLane(sim, socket, aim, profile.size * r, (profile.width || 0.8) * r, true), socket: true });
+        continue;
+      }
+      if (profile.layout === "relay" || profile.layout === "bastion") {
+        const nearWall = classicNextWallContact(sim, center, Math.cos(angle + i * TAU / count), Math.sin(angle + i * TAU / count));
+        const offset = classicPowerOffset(center, angle + Math.PI / 2 + index * 0.58, spread * (i % 2 ? 1 : -1));
+        const origin = profile.layout === "relay" ? offset : posts[i] || nearWall;
+        const socket = clampPointToArena(sim, origin.x, origin.y, r * 0.12);
+        const aim = Math.atan2(center.y - socket.y, center.x - socket.x);
+        points.push({ ...classicPowerLane(sim, socket, aim, profile.size * r, (profile.width || 0.8) * r, true), socket: true });
+        continue;
+      }
+      const turn = profile.layout === "cross" ? index * Math.PI / 2 : profile.layout === "fan" ? index * Math.PI * 0.22 : 0;
+      const start = profile.layout === "grid" ? classicPowerOffset(center, angle + Math.PI / 2, index * spread) : center;
+      const position = clampPointToArena(sim, start.x, start.y, r * 0.04);
+      points.push(classicPowerLane(sim, position, angle + turn, profile.size * r, (profile.width || 0.8) * r, profile.layout === "fan"));
+    }
+  } else if (profile.kind === "zones") {
+    const drones = profile.deployed ? sim.classicEntities.filter((entity) => entity.ownerId === fighter.id && entity.kind.startsWith("commander-drone")) : [];
+    for (let i = 0; i < count; i += 1) {
+      const index = i - (count - 1) / 2;
+      const offset = profile.layout === "line" ? classicPowerOffset(center, angle + Math.PI * 0.18, index * spread / Math.max(1, count - 1) * 2)
+        : profile.layout === "cross" && i > 0 ? classicPowerOffset(center, angle + (i - 1) * Math.PI / 2, spread)
+          : profile.layout === "cluster" && i > 0 ? classicPowerOffset(center, angle + (i - 1) * TAU / Math.max(1, count - 1), spread * 0.82)
+            : center;
+      const point = clampPointToArena(sim, offset.x, offset.y, r * 0.25);
+      const zone = { shape: "zone", ...point, radius: profile.size * r };
+      if (profile.layout === "drop" || profile.deployed) {
+        const source = (drones.length ? drones[i % drones.length] : null)
+          || classicNextWallContact(sim, point, Math.cos(angle + Math.PI / 2), Math.sin(angle + Math.PI / 2));
+        zone.sourceX = source.x;
+        zone.sourceY = source.y;
+      }
+      points.push(zone);
+    }
+  }
+  return points;
+}
+
+function beginClassicPowerMove(sim, fighter, target, profile, mode) {
+  const { time } = sim;
+  const lead = Math.min(0.22, profile.windup * 0.47);
+  const mark = classicPowerMark(sim, fighter, target, lead);
+  const bounds = arenaBounds(sim);
+  const center = profile.anchor === "self" || mode === "evade" ? { x: fighter.x, y: fighter.y }
+    : profile.anchor === "arena" ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
+      : profile.anchor === "wall" ? classicWallContactFor(sim, target) : mark;
+  const aimFrom = profile.anchor === "wall" ? center : fighter;
+  const angle = mode === "evade" ? classicSidestep(sim, fighter, target).angle : Math.atan2(mark.y - aimFrom.y, mark.x - aimFrom.x);
+  const activeAt = time + (mode === "evade" ? 0 : profile.windup);
+  const endAt = activeAt + (mode === "evade" ? 0.18 : profile.duration);
+  const power = {
+    phase: "charge", mode, angle, center, startedAt: time, activeAt, endAt, recoverUntil: endAt + 0.27,
+    layout: profile.layout, kind: profile.kind, targetId: target.id, hitIds: [],
+    lastX: fighter.x, lastY: fighter.y, path: [],
+  };
+  power.blueprint = classicPowerBlueprint(sim, fighter, power, profile);
+  fighter.classicPowerMove = power;
+  if (mode === "guard") classicPowerCue(sim, fighter, "guard", fighter, { targetId: target.id });
+  else if (mode !== "evade") classicPowerCue(sim, fighter, "charge", center, { targetId: target.id });
+  return power;
+}
+
+function activateClassicPowerMove(sim, fighter, power, profile) {
+  power.phase = "active";
+  if (profile.kind === "rush") {
+    if (fighter.type === "sword") {
+      fighter.classicSwordPhase = "idle";
+      fighter.classicSwordPhaseUntil = 0;
+      fighter.classicSwordSegment = classicSwordSegment(fighter, sim.time);
+    }
+    launchClassicPulseTarget(sim, fighter, power.angle, profile.speed || 2.85);
+    fighter.classicPulseLaunchUntil = power.endAt;
+    if (power.mode === "evade") fighter.classicDodgeUntil = power.endAt;
+    power.path = [{ x: fighter.x, y: fighter.y }];
+  }
+  classicPowerCue(sim, fighter, power.mode === "evade" ? "evade" : "release", power.center, { targetId: power.targetId });
+}
+
+function tryClassicReactivePower(sim, fighter, source, amount) {
+  const readyAt = fighter.classicPowerReadyAt;
+  if (readyAt === undefined || sim.time < readyAt || !source) return false;
+  const profile = CLASSIC_POWER_MOVES[fighter.type];
+  const power = fighter.classicPowerMove;
+  if (power?.mode === "evade" && sim.time < power.endAt) return true;
+  if (profile.evade && (!power || power.phase === "charge") && amount >= 5 && !classicFighterActionLocked(sim, fighter)) {
+    const escape = classicSidestep(sim, fighter, source);
+    if (escape.room < fighter.radius * 0.70) return false;
+    const dodge = beginClassicPowerMove(sim, fighter, source, profile, "evade");
+    const step = Math.min(escape.room, fighter.radius * 0.68);
+    fighter.x += Math.cos(escape.angle) * step;
+    fighter.y += Math.sin(escape.angle) * step;
+    activateClassicPowerMove(sim, fighter, dodge, profile);
+    fighter.classicPulseBlockedAt = sim.time;
+    return true;
+  }
+  if (profile.kind !== "guard" || power || amount < (profile.minDamage || 3) || classicFighterActionLocked(sim, fighter)) return false;
+  beginClassicPowerMove(sim, fighter, source, profile, "guard");
+  fighter.classicPulseBlockedAt = sim.time;
+  return true;
+}
+
+function classicPowerPose(sim, fighter, power, profile, now) {
+  const r = fighter.radius;
+  const elapsed = Math.max(0, now - power.activeAt);
+  const progress = clamp(elapsed / (power.endAt - power.activeAt), 0, 1);
+  const { center, angle } = power;
+  if (profile.kind === "ring" || profile.kind === "guard") {
+    const inward = profile.layout === "inward";
+    const start = profile.layout === "cone" ? 0.45 : 0.92;
+    const size = r * (start + (profile.size - start) * (inward ? 1 - progress : progress));
+    return [{ shape: "ring", ...center, radius: size, width: r * (profile.width || 0.93), angle, arc: profile.layout === "cone" ? 2.16 : TAU, live: true }];
+  }
+  if (profile.kind === "lanes" || profile.kind === "zones") {
+    const count = power.blueprint.length;
+    const spacing = count > 1 ? Math.min(0.22, profile.duration * 0.58 / (count - 1)) : 0;
+    return power.blueprint.map((shape, index) => {
+      const age = elapsed - index * spacing;
+      const duration = Math.min(0.36, profile.duration - index * spacing);
+      return { ...shape, live: age >= 0 && age <= duration, age, glow: age < 0 ? 0 : clamp(1 - age / (duration + 0.14), 0, 1) };
+    });
+  }
+  if (profile.kind === "field") {
+    return [{ shape: "field", ...center, radius: r * profile.size, angle, live: progress > 0.71 }];
+  }
+  if (profile.kind === "orbit") {
+    const count = profile.count || 3;
+    const collapse = profile.layout === "collapse";
+    const spiral = profile.layout === "spiral";
+    const distance = r * profile.size * (collapse ? (1 - progress) ** 1.22 : spiral ? 0.30 + progress * 0.70 : 1);
+    const turn = collapse ? progress * 0.31 : progress * (spiral ? TAU * 1.45 : TAU);
+    return Array.from({ length: count }, (_, i) => {
+      const a = angle + i * TAU / count + turn;
+      const desired = classicPowerOffset(center, a, distance);
+      const point = clampPointToArena(sim, desired.x, desired.y, r * 0.12);
+      const scale = profile.gravity ? 0.68 + progress * 0.32 : 1;
+      return { shape: "orbiter", ...point, radius: r * (profile.width || 1.05) * scale, angle: a, live: !collapse || progress > (profile.gravity ? 0.30 : 0.48) };
+    });
+  }
+  if (profile.kind === "rush") {
+    return [{ shape: "lane", x1: power.lastX, y1: power.lastY, x2: fighter.x, y2: fighter.y,
+      width: r * (2 + (profile.width || 0.48) * 2), live: power.mode !== "evade" }];
+  }
+  return [];
+}
+
+function classicPowerTouches(shape, target) {
+  if (shape.shape === "lane") return classicSegmentHitsFighter(shape, target);
+  const dx = target.x - shape.x;
+  const dy = target.y - shape.y;
+  const distance = Math.hypot(dx, dy);
+  if (shape.shape !== "ring") return distance <= shape.radius + target.radius;
+  if (Math.abs(distance - shape.radius) > shape.width * 0.5 + target.radius) return false;
+  if (shape.arc >= TAU) return true;
+  const angle = Math.atan2(dy, dx) - shape.angle;
+  return Math.abs(Math.atan2(Math.sin(angle), Math.cos(angle))) <= shape.arc * 0.5;
+}
+
+function applyClassicPowerField(target, power, profile, dt) {
+  const angle = Math.atan2(power.center.y - target.y, power.center.x - target.x);
+  const direction = angle + (profile.layout === "swirl" ? Math.PI * 0.48 : profile.layout === "push" ? Math.PI : 0);
+  const strength = (target.baselineSpeed || target.moveSpeed || ORB_BASE_SPEED) * (profile.gravity ? 2.3 : 1.9);
+  target.vx += Math.cos(direction) * strength * dt;
+  target.vy += Math.sin(direction) * strength * dt;
+}
+
+function resolveClassicPowerMove(sim, fighter, power, profile, dt) {
+  power.pose = classicPowerPose(sim, fighter, power, profile, sim.time);
+  const radius = fighter.radius;
+  if (profile.kind === "rush" && sim.time >= (power.nextTrailAt || 0)) {
+    power.path.push({ x: fighter.x, y: fighter.y });
+    if (power.path.length > 20) power.path.shift();
+    power.nextTrailAt = sim.time + 1 / 60;
+  }
+  const gravity = profile.kind === "field" || profile.gravity;
+  for (const target of classicCombatTargets(sim, fighter)) {
+    if (gravity && !classicAbilityHeld(target, sim.time)) {
+      const inField = profile.gravity
+        ? power.pose.some((point) => Math.hypot(target.x - point.x, target.y - point.y) <= point.radius + radius * 1.32)
+        : classicPowerTouches(power.pose[0], target);
+      if (inField) applyClassicPowerField(target, power, profile, dt);
+    }
+    if (power.hitIds.includes(target.id)) continue;
+    const hit = power.pose.find((shape) => shape.live && classicPowerTouches(shape, target));
+    if (!hit) continue;
+    power.hitIds.push(target.id);
+    const dealt = damage(sim, target, profile.damage, fighter.id, profile.name, "classic-signature-power", "critical");
+    if (!(dealt > 0)) continue;
+    const point = hit.shape === "lane" ? closestPointOnSegment(target.x, target.y, hit) : target;
+    const heading = profile.kind === "rush" ? power.angle : Math.atan2(target.y - power.center.y, target.x - power.center.x);
+    classicPowerCue(sim, fighter, "hit", point, { targetId: target.id, amount: dealt, angle: heading });
+    sim.effects.push({ kind: "classic-power-impact", x: point.x, y: point.y, color: profile.color,
+      angle: heading, radius: Math.max(radius, target.radius), style: profile.kind, life: 0.39, maxLife: 0.39 });
+    if (profile.heal && !power.healed) {
+      healClassicFighter(sim, fighter, profile.heal, fighter.id, profile.name);
+      power.healed = true;
+    }
+    if (!target.alive) continue;
+    if (profile.force) launchClassicPulseTarget(sim, target, heading + (profile.force < 0 ? Math.PI : 0), Math.abs(profile.force));
+    if (profile.status === "snare") target.classicSlowUntil = Math.max(target.classicSlowUntil || 0, sim.time + 0.42);
+    if (profile.status === "scramble") {
+      const old = Math.atan2(target.vy, target.vx);
+      launchClassicPulseTarget(sim, target, old + Math.PI * 0.31, 1.08);
+    }
+  }
+  power.lastX = fighter.x;
+  power.lastY = fighter.y;
+}
+
+function updateClassicPowerMove(sim, fighter, target, dt) {
+  const readyAt = fighter.classicPowerReadyAt;
+  if (readyAt === undefined || sim.time < readyAt) return false;
+  const profile = CLASSIC_POWER_MOVES[fighter.type];
+  let power = fighter.classicPowerMove;
+  if (power?.phase === "spent") return false;
+  if (!power) {
+    if (!target || profile.kind === "guard" || sim.time < (profile.chaseAt || 0)) return false;
+    if (fighter.type === "vampire" && fighter.classicLatchPhase === "latched") return false;
+    if (profile.evade && ["active", "windup"].includes(fighter.classicSwordPhase)) return false;
+    const distance = Math.hypot(target.x - fighter.x, target.y - fighter.y);
+    const range = profile.range || (profile.kind === "rush" ? profile.size : 0);
+    if (range && distance > fighter.radius * range + target.radius) return false;
+    if (profile.evade && distance <= fighter.radius * 4.2 + target.radius && sim.time < profile.chaseAt + 2.4) return false;
+    power = beginClassicPowerMove(sim, fighter, target, profile, "attack");
+  }
+  if (sim.time >= power.recoverUntil) {
+    fighter.classicPowerMove = { phase: "spent" };
+    return false;
+  }
+  if (sim.time >= power.endAt) {
+    power.phase = "recover";
+    return false;
+  }
+  if (power.phase === "charge" && power.mode === "attack") {
+    const marked = classicCombatantById(sim, power.targetId);
+    if (profile.anchor === "self" && profile.kind !== "lanes") {
+      power.center = { x: fighter.x, y: fighter.y };
+      if (marked?.alive && (profile.kind === "rush" || profile.layout === "cone")) {
+        power.angle = classicPulseAim(fighter, marked, 0.17);
+      }
+    } else if (marked?.alive && sim.time < power.activeAt - 0.20) {
+      const mark = classicPowerMark(sim, fighter, marked, 0.19);
+      if (profile.anchor === "self") power.center = { x: fighter.x, y: fighter.y };
+      if (profile.anchor === "target") power.center = mark;
+      const aimFrom = profile.anchor === "wall" ? power.center : fighter;
+      power.angle = Math.atan2(mark.y - aimFrom.y, mark.x - aimFrom.x);
+      power.blueprint = classicPowerBlueprint(sim, fighter, power, profile);
+    }
+  }
+  if (power.phase === "charge" && profile.kind === "orbit") {
+    power.pose = classicPowerPose(sim, fighter, power, profile, power.activeAt);
+  }
+  if (sim.time >= power.activeAt) {
+    if (power.phase === "charge") activateClassicPowerMove(sim, fighter, power, profile);
+    resolveClassicPowerMove(sim, fighter, power, profile, dt);
+  }
+  return true;
+}
+
+function nextClassicAlien(sim, bag) {
+  if (!bag.length) {
+    bag.push(...Object.keys(CLASSIC_ALIENS));
+    for (let i = bag.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(sim.rng.range(0, i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+  }
+  return bag.pop();
+}
+
+function classicAlienIntercept(sim, fighter, target, speed, maxLead = 0.60) {
+  const dx = target.x - fighter.x;
+  const dy = target.y - fighter.y;
+  const ahead = dx * target.vx + dy * target.vy;
+  const advantage = speed * speed - target.vx * target.vx - target.vy * target.vy;
+  const distance = dx * dx + dy * dy;
+  const intercept = advantage > 0
+    ? (ahead + Math.sqrt(ahead * ahead + advantage * distance)) / advantage
+    : Math.sqrt(distance) / speed;
+  const lead = Math.min(maxLead, intercept);
+  const point = clampPointToArena(sim, target.x + target.vx * lead, target.y + target.vy * lead, target.radius);
+  return Math.atan2(point.y - fighter.y, point.x - fighter.x);
+}
+
+function classicRushToward(sim, fighter, target, dt, turnRate) {
+  const speed = Math.hypot(fighter.vx, fighter.vy);
+  const current = Math.atan2(fighter.vy, fighter.vx);
+  const aim = classicAlienIntercept(sim, fighter, target, Math.max(speed, 1), 0.20);
+  const turn = Math.atan2(Math.sin(aim - current), Math.cos(aim - current));
+  const angle = current + clamp(turn, -turnRate * dt, turnRate * dt);
+  fighter.vx = Math.cos(angle) * speed;
+  fighter.vy = Math.sin(angle) * speed;
+}
+
+function updateClassicXlr8Tornado(sim, fighter, target, rush, dt) {
+  const radius = fighter.radius * 2.02 + target.radius * 0.76;
+  const dx = fighter.x - target.x;
+  const dy = fighter.y - target.y;
+  const distance = Math.hypot(dx, dy);
+  if (rush.phase === "approach") {
+    if (distance > radius * 1.30) {
+      classicRushToward(sim, fighter, target, dt, 9);
+      return;
+    }
+    Object.assign(rush, { phase: "tornado", spunAt: sim.time, until: sim.time + 0.90, nextTickAt: sim.time + 0.17 });
+    fighter.classicPulseLaunchUntil = rush.until;
+    fighter.classicOmnitrix.until = Math.max(fighter.classicOmnitrix.until, rush.until + 0.05);
+    emitClassicPulseCue(sim, fighter, "xlr8-tornado", target, { targetId: target.id });
+  }
+  const angle = Math.atan2(dy, dx);
+  const speed = classicMovementTargetSpeed(fighter, sim.time);
+  const correction = clamp((radius - distance) / radius * 1.72, -0.86, 0.62);
+  const tangent = angle + rush.turn * Math.PI / 2;
+  const vx = Math.cos(tangent) * speed + Math.cos(angle) * correction * speed + target.vx * 0.78;
+  const vy = Math.sin(tangent) * speed + Math.sin(angle) * correction * speed + target.vy * 0.78;
+  const aim = Math.atan2(vy, vx);
+  fighter.vx = Math.cos(aim) * speed;
+  fighter.vy = Math.sin(aim) * speed;
+  if (sim.time < rush.nextTickAt) return;
+  rush.nextTickAt += 0.21;
+  if (distance <= radius * 1.61) {
+    classicAbilityHit(sim, fighter, target, 5, "xlr8-tornado-hit", target, { angle });
+  }
+}
+
+function updateClassicAlienRush(sim, fighter, state, dt) {
+  const rush = state.rush;
+  if (!rush || sim.time >= rush.until) {
+    state.rush = null;
+    return;
+  }
+  const target = classicCombatantById(sim, rush.targetId);
+  if (state.form === "xlr8") {
+    if (classicCombatantIsEnemy(sim, fighter, target)) updateClassicXlr8Tornado(sim, fighter, target, rush, dt);
+    return;
+  }
+
+  const rolling = state.form === "cannonbolt";
+  if (rolling) {
+    const bounds = arenaBounds(sim);
+    const full = Math.max(fighter.radius, Math.min(bounds.width, bounds.height) / 6);
+    const growth = clamp((sim.time - rush.at) / 0.34, 0, 1);
+    rush.radius = fighter.radius + (full - fighter.radius) * (1 - (1 - growth) ** 2);
+  }
+  if (rush.wrap) return;
+  const radius = rolling ? rush.radius : fighter.radius;
+  const segment = { x1: rush.x, y1: rush.y, x2: fighter.x, y2: fighter.y, width: radius * (rolling ? 2 : 2.14) };
+  const angle = Math.atan2(fighter.vy, fighter.vx);
+  const nose = rolling ? null : {
+    x1: fighter.x, y1: fighter.y, x2: fighter.x + Math.cos(angle) * radius * 1.81,
+    y2: fighter.y + Math.sin(angle) * radius * 1.81, width: radius * 0.54,
+  };
+  rush.x = fighter.x;
+  rush.y = fighter.y;
+  for (const enemy of classicCombatTargets(sim, fighter)) {
+    if (rush.hits.includes(enemy.id)
+      || (!classicSegmentHitsFighter(segment, enemy) && !(nose && classicSegmentHitsFighter(nose, enemy)))) continue;
+    rush.hits.push(enemy.id);
+    const dealt = classicAbilityHit(sim, fighter, enemy, rolling ? 30 : 32, rolling ? "roll-hit" : "diamond-charge-hit", enemy, { angle });
+    if (dealt > 0 && enemy.alive) launchClassicPulseTarget(sim, enemy, angle, rolling ? 1.66 : 1.96);
+  }
+  if (!rolling && classicCombatantIsEnemy(sim, fighter, target) && !rush.hits.includes(target.id)) {
+    classicRushToward(sim, fighter, target, dt, 5.8);
+  }
+}
+
+const CLASSIC_CANNON_ROLL_SCALE = 3.10 * 0.75;
+
+function classicCannonRollRadius(fighter, time) {
+  const state = fighter.classicOmnitrix;
+  return state?.form === "cannonbolt" && time < (state.rush?.until || 0)
+    ? state.rush.radius : fighter.radius;
+}
+
+function deformClassicWall(sim, contact, kind, radius, angle) {
+  const bounds = arenaBounds(sim);
+  const span = Math.min(Math.min(bounds.width, bounds.height) * 0.24, radius * (kind === "breach" ? 1.08 : 1.55));
+  const depth = radius * (kind === "breach" ? 0.23 : 0.85);
+  const deformation = { kind, side: contact.side, x: contact.x, y: contact.y, span, depth };
+  // The wall keeps its shape after the impact debris expires and through replay.
+  sim.classicWallDeformations = [...(sim.classicWallDeformations || []), deformation];
+  sim.effects.push({
+    kind: "classic-wall-debris", ...contact, angle, radius, open: kind === "breach",
+    life: 0.48, maxLife: 0.48,
+  });
+}
+
+function startClassicCannonWrap(sim, fighter) {
+  const state = fighter.classicOmnitrix;
+  const rush = state?.rush;
+  if (state?.form !== "cannonbolt" || !rush || fighter.classicCannonExitUsed || sim.time >= rush.until) return false;
+  const r = rush.radius;
+  const inside = clampPointToArena(sim, fighter.x, fighter.y, r);
+  const ox = fighter.x - inside.x;
+  const oy = fighter.y - inside.y;
+  const distance = Math.hypot(ox, oy);
+  if (distance < 1e-6) return false;
+  const bounds = arenaBounds(sim);
+  const circle = sim.arenaShape === "circle";
+  const horizontal = Math.abs(ox) >= Math.abs(oy);
+  const nx = circle ? ox / distance : horizontal ? Math.sign(ox) : 0;
+  const ny = circle ? oy / distance : horizontal ? 0 : Math.sign(oy);
+  if (fighter.vx * nx + fighter.vy * ny <= 0) return false;
+  const exit = { x: inside.x + nx * r, y: inside.y + ny * r };
+  const enter = {
+    x: circle || horizontal ? 2 * bounds.x + bounds.width - exit.x : exit.x,
+    y: circle || !horizontal ? 2 * bounds.y + bounds.height - exit.y : exit.y,
+  };
+  rush.wrap = { at: sim.time, exit, enter, nx, ny, radius: r, entered: false };
+  fighter.classicCannonExitUsed = true;
+  rush.until = Math.max(rush.until, sim.time + 0.79);
+  state.until = Math.max(state.until, rush.until);
+  fighter.classicPulseLaunchUntil = rush.until;
+  fighter.classicCannonOutside = true;
+  const side = circle ? "circle" : horizontal ? (nx > 0 ? "right" : "left") : (ny > 0 ? "bottom" : "top");
+  deformClassicWall(sim, { ...exit, side }, "breach", r, Math.atan2(-ny, -nx));
+  emitClassicPulseCue(sim, fighter, "cannonbolt-exit", exit, { angle: Math.atan2(ny, nx), radius: r });
+  return true;
+}
+
+function advanceClassicCannonWrap(sim, fighter) {
+  const rush = fighter.classicOmnitrix?.rush;
+  const wrap = rush?.wrap;
+  if (!wrap) return false;
+  const elapsed = sim.time - wrap.at;
+  const duration = 0.16 / 0.75;
+  const entering = elapsed >= duration;
+  if (entering && !wrap.entered) {
+    wrap.entered = true;
+    emitClassicPulseCue(sim, fighter, "cannonbolt-enter", wrap.enter, { angle: Math.atan2(wrap.ny, wrap.nx), radius: wrap.radius });
+  }
+  const wall = entering ? wrap.enter : wrap.exit;
+  const progress = clamp((entering ? elapsed - duration : elapsed) / duration, 0, 1);
+  const offset = rush.radius * (progress * 2.02 - 1.01);
+  fighter.x = wall.x + wrap.nx * offset;
+  fighter.y = wall.y + wrap.ny * offset;
+  rush.x = fighter.x;
+  rush.y = fighter.y;
+  if (elapsed < duration * 2) return true;
+  fighter.classicCannonOutside = false;
+  rush.wrap = null;
+  return true;
+}
+
+function updateClassicFlameBlast(sim, fighter, state) {
+  const flame = state.flame;
+  if (!flame || sim.time >= flame.until) {
+    state.flame = null;
+    return;
+  }
+  const r = fighter.radius;
+  const age = sim.time - flame.at;
+  const angle = flame.angle + age * flame.turn;
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const startX = fighter.x + dx * r * 0.78;
+  const startY = fighter.y + dy * r * 0.78;
+  const wall = classicRayToArenaBoundary(sim, startX, startY, dx, dy);
+  const reach = Math.min(wall.distance, r * 13.8 * Math.min(1, 0.23 + age * 5.4));
+  const near = r * 0.63;
+  const far = r * (1.25 + Math.min(1, age * 4.1) * 1.05);
+  const pose = { x1: startX, y1: startY, x2: startX + dx * reach, y2: startY + dy * reach, near, far, angle };
+  flame.pose = pose;
+  if (reach < r * 0.5) return;
+  for (const target of classicCombatTargets(sim, fighter)) {
+    if (sim.time < (flame.hitAt[target.id] || 0)) continue;
+    const projected = (target.x - startX) * dx + (target.y - startY) * dy;
+    const width = near + (far - near) * clamp(projected / reach, 0, 1);
+    const closest = closestPointOnSegment(target.x, target.y, pose);
+    if (Math.hypot(closest.x - target.x, closest.y - target.y) > target.radius + width) continue;
+    flame.hitAt[target.id] = sim.time + 0.22;
+    classicAbilityHit(sim, fighter, target, 7, "heatblast-hit", closest, { angle });
+  }
+}
+
+function updateClassicFourArmsGrab(sim, fighter, state) {
+  const grab = state.grab;
+  if (!grab || sim.time < grab.releaseAt) return;
+  state.grab = null;
+  const target = classicCombatantById(sim, grab.targetId);
+  if (!target?.alive || target.classicHeldOwnerId !== fighter.id) return;
+  releaseClassicAbilityHold(sim, target);
+  const speed = Math.max(850, (target.baselineSpeed || target.moveSpeed || 200) * 3.20);
+  const dx = Math.cos(grab.angle);
+  const dy = Math.sin(grab.angle);
+  const ahead = classicNextWallContact(sim, target, dx, dy);
+  const wall = Math.hypot(ahead.x - target.x, ahead.y - target.y) <= speed * 0.75
+    ? ahead : classicWallContactFor(sim, target);
+  const angle = Math.atan2(wall.y - target.y, wall.x - target.x);
+  target.classicWallThrow = { ownerId: fighter.id, speed, until: sim.time + 1.07 };
+  target.vx = Math.cos(angle) * speed;
+  target.vy = Math.sin(angle) * speed;
+  emitClassicPulseCue(sim, fighter, "four-arms-throw", target, { targetId: target.id, angle });
+}
+
+function resolveClassicThrownWallImpact(sim, target, contact) {
+  const flight = target.classicWallThrow;
+  if (!flight || sim.time >= flight.until) return;
+  target.classicWallThrow = null;
+  const owner = sim.fighters.find(({ id }) => id === flight.ownerId);
+  if (!owner?.alive) return;
+  const angle = Math.atan2(target.y - contact.y, target.x - contact.x);
+  classicAbilityHit(sim, owner, target, 19, "four-arms-wall-hit", contact, { angle, side: contact.side }, "classic-dot");
+  deformClassicWall(sim, contact, "dent", target.radius, angle);
+}
+
+function advanceClassicThrownMinion(sim, target, dt) {
+  if (sim.time >= (target.classicWallThrow?.until || 0)) return false;
+  const x = target.x + target.vx * dt;
+  const y = target.y + target.vy * dt;
+  const point = clampPointToArena(sim, x, y, target.radius);
+  Object.assign(target, point);
+  if (x !== point.x || y !== point.y) {
+    resolveClassicThrownWallImpact(sim, target, classicWallContactFor(sim, target));
+    if (target.alive) {
+      target.vx *= -0.4;
+      target.vy *= -0.4;
+    }
+  }
+  return true;
+}
+
+function updateClassicBen(sim, fighter, target, ability, dt) {
+  const time = sim.time;
+  const state = fighter.classicOmnitrix ??= { phase: "ready", form: null, bag: [] };
+  if ((state.phase === "ready" || state.phase === "reset") && target && time >= fighter.classicAbilityNextAt) {
+    let form = nextClassicAlien(sim, state.bag);
+    if (form === state.form) {
+      state.bag.unshift(form);
+      form = state.bag.pop();
+    }
+    Object.assign(state, {
+      phase: "transform", form, at: time, until: time + 0.42,
+      rush: null, flame: null, grab: null, attackAt: null, strikeAt: null, guard: 0,
+    });
+    fighter.classicAbilityUses += 1;
+    emitClassicPulseCue(sim, fighter, "omnitrix-tell", fighter, { form });
+    return;
+  }
+  if (state.phase === "transform" && time >= state.until) {
+    Object.assign(state, {
+      phase: "alien", at: time, until: time + ability.interval - 0.95,
+      nextAttackAt: time + 0.24, guard: state.form === "diamondhead" ? 2 : 0,
+    });
+    fighter.classicAbilityActiveUntil = state.until;
+    emitClassicPulseCue(sim, fighter, "omnitrix-transform", fighter, { form: state.form });
+  }
+  if (state.phase !== "alien") return;
+  if (time >= state.until) {
+    Object.assign(state, { phase: "reset", at: time, until: time + 0.53, rush: null, flame: null, grab: null, attackAt: null, guard: 0 });
+    fighter.classicAbilityNextAt = state.until;
+    emitClassicPulseCue(sim, fighter, "omnitrix-reset", fighter, { form: state.form });
+    return;
+  }
+  updateClassicAlienRush(sim, fighter, state, dt);
+  updateClassicFlameBlast(sim, fighter, state);
+  updateClassicFourArmsGrab(sim, fighter, state);
+  if (!target) return;
+  const form = state.form;
+  if (state.attackAt === null && !state.rush && !state.grab && !state.flame
+    && time >= state.nextAttackAt && state.until - time > 0.60) {
+    const tell = form === "diamondhead" ? 0.37 : form === "heatblast" ? 0.29 : form === "four-arms" ? 0.27 : 0.16;
+    state.attackAt = time + tell;
+    state.attackStartedAt = time;
+    state.angle = classicPulseAim(fighter, target, 0.10);
+    if (form === "four-arms") launchClassicPulseTarget(sim, fighter, state.angle, 1.59);
+    emitClassicPulseCue(sim, fighter, "alien-windup", fighter, { form, angle: state.angle });
+  }
+  if (state.attackAt === null || time < state.attackAt) return;
+  const firstRoll = form === "cannonbolt" && !fighter.classicCannonExitUsed;
+  let angle = classicAlienIntercept(sim, fighter, target, fighter.baselineSpeed * 2.55, form === "heatblast" ? 0.19 : 0.51);
+  if (firstRoll) {
+    const bounds = arenaBounds(sim);
+    const radius = Math.min(bounds.width, bounds.height) / 6;
+    const y = target.y >= fighter.y ? bounds.y + bounds.height : bounds.y;
+    const x = clamp(target.x + target.vx * 0.15, bounds.x + radius, bounds.x + bounds.width - radius);
+    angle = Math.atan2(y - fighter.y, x - fighter.x);
+  }
+  state.attackAt = null;
+  state.angle = angle;
+  state.strikeAt = time;
+  state.nextAttackAt = time + (form === "diamondhead" ? 1.64 : form === "heatblast" ? 1.22 : 1.18);
+  emitClassicPulseCue(sim, fighter, form, fighter, { form, angle });
+  if (form === "heatblast") {
+    const turn = sim.rng.next() < 0.5 ? -0.48 : 0.48;
+    state.flame = { at: time, until: time + 0.58, angle, turn, hitAt: {} };
+  } else if (form === "four-arms") {
+    const close = Math.hypot(target.x - fighter.x, target.y - fighter.y) <= fighter.radius * 4.30 + target.radius;
+    const available = close && !classicAbilityHeld(target, time) && time >= (target.classicWallThrow?.until || 0);
+    if (available && classicAbilityHit(sim, fighter, target, 3, "four-arms-grab", target, { angle }) > 0 && target.alive) {
+      state.grab = { targetId: target.id, x: target.x, y: target.y, at: time, releaseAt: time + 0.30, angle: classicPulseAim(fighter, target) };
+      holdClassicTarget(sim, fighter, target, "four-arms", state.grab.releaseAt + 0.02);
+    }
+  } else {
+    const rolling = form === "cannonbolt";
+    const duration = rolling ? (firstRoll ? 1.04 / 0.75 : 1.04) : form === "diamondhead" ? 0.47 : 0.54;
+    launchClassicPulseTarget(sim, fighter, angle, rolling ? CLASSIC_CANNON_ROLL_SCALE : form === "diamondhead" ? 2.64 : 3.05);
+    fighter.classicPulseLaunchUntil = time + duration;
+    state.rush = {
+      x: fighter.x, y: fighter.y, at: time, until: time + duration, targetId: target.id,
+      hits: [], radius: fighter.radius, phase: "approach", turn: form === "xlr8" && sim.rng.next() < 0.5 ? -1 : 1,
+    };
+  }
+}
+
+const CLASSIC_SABER_SWEEPS = {
+  "saber-combo": [
+    { start: 0.17, end: 0.39, from: -0.96, to: 1.08, damage: 11 },
+    { start: 0.51, end: 0.75, from: 1.12, to: -1.16, damage: 15 },
+  ],
+  "saber-lunge": [{ start: 0.24, end: 0.53, from: -0.71, to: 0.92, damage: 16 }],
+  "vader-sweep": [{ start: 0.47, end: 0.83, from: -1.47, to: 1.42, damage: 34 }],
+};
+
+export function classicSaberBlade(fighter, time) {
+  const move = classicAbilityHeld(fighter, time) ? null : fighter.classicSaberMove;
+  const heldAngle = move?.angle ?? fighter.classicAimAngle ?? fighter.weaponAngle;
+  const elapsed = move ? time - move.at : 0;
+  const sweep = CLASSIC_SABER_SWEEPS[move?.key]?.[move.swingIndex ?? 0];
+  const phase = sweep ? clamp((elapsed - sweep.start) / (sweep.end - sweep.start), 0, 1) : 0;
+  const windup = sweep ? clamp(elapsed / sweep.start, 0, 1) : 0;
+  const offset = sweep ? -0.37 + (sweep.from + 0.37) * windup + (sweep.to - sweep.from) * phase
+    : move?.key === "force-choke" ? -1.67 : -0.37;
+  const angle = heldAngle + offset;
+  const active = Boolean(sweep && elapsed >= sweep.start && elapsed <= sweep.end);
+  const heavy = move?.key === "vader-sweep";
+  const base = fighter.radius * (heavy ? 1.64 : 1.52);
+  const tip = fighter.radius * (heavy ? 3.74 : move?.key === "saber-lunge" ? 3.46 : 3.06);
+  return {
+    x1: fighter.x + Math.cos(angle) * base, y1: fighter.y + Math.sin(angle) * base,
+    x2: fighter.x + Math.cos(angle) * tip, y2: fighter.y + Math.sin(angle) * tip,
+    width: fighter.radius * (heavy ? 0.34 : 0.26), angle, active,
+  };
+}
+
+export function classicThrownSaberBlade(saber, time) {
+  const angle = saber.angle + (time - saber.startedAt) * 22;
+  const dx = Math.cos(angle) * saber.radius;
+  const dy = Math.sin(angle) * saber.radius;
+  return {
+    x1: saber.x - dx * 0.46, y1: saber.y - dy * 0.46,
+    x2: saber.x + dx, y2: saber.y + dy, width: saber.radius * 0.21, angle, active: true,
+  };
+}
+
+function recordClassicSaberScar(sim, fighter, key, blade, color, life) {
+  let effect = sim.effects.find((item) => item.kind === "classic-saber-scar" && item.key === key);
+  if (!effect) {
+    effect = { kind: "classic-saber-scar", key, color, life, maxLife: life, at: -Infinity, cuts: [] };
+    sim.effects.push(effect);
+  }
+  if (sim.time - effect.at < 0.024) return;
+  effect.at = sim.time;
+  effect.life = life;
+  const dx = Math.cos(blade.angle);
+  const dy = Math.sin(blade.angle);
+  const wall = classicRayToArenaBoundary(sim, blade.x1, blade.y1, dx, dy);
+  const length = Math.hypot(blade.x2 - blade.x1, blade.y2 - blade.y1);
+  const touchesWall = wall.side && wall.distance <= length + blade.width * 0.45;
+  if (touchesWall) recordClassicSaberBurn(sim, fighter, key, wall, blade);
+  const reach = touchesWall ? Math.max(0, Math.min(length, wall.distance - blade.width * 0.75)) : length;
+  effect.cuts.push({ ...blade, x2: blade.x1 + dx * reach, y2: blade.y1 + dy * reach });
+  if (effect.cuts.length > 30) effect.cuts.shift();
+}
+
+function recordClassicSaberBurn(sim, fighter, key, wall, blade) {
+  const burnKey = `${key}-${wall.side}`;
+  let burn = sim.effects.find((item) => item.kind === "classic-saber-burn" && item.key === burnKey);
+  if (!burn) {
+    burn = { kind: "classic-saber-burn", key: burnKey, life: 2.2, maxLife: 2.2, marks: [] };
+    sim.effects.push(burn);
+    emitClassicPulseCue(sim, fighter, "saber-wall-scorch", wall, { side: wall.side });
+  }
+  const last = burn.marks.at(-1);
+  if (last && Math.hypot(last.x - wall.x, last.y - wall.y) < blade.width * 0.42) return;
+  burn.life = burn.maxLife;
+  burn.marks.push({ x: wall.x, y: wall.y, angle: blade.angle + Math.PI, width: blade.width, at: sim.time });
+  if (burn.marks.length > 24) burn.marks.shift();
+}
+
+function startClassicSaberMove(sim, fighter, target, key, duration) {
+  fighter.classicSaberMove = {
+    key, at: sim.time, until: sim.time + duration, phase: "tell", swingIndex: 0,
+    targetId: target.id, angle: classicPulseAim(fighter, target, 0.09), hits: [],
+  };
+  fighter.classicAbilityUses += 1;
+  fighter.classicAbilityActiveUntil = fighter.classicSaberMove.until;
+  if (key === "saber-combo") launchClassicPulseTarget(sim, fighter, fighter.classicSaberMove.angle, 1.13);
+  emitClassicPulseCue(sim, fighter, "saber-tell", fighter, { move: key, angle: fighter.classicSaberMove.angle });
+}
+
+function updateClassicSaberSweeps(sim, fighter, move, target, sweeps) {
+  const elapsed = sim.time - move.at;
+  const heavy = move.key === "vader-sweep";
+  if (heavy && target?.alive && elapsed < 0.35) move.angle = classicPulseAim(fighter, target, 0.14);
+  if (sweeps[1] && move.swingIndex === 0 && elapsed >= sweeps[0].end + 0.045) {
+    move.swingIndex = 1;
+    move.hits = [];
+    move.phase = "link";
+    if (target?.alive) {
+      move.angle = classicPulseAim(fighter, target, 0.08);
+      launchClassicPulseTarget(sim, fighter, move.angle, 1.28);
+    }
+  }
+  const blade = classicSaberBlade(fighter, sim.time);
+  if (!blade.active) {
+    if (elapsed > sweeps[move.swingIndex].end) move.phase = "recover";
+    return;
+  }
+  const sweep = sweeps[move.swingIndex];
+  if (move.phase !== "swing") {
+    move.phase = "swing";
+    emitClassicPulseCue(sim, fighter, "saber-swing", fighter, { move: move.key, strike: move.swingIndex + 1, angle: blade.angle });
+  }
+  const color = fighter.type === "darth-vader" ? "#ff344c" : "#70ff75";
+  recordClassicSaberScar(sim, fighter, `${fighter.id}-${move.at}-${move.swingIndex}`, blade, color, 1.18);
+  for (const enemy of classicCombatTargets(sim, fighter)) {
+    if (move.hits.includes(enemy.id) || !classicSegmentHitsFighter(blade, enemy)) continue;
+    move.hits.push(enemy.id);
+    const point = closestPointOnSegment(enemy.x, enemy.y, blade);
+    const dealt = classicAbilityHit(sim, fighter, enemy, sweep.damage, "saber-hit", point, {
+      move: move.key, strike: move.swingIndex + 1, angle: blade.angle,
+    });
+    if (heavy && dealt > 0 && enemy.alive) {
+      launchClassicPulseTarget(sim, enemy, Math.atan2(enemy.y - fighter.y, enemy.x - fighter.x), 1.84);
+    }
+  }
+}
+
+function launchClassicSaberThrow(sim, fighter, move) {
+  const speed = fighter.baselineSpeed * 2.30;
+  const dx = Math.cos(move.angle);
+  const dy = Math.sin(move.angle);
+  const saber = addClassicEntity(sim, {
+    kind: "classic-saber-throw", ownerId: fighter.id, targetId: move.targetId,
+    x: fighter.x + dx * fighter.radius, y: fighter.y + dy * fighter.radius,
+    vx: dx * speed, vy: dy * speed, radius: fighter.radius * 1.52,
+    angle: move.angle, phase: "outbound", returnsAt: sim.time + 0.67,
+    expiresAt: sim.time + 2.35, hitTargetIds: [],
+  });
+  emitClassicPulseCue(sim, fighter, "saber-throw", saber, { entityId: saber.id, angle: saber.angle });
+}
+
+function updateClassicThrownSaber(sim, owner, saber, dt) {
+  const returning = saber.phase === "returning";
+  const dx = owner.x - saber.x;
+  const dy = owner.y - saber.y;
+  if (returning && Math.hypot(dx, dy) <= owner.radius + saber.radius * 0.42) {
+    saber.expiresAt = sim.time;
+    emitClassicPulseCue(sim, owner, "saber-catch", owner, { entityId: saber.id });
+    return;
+  }
+  if (returning) {
+    const angle = Math.atan2(dy, dx);
+    const speed = owner.baselineSpeed * 3.15;
+    saber.vx = Math.cos(angle) * speed;
+    saber.vy = Math.sin(angle) * speed;
+  }
+  const x = saber.x + saber.vx * dt;
+  const y = saber.y + saber.vy * dt;
+  const point = clampPointToArena(sim, x, y, saber.radius * 0.48);
+  Object.assign(saber, point);
+  const blade = classicThrownSaberBlade(saber, sim.time);
+  recordClassicSaberScar(sim, owner, saber.id + "-" + saber.phase, blade, "#ff344c", 0.74);
+  if (!classicFighterActionLocked(sim, owner) && !classicVampireLatchBlocksAttacker(sim, owner)) {
+    for (const enemy of classicCombatTargets(sim, owner)) {
+      if (saber.hitTargetIds.includes(enemy.id) || !classicSegmentHitsFighter(blade, enemy)) continue;
+      saber.hitTargetIds.push(enemy.id);
+      classicAbilityHit(sim, owner, enemy, returning ? 10 : 15, "saber-hit", closestPointOnSegment(enemy.x, enemy.y, blade), {
+        move: "saber-throw", strike: returning ? 2 : 1, angle: blade.angle, entityId: saber.id,
+      }, "classic-projectile");
+    }
+  }
+  if (!returning && (sim.time >= saber.returnsAt || x !== point.x || y !== point.y)) {
+    saber.phase = "returning";
+    saber.hitTargetIds = [];
+    emitClassicPulseCue(sim, owner, "saber-return", saber, { entityId: saber.id });
+  }
+}
+
+function classicAbilityHeld(target, time) {
+  return time < (target?.classicHeldUntil || 0);
+}
+
+function holdClassicTarget(sim, owner, target, kind, until) {
+  target.classicHeldKind = kind;
+  target.classicHeldOwnerId = owner.id;
+  target.classicHeldUntil = until;
+  target.classicHeldPose = { x: target.x, y: target.y, vx: target.vx, vy: target.vy };
+  target.vx = 0;
+  target.vy = 0;
+  (sim.classicAbilityHolds ??= new Set()).add(target);
+}
+
+function releaseClassicAbilityHold(sim, target) {
+  if (!target?.classicHeldPose) return;
+  const { vx, vy } = target.classicHeldPose;
+  if (target.alive) Object.assign(target, { vx, vy });
+  target.classicHeldPose = null;
+  target.classicHeldUntil = 0;
+  target.classicHeldOwnerId = null;
+  target.classicHeldKind = null;
+  sim.classicAbilityHolds.delete(target);
+}
+
+function syncClassicAbilityHolds(sim) {
+  if (!sim.classicAbilityHolds?.size) return;
+  for (const target of sim.classicAbilityHolds) {
+    const owner = sim.fighters.find(({ id }) => id === target.classicHeldOwnerId);
+    if (!owner?.alive || !classicCombatantIsAlive(sim, target) || !classicAbilityHeld(target, sim.time)
+      || classicFighterActionLocked(sim, owner) || classicVampireLatchBlocksAttacker(sim, owner)) {
+      releaseClassicAbilityHold(sim, target);
+      continue;
+    }
+    const { x, y } = target.classicHeldPose;
+    Object.assign(target, { x, y, vx: 0, vy: 0 });
+  }
+}
+
+function updateClassicForceChoke(sim, fighter, target, move, elapsed) {
+  if (elapsed < 0.35 || move.phase === "recover") return;
+  if (move.phase === "tell") {
+    const inRange = classicCombatantIsAlive(sim, target)
+      && !classicAbilityHeld(target, sim.time)
+      && Math.hypot(target.x - fighter.x, target.y - fighter.y) <= fighter.radius * 10.5;
+    const dealt = inRange && classicAbilityHit(sim, fighter, target, 4, "force-grip", target, { tick: 1 });
+    if (!(dealt > 0) || !target.alive) {
+      move.phase = "recover";
+      return;
+    }
+    Object.assign(move, { phase: "grip", holdUntil: sim.time + 0.66, nextTickAt: sim.time + 0.18, ticks: 1 });
+    holdClassicTarget(sim, fighter, target, "force-choke", move.holdUntil + 0.02);
+    return;
+  }
+  if (target?.classicHeldOwnerId !== fighter.id || !target.alive) {
+    move.phase = "recover";
+    return;
+  }
+  if (move.ticks < 4 && sim.time >= move.nextTickAt) {
+    move.ticks += 1;
+    move.nextTickAt += 0.18;
+    classicAbilityHit(sim, fighter, target, 4, "force-choke-tick", target, { tick: move.ticks }, "classic-dot");
+  }
+  if (sim.time < move.holdUntil && target.alive) return;
+  move.phase = "recover";
+  releaseClassicAbilityHold(sim, target);
+  if (!target.alive) return;
+  const angle = Math.atan2(target.y - fighter.y, target.x - fighter.x);
+  launchClassicPulseTarget(sim, target, angle, 1.36);
+  emitClassicPulseCue(sim, fighter, "force-release", target, { targetId: target.id, angle });
+}
+
+function updateClassicSaber(sim, fighter, target, ability) {
+  const time = sim.time;
+  if (target) fighter.classicAimAngle = classicPulseAim(fighter, target);
+  let move = fighter.classicSaberMove;
+  if (move && time >= move.until) {
+    fighter.classicSaberMove = null;
+    const afterLeap = move.key === "force-vault" || move.key === "saber-lunge";
+    fighter.classicAbilityNextAt = time + (afterLeap ? 0.18 : ability.interval);
+    move = null;
+  }
+  if (move) {
+    const focus = classicCombatantById(sim, move.targetId);
+    const elapsed = time - move.at;
+    const leap = move.key === "force-vault" || move.key === "saber-lunge";
+    if (leap && move.phase === "tell" && elapsed >= 0.18) {
+      move.phase = "leap";
+      if (focus?.alive) move.angle = classicPulseAim(fighter, focus, 0.15);
+      const vault = move.key === "force-vault";
+      launchClassicPulseTarget(sim, fighter, move.angle, vault ? 2.62 : 2.16);
+      fighter.classicPulseLaunchUntil = time + (vault ? 0.29 : 0.23);
+      fighter.classicDodgeUntil = time + (vault ? 0.21 : 0.10);
+      emitClassicPulseCue(sim, fighter, move.key, fighter, { angle: move.angle });
+    }
+    if (move.key === "force-vault" && elapsed >= 0.48) move.phase = "recover";
+    if (move.key === "force-choke") updateClassicForceChoke(sim, fighter, focus, move, elapsed);
+    if (move.key === "saber-throw" && move.phase === "tell" && elapsed >= 0.28) {
+      move.phase = "throw";
+      if (focus?.alive) move.angle = classicPulseAim(fighter, focus, 0.22);
+      launchClassicSaberThrow(sim, fighter, move);
+    }
+    const sweeps = CLASSIC_SABER_SWEEPS[move.key];
+    if (sweeps) updateClassicSaberSweeps(sim, fighter, move, focus, sweeps);
+    return;
+  }
+  if (!target || time < fighter.classicAbilityNextAt) return;
+  const distance = Math.hypot(target.x - fighter.x, target.y - fighter.y) - target.radius;
+  const radius = fighter.radius;
+  if (fighter.type === "luke-skywalker") {
+    const lead = 0.10;
+    const incoming = Math.hypot(
+      target.x - fighter.x + (target.vx - fighter.vx) * lead,
+      target.y - fighter.y + (target.vy - fighter.vy) * lead,
+    ) - target.radius;
+    if (Math.min(distance, incoming) <= radius * 3.55) startClassicSaberMove(sim, fighter, target, "saber-combo", 0.91);
+    else if (distance <= radius * 8 || fighter.classicSaberLastMove === "force-vault") {
+      startClassicSaberMove(sim, fighter, target, "saber-lunge", 0.67);
+    } else {
+      startClassicSaberMove(sim, fighter, target, "force-vault", 0.57);
+    }
+  } else {
+    const thrown = sim.classicEntities.some((item) => item.kind === "classic-saber-throw" && item.ownerId === fighter.id && item.expiresAt > time);
+    const opening = sim.classicOpening?.phase;
+    if (!thrown && opening !== "orbit" && opening !== "converge"
+      && distance <= radius * 3.6 && time >= (fighter.classicHeavySaberReadyAt || 0)) {
+      startClassicSaberMove(sim, fighter, target, "vader-sweep", 1.13);
+      fighter.classicHeavySaberReadyAt = time + 4.6;
+      launchClassicPulseTarget(sim, fighter, fighter.classicSaberMove.angle, 1.08);
+    } else if (distance <= radius * 9.5 && fighter.classicSaberLastMove !== "force-choke") {
+      startClassicSaberMove(sim, fighter, target, "force-choke", 1.19);
+    } else if (!thrown) {
+      startClassicSaberMove(sim, fighter, target, "saber-throw", 0.67);
+    }
+  }
+  if (fighter.classicSaberMove) fighter.classicSaberLastMove = fighter.classicSaberMove.key;
+}
+
+const CLASSIC_PULSE_UPDATES = {
+  gojo: updateClassicGojo,
+  "john-rod": updateClassicJohnRod,
+  "one-above-all": updateClassicOneAboveAll,
+  knight: updateClassicKnight,
+  "ben-10": updateClassicBen,
+  "darth-vader": updateClassicSaber,
+  "luke-skywalker": updateClassicSaber,
+};
 
 function updateClassicAbilities(sim, dt) {
   if (sim.gameplayMode !== "classic" || sim.legacyClassicRules) return;
@@ -10690,6 +12520,11 @@ function updateClassicAbilities(sim, dt) {
   for (const fighter of sim.fighters) {
     if (!fighter.alive || fighter.classicIsDuplicate) continue;
     const ability = classicAbilityDefinition(fighter);
+    if (fighter.classicPulseMove && sim.time >= fighter.classicPulseMove.until) fighter.classicPulseMove = null;
+    if (ability.kind === "wdc") {
+      updateClassicWdcForm(sim, fighter, ability, classicVampireLatchBlocksAttacker(sim, fighter), dt);
+      continue;
+    }
     if (fighter.type === "reactor") {
       const interval = Math.max(0.001, Number(ability.interval) || 6);
       const nextAt = Number(fighter.classicAbilityNextAt);
@@ -10723,6 +12558,7 @@ function updateClassicAbilities(sim, dt) {
     if (vampireLatchSuppressesAttack) {
       suppressClassicVampireLatchedTargetAttack(sim, fighter);
     }
+    if (!vampireLatchSuppressesAttack && updateClassicPowerMove(sim, fighter, liveTarget, dt)) continue;
     if (!ability.kind) continue;
     if (fighter.type === "hydrogen-bomb") {
       const countdownSeconds = Math.max(0.1, Number(ability.duration) || 60);
@@ -10771,8 +12607,8 @@ function updateClassicAbilities(sim, dt) {
     if (CLASSIC_HOMING_FIGHTERS.has(fighter.type) && liveTarget) {
       setClassicHomingVelocity(fighter, liveTarget, sim.time);
     }
-    if (ability.kind === "wdc") {
-      updateClassicWdcForm(sim, fighter, ability, liveTarget, vampireLatchSuppressesAttack);
+    if (Object.hasOwn(CLASSIC_PULSE_UPDATES, ability.kind)) {
+      if (!vampireLatchSuppressesAttack) CLASSIC_PULSE_UPDATES[ability.kind](sim, fighter, liveTarget, ability, dt);
       continue;
     }
     if (ability.kind === "boxer") {
@@ -10786,11 +12622,10 @@ function updateClassicAbilities(sim, dt) {
         ||
         fighter.classicPunchPhase !== "idle"
         || sim.time < fighter.classicAbilityNextAt
-        || !classicPunchTargetIsInRange(fighter, liveTarget)
+        || !classicPunchTargetIsInRange(fighter, liveTarget, sim.time)
       ) continue;
       fighter.classicAbilityUses += 1;
       const interval = ability.interval || 5;
-      fighter.classicAbilityNextAt = sim.time + interval;
       emitEvent(sim, "classic-ability-start", {
         fighterId: fighter.id,
         targetId: liveTarget.id,
@@ -10800,6 +12635,7 @@ function updateClassicAbilities(sim, dt) {
         y: fighter.y,
       });
       startClassicBoxerPunch(sim, fighter, liveTarget);
+      fighter.classicAbilityNextAt = sim.time + interval;
       continue;
     }
     if (fighter.type === "necromancer") updateClassicNecromancerSummonState(sim, fighter);
@@ -10859,69 +12695,6 @@ function updateClassicAbilities(sim, dt) {
       }
     }
 
-    if (fighter.type === "frost-ball" && !vampireLatchSuppressesAttack && sim.time >= fighter.classicAbilityNextAt) {
-      const laidVx = Number(fighter.vx);
-      const laidVy = Number(fighter.vy);
-      const laidAngle = Math.atan2(
-        Number.isFinite(laidVy) ? laidVy : 0,
-        Number.isFinite(laidVx) ? laidVx : 1,
-      );
-      const entity = addClassicEntity(sim, {
-        kind: "frost-trail",
-        ownerId: fighter.id,
-        x: fighter.x,
-        y: fighter.y,
-        // Trail art is directional state, not a live reflection of the
-        // Snowball's later velocity. Preserve the heading at the exact
-        // fixed-step when this patch was laid.
-        angle: laidAngle,
-        laidAngle,
-        radius: fighter.radius * 0.55,
-        dps: 0,
-        damage: Math.max(0, Number(ability.damage) || CLASSIC_FROST_CONTACT_DAMAGE),
-        contactDamage: Math.max(0, Number(ability.damage) || CLASSIC_FROST_CONTACT_DAMAGE),
-        tickInterval: 0,
-        nextTickAt: Infinity,
-        touchingTargetIds: [],
-        freeze: ability.freeze !== false,
-        startedAt: sim.time,
-        fadeDelay: Math.max(0, Number(ability.fadeDelay) || CLASSIC_FROST_TRAIL_FADE_DELAY),
-        fadeDuration: Math.max(0.001, Number(ability.fadeDuration) || CLASSIC_FROST_TRAIL_FADE_DURATION),
-        fadeStartedAt: sim.time + Math.max(0, Number(ability.fadeDelay) || CLASSIC_FROST_TRAIL_FADE_DELAY),
-        lifetimeState: "active",
-        fadeProgress: 0,
-        opacity: 1,
-        slowFactor: clamp(Number(ability.slowFactor) || CLASSIC_FROST_SLOW_FACTOR, 0.05, 1),
-        cooldownScale: Math.max(1, Number(ability.cooldownScale) || CLASSIC_FROST_COOLDOWN_SCALE),
-        slowGraceSeconds: 0.35,
-        trailMode: "fading-fixed-direction-trail",
-        followOwner: false,
-        followOwnerId: null,
-        trailSourceX: fighter.x,
-        trailSourceY: fighter.y,
-        physical: false,
-        expiresAt: sim.time + Math.max(0.001, Number(ability.duration) || 4),
-      });
-      fighter.classicAbilityNextAt = sim.time + Math.max(0.001, Number(ability.interval) || 0.25);
-      emitEvent(sim, "classic-hazard-spawn", {
-        fighterId: fighter.id,
-        entityId: entity.id,
-        hazardKind: entity.kind,
-        x: entity.x,
-        y: entity.y,
-        fadeDelay: entity.fadeDelay,
-        fadeDuration: entity.fadeDuration,
-        expiresAt: entity.expiresAt,
-        dps: entity.dps,
-        tickInterval: entity.tickInterval,
-        slowFactor: entity.slowFactor,
-        cooldownScale: entity.cooldownScale,
-        followOwner: false,
-        followOwnerId: null,
-        laidAngle: entity.laidAngle,
-      });
-      continue;
-    }
     if (fighter.type === "trident" && sim.classicEntities.some((entity) => (
       entity.ownerId === fighter.id
       && entity.kind === "trident-ammo"
@@ -11167,6 +12940,7 @@ function updateClassicAbilities(sim, dt) {
       const angle = Math.atan2(fighter.vy, fighter.vx) + turn;
       fighter.vx = Math.cos(angle) * fighter.baselineSpeed;
       fighter.vy = Math.sin(angle) * fighter.baselineSpeed;
+      emitEvent(sim, "classic-flash-burst", { fighterId: fighter.id, angle, duration: ability.duration });
     } else if (ability.kind === "summon") {
       startClassicNecromancerSummon(sim, fighter, target);
     } else if (ability.kind === "apple") {
@@ -11540,7 +13314,11 @@ function updateClassicAbilities(sim, dt) {
       fighter.classicJackpotSpins += 1;
       const jackpot = fighter.classicJackpotSpins >= 7 || sim.rng.next() < 0.015;
       const amount = jackpot ? Math.floor(sim.rng.range(100, 151)) : 1;
-      damage(sim, target, amount, fighter.id, "jackpot spin", "classic-ability", jackpot ? "critical" : "regular");
+      const dealt = damage(sim, target, amount, fighter.id, "jackpot spin", "classic-ability", jackpot ? "critical" : "regular");
+      emitEvent(sim, "classic-jackpot-result", {
+        fighterId: fighter.id, targetId: target.id, jackpot, amount: dealt, roll: amount,
+        spin: fighter.classicJackpotSpins, x: target.x, y: target.y,
+      });
     } else if (ability.kind === "artist") {
       const kinds = ["artist-monster", "artist-fairy", "artist-soldier"];
       const kind = kinds[Math.floor(sim.rng.next() * kinds.length)];
@@ -11802,6 +13580,21 @@ function updateClassicEntities(sim, dt) {
 
   for (const entity of sim.classicEntities) {
     const owner = sim.fighters.find((fighter) => fighter.id === entity.ownerId);
+    if (CLASSIC_MINION_KINDS.has(entity.kind) && advanceClassicThrownMinion(sim, entity, dt)) continue;
+    if (entity.kind === "wdc-summon") {
+      if (!owner?.alive) entity.expiresAt = sim.time;
+      continue;
+    }
+    if (entity.kind === "pulse-punch-wave") {
+      if (owner?.alive && sim.time < entity.expiresAt) updateClassicPunchWave(sim, owner, entity, dt);
+      else entity.expiresAt = sim.time;
+      continue;
+    }
+    if (entity.kind === "classic-saber-throw") {
+      if (owner?.alive && sim.time < entity.expiresAt) updateClassicThrownSaber(sim, owner, entity, dt);
+      else entity.expiresAt = sim.time;
+      continue;
+    }
     if (entity.kind === "frost-trail") {
       const fadeDelay = Math.max(0, Number(entity.fadeDelay) || CLASSIC_FROST_TRAIL_FADE_DELAY);
       const fadeDuration = Math.max(0.001, Number(entity.fadeDuration) || CLASSIC_FROST_TRAIL_FADE_DURATION);
@@ -12158,7 +13951,7 @@ function updateClassicEntities(sim, dt) {
       entity.latchState = "latched";
       continue;
     }
-    if (CLASSIC_MINION_KINDS.has(entity.kind) && classicMinionIsLatched(sim, entity)) {
+    if (CLASSIC_MINION_KINDS.has(entity.kind) && (classicMinionIsLatched(sim, entity) || classicAbilityHeld(entity, sim.time))) {
       entity.vx = 0;
       entity.vy = 0;
       continue;
@@ -12651,7 +14444,7 @@ function updateClassicEntities(sim, dt) {
       continue;
     }
 
-    if (["projectile", "shrapnel", "batarang", "draftmaster-ammo", "sniper-ammo", "pistol-ammo", "shotgun-ammo", "rifle-ammo", "trident-ammo", "fairy-ammo", "necromancer-arrow", "bee", "parasite", "train", "commander-round"].includes(entity.kind)) {
+    if (["projectile", "shrapnel", "batarang", "draftmaster-ammo", "sniper-ammo", "pistol-ammo", "shotgun-ammo", "rifle-ammo", "trident-ammo", "fairy-ammo", "necromancer-arrow", "bee", "parasite", "train", "commander-round", "snow-shard"].includes(entity.kind)) {
       const isTrident = entity.kind === "trident-ammo";
       if (isTrident && entity.phase === "returning") {
         const callbackTarget = nearestClassicOpponent(sim, owner);
@@ -12940,6 +14733,7 @@ function updateClassicEntities(sim, dt) {
           targetId: target.id,
           entityId: entity.id,
           projectileKind: entity.kind,
+          projectileDamage: entity.damage,
           amount: dealt,
           damageAmount: dealt,
           healAmount: 0,
@@ -14078,14 +15872,17 @@ function classicVampireReleaseLockActive(sim, fighter) {
 }
 
 function classicFighterActionLocked(sim, fighter) {
-  return classicFighterIsTrapped(sim, fighter)
+  return classicAbilityHeld(fighter, sim.time) || sim.time < (fighter.classicWallThrow?.until || 0)
+    || classicFighterIsTrapped(sim, fighter)
     || classicVampireOwnsActiveLatch(fighter)
     || classicVampireReleaseLockActive(sim, fighter);
 }
 
 function classicCombatantIsAlive(sim, target) {
   if (!target) return false;
-  if (sim.fighters.some((fighter) => fighter.id === target.id)) return target.alive === true;
+  if (sim.fighters.some((fighter) => fighter.id === target.id)) {
+    return target.alive === true && !target.classicWdcReserve;
+  }
   return classicMinionIsAlive(sim, target);
 }
 
@@ -14104,7 +15901,7 @@ function classicCombatantTeamIndex(sim, target) {
 }
 
 function classicCombatantIsEnemy(sim, attacker, target) {
-  if (!classicCombatantIsAlive(sim, target) || target.id === attacker.id) return false;
+  if (!classicCombatantIsAlive(sim, target) || target.classicCannonOutside || target.id === attacker.id) return false;
   const attackerTeam = classicCombatantTeamIndex(sim, attacker);
   const targetTeam = classicCombatantTeamIndex(sim, target);
   return attackerTeam === null || targetTeam === null || attackerTeam !== targetTeam;
@@ -14347,9 +16144,11 @@ function classicDestructionBurstFor(sim, target, source, reason, amount) {
 }
 
 function damage(sim, target, amount, sourceId, reason, category = "direct", flashKind = "regular") {
-  if (!target.alive) return 0;
+  if (!target.alive || target.classicWdcReserve || target.classicCannonOutside) return 0;
   const fighterTarget = sim.fighters.some((fighter) => fighter.id === target.id);
   const source = sim.fighters.find((fighter) => fighter.id === sourceId);
+  if (source !== target && amount > 0 && (source || target.type === "one-punch-man")
+    && blockClassicPulseHit(sim, target, source, category, amount)) return 0;
   if (
     fighterTarget
     && target.type === "vampire"
@@ -14392,6 +16191,10 @@ function damage(sim, target, amount, sourceId, reason, category = "direct", flas
     && !fighterTarget
     && CLASSIC_MINION_KINDS.has(target.kind);
   target.health = Math.max(0, target.health - actualAmount);
+  if (target.kind === "wdc-summon" && actualAmount > 0) {
+    const form = sim.fighters.find((fighter) => fighter.id === target.ownerId)?.classicWdcForm;
+    if (form?.entityId === target.id) form.lastSourceId = sourceId;
+  }
   if (sim.gameplayMode === "classic" && fighterTarget) syncClassicHealthState(target);
   target.flash = 0.12;
   target.flashKind = flashKind;
@@ -14561,9 +16364,15 @@ function checkWinner(sim) {
     return;
   }
   if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) {
-    const livingTeams = [...new Set(
-      sim.fighters.filter((fighter) => fighter.alive).map((fighter) => fighter.classicTeamIndex),
-    )];
+    const living = sim.fighters.filter((fighter) => fighter.alive);
+    const livingTeams = [...new Set(living.map((fighter) => fighter.classicTeamIndex))];
+    if (livingTeams.length > 1 && sim.time >= 36 && living.every((fighter) => fighter.type === "one-punch-man")) {
+      sim.finished = true;
+      sim.classicDraw = "DODGE STALEMATE";
+      sim.analytics = buildMatchAnalytics(sim);
+      emitEvent(sim, "classic-draw", { reason: "dodge-stalemate" });
+      return;
+    }
     if (livingTeams.length <= 1 && sim.fighters.length > 1) {
       sim.finished = true;
       const winningTeam = livingTeams[0];
@@ -14713,6 +16522,11 @@ function emitEvent(sim, type, detail = {}) {
   };
   if (!Number.isFinite(Number(event.x))) event.x = fighter?.x ?? source?.x ?? target?.x;
   if (!Number.isFinite(Number(event.y))) event.y = fighter?.y ?? source?.y ?? target?.y;
+  if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) {
+    addClassicActionBurst(sim, event, fighter);
+    const signature = classicSignatureEffectFor(event, sim, { fighter, source, target });
+    if (signature) sim.effects.push(signature);
+  }
   sim.events.push(event);
   sim.nextEventId += 1;
   if (sim.events.length > 120) sim.events.splice(0, sim.events.length - 120);
@@ -14755,7 +16569,7 @@ function applyOrbPhysics(sim, fighter, dt) {
 }
 
 function setClassicConstantSpeed(fighter, time = Infinity) {
-  if (fighter?.classicFrostFrozen === true) {
+  if (fighter?.classicFrostFrozen === true || classicAbilityHeld(fighter, time)) {
     fighter.vx = 0;
     fighter.vy = 0;
     return;
@@ -25146,6 +26960,7 @@ export function captureReplayFrame(sim) {
     time: sim.time,
     finished: sim.finished,
     winnerId: sim.winner?.id ?? null,
+    ...(sim.classicDraw ? { classicDraw: sim.classicDraw } : {}),
     ...(sim.classicWdcDuel ? {
       classicWdcDuel: { ...sim.classicWdcDuel, effects: [...sim.classicWdcDuel.effects] },
     } : {}),
@@ -25191,10 +27006,17 @@ export function captureReplayFrame(sim) {
     classicHydrogenHealth: sim.classicHydrogenHealth ?? 100,
     classicAnnouncementFreezeUntil: sim.classicAnnouncementFreezeUntil ?? 0,
     classicAnnouncementPoseUntil: sim.classicAnnouncementPoseUntil ?? 0,
+    ...(sim.classicOpening ? { classicOpening: { ...sim.classicOpening } } : {}),
+    ...(sim.classicWallDeformations ? { classicWallDeformations: sim.classicWallDeformations.map((wall) => ({ ...wall })) } : {}),
     classicAnnouncementFrozen: sim.classicAnnouncementFrozen === true,
     classicAnnouncementFinished: sim.classicAnnouncementFinished === true,
     classicEntities: (sim.classicEntities || []).map((entity) => ({
       ...entity,
+      ...(entity.kind === "wdc-summon" ? {
+        strike: entity.strike && { ...entity.strike },
+        beam: entity.beam && { ...entity.beam, origin: entity.beam.origin && { ...entity.beam.origin }, hits: [...entity.beam.hits] },
+        trail: entity.trail.map((point) => ({ ...point })),
+      } : {}),
       nodes: entity.nodes?.map((node) => ({ ...node })),
       segments: entity.segments?.map((segment) => ({ ...segment })),
       webSegments: entity.webSegments?.map((segment) => ({ ...segment })),
@@ -25417,8 +27239,61 @@ export function captureReplayFrame(sim) {
       classicRecoilUntil: fighter.classicRecoilUntil,
       classicRecoilCount: fighter.classicRecoilCount,
       ...(fighter.classicWdcForm ? {
-        classicWdcForm: { ...fighter.classicWdcForm, beam: fighter.classicWdcForm.beam && { ...fighter.classicWdcForm.beam } },
+        classicWdcForm: {
+          ...fighter.classicWdcForm,
+          portal: { ...fighter.classicWdcForm.portal },
+          entry: fighter.classicWdcForm.entry && { ...fighter.classicWdcForm.entry },
+        },
+        classicWdcReserve: fighter.classicWdcReserve,
       } : {}),
+      ...(CLASSIC_PULSE_FIRST_MOVE[fighter.type] !== undefined ? {
+        classicPulseMove: fighter.classicPulseMove && {
+          ...fighter.classicPulseMove,
+          ...(fighter.classicPulseMove.hits ? { hits: [...fighter.classicPulseMove.hits] } : {}),
+        },
+        classicPulseField: fighter.classicPulseField,
+        classicPulseGuardUntil: fighter.classicPulseGuardUntil,
+        classicPulseGuardCharges: fighter.classicPulseGuardCharges,
+        classicPunchSerious: fighter.classicPunchSerious,
+        classicPunchVariant: fighter.classicPunchVariant,
+        classicSeriousReadyAt: fighter.classicSeriousReadyAt,
+        classicDodgeUntil: fighter.classicDodgeUntil,
+        classicDodgeReadyAt: fighter.classicDodgeReadyAt,
+      } : {}),
+      ...(fighter.classicPulseLaunchUntil ? { classicPulseLaunchUntil: fighter.classicPulseLaunchUntil } : {}),
+      ...(fighter.classicPowerReadyAt !== undefined ? {
+        classicPowerReadyAt: fighter.classicPowerReadyAt,
+        classicPowerMove: fighter.classicPowerMove && {
+          ...fighter.classicPowerMove,
+          center: fighter.classicPowerMove.center && { ...fighter.classicPowerMove.center },
+          blueprint: fighter.classicPowerMove.blueprint?.map((shape) => ({ ...shape })),
+          pose: fighter.classicPowerMove.pose?.map((shape) => ({ ...shape })),
+          path: fighter.classicPowerMove.path?.map((point) => ({ ...point })),
+          hitIds: fighter.classicPowerMove.hitIds && [...fighter.classicPowerMove.hitIds],
+        },
+      } : {}),
+      ...(fighter.classicCollisionKick ? { classicCollisionKick: { ...fighter.classicCollisionKick } } : {}),
+      ...(fighter.classicOmnitrix ? {
+        classicOmnitrix: {
+          ...fighter.classicOmnitrix,
+          bag: [...fighter.classicOmnitrix.bag],
+          rush: fighter.classicOmnitrix.rush && {
+            ...fighter.classicOmnitrix.rush,
+            hits: [...fighter.classicOmnitrix.rush.hits],
+            wrap: fighter.classicOmnitrix.rush.wrap && { ...fighter.classicOmnitrix.rush.wrap },
+          },
+          flame: fighter.classicOmnitrix.flame && {
+            ...fighter.classicOmnitrix.flame,
+            hitAt: { ...fighter.classicOmnitrix.flame.hitAt },
+          },
+        },
+      } : {}),
+      ...(fighter.classicSaberMove ? {
+        classicSaberMove: { ...fighter.classicSaberMove, hits: [...fighter.classicSaberMove.hits] },
+      } : {}),
+      ...(fighter.classicHeldUntil ? { classicHeldUntil: fighter.classicHeldUntil, classicHeldKind: fighter.classicHeldKind } : {}),
+      ...(fighter.classicWallThrow ? { classicWallThrow: { ...fighter.classicWallThrow } } : {}),
+      ...(fighter.classicCannonOutside ? { classicCannonOutside: true } : {}),
       classicPunchPhase: fighter.classicPunchPhase,
       classicPunchStartedAt: fighter.classicPunchStartedAt,
       classicPunchPhaseUntil: fighter.classicPunchPhaseUntil,
@@ -26217,6 +28092,8 @@ export function captureReplayFrame(sim) {
     effects: sim.effects.map((effect) => ({
       ...effect,
       particles: effect.particles?.map((particle) => ({ ...particle })),
+      ...(effect.cuts ? { cuts: [...effect.cuts] } : {}),
+      ...(effect.marks ? { marks: [...effect.marks] } : {}),
     })),
     projectiles: sim.projectiles.map((projectile) => ({
       ...projectile,

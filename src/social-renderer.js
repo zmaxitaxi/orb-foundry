@@ -22,15 +22,21 @@ import {
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261108-wdc-duel3";
+} from "./simulation.js?v=20261109-classic-signature2";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
+  classicBlackInkFor,
   classicVisualColorFor,
+  drawClassicPixelMatchup,
+  drawClassicPulseOutsideArena,
+  drawClassicCannonOutsideArena,
+  drawClassicArenaWall,
+  drawClassicWallDamage,
   drawClassicWdcDuel,
   drawMotionStreak,
-} from "./renderer.js?v=20261108-wdc-duel3";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261108-wdc-duel3";
+} from "./renderer.js?v=20261109-classic-signature2";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261109-classic-signature2";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -54,7 +60,7 @@ import {
   CLASSIC_ORBS,
   classicTeamDisplayName,
   classicTeamOutlineColorFor,
-} from "./classic-orbs.js?v=20261108-wdc-duel3";
+} from "./classic-orbs.js?v=20261109-classic-signature2";
 import {
   TOURNAMENT_CONNECTOR_COLORS,
   TOURNAMENT_PRESENTATION_TIMING,
@@ -1638,17 +1644,17 @@ function drawTextSegments(ctx, segments, x, y) {
   return totalWidth;
 }
 
-export function socialBattleLayout(width, height, formatId = null, arenaSizeId = "standard") {
+export function socialBattleLayout(width, height, formatId = null, arenaSizeId = "standard", classicBlackTheme = false) {
   if (formatId === "portrait" || (!formatId && height / width > 1.35)) {
     const namesHeight = 132;
     const abilityHeight = 92;
     const sectionGap = 22;
-    const widthRatio = arenaSizeId === "large" ? 0.95 : 0.71;
+    const widthRatio = arenaSizeId === "large" ? 0.95 : classicBlackTheme ? 0.77 : 0.71;
     const arenaSize = Math.min(
       Math.round(width * widthRatio),
       height - namesHeight - abilityHeight - sectionGap * 2 - 48,
     );
-    const compositionY = 410;
+    const compositionY = classicBlackTheme ? 300 : 410;
     const arenaY = compositionY + namesHeight + sectionGap;
     const arenaX = Math.round((width - arenaSize) / 2);
     return {
@@ -2272,6 +2278,11 @@ export class SocialBattleRenderer {
     }
     const classicBlackTheme = sim.gameplayMode === "classic" && motion.classicBlackTheme === true;
     const classicTeamColors = sim.gameplayMode === "classic" && motion.classicTeamColors !== false;
+    if (sim.finished && this.classicResultSim !== sim) {
+      this.classicResultSim = sim;
+      this.classicResultAt = Number(presentation.now) || 0;
+    }
+    const classicResultAge = sim.finished ? Math.max(0, ((Number(presentation.now) || 0) - this.classicResultAt) / 1000) : 0;
     this.arenaRenderer.setOptions({
       simpleOrbs: true,
       flatOrbs: true,
@@ -2284,6 +2295,8 @@ export class SocialBattleRenderer {
       duelHealthBars: sim.gameplayMode === "classic" && sim.fighters.filter((fighter) => !fighter.classicIsDuplicate).length === 2,
       damageNumbers: false,
       flashReduction: motion.flashReduction === true,
+      reducedMotion: this.reducedMotion,
+      classicResultAge,
       classicBlackTheme,
       classicTeamColors,
     });
@@ -2298,7 +2311,7 @@ export class SocialBattleRenderer {
     ctx.clearRect(0, 0, width, height);
     this.updateClassicHealthMarkers(sim);
     this.drawBackground(ctx, width, height, sim.gameplayMode, classicBlackTheme);
-    const layout = this.layout(width, height, sim);
+    const layout = this.layout(width, height, sim, classicBlackTheme);
     const classicShakeDisabled = sim.gameplayMode === "classic";
     const highlightShake = !classicShakeDisabled && motion.screenShake !== false && presentation.highlight
       ? presentation.highlight.strength * Math.min(width, height) * 0.006
@@ -2309,6 +2322,12 @@ export class SocialBattleRenderer {
     const impactShake = motion.screenShake !== false && !motion.reducedMotion && impact
       ? impact.shake * (1 - impactProgress) * Math.min(width, height) * 0.008
       : 0;
+    const pulseImpact = motion.screenShake !== false && !motion.reducedMotion && sim.effects?.findLast((effect) => (
+      effect.kind === "classic-pulse-burst" && ["serious-punch", "shield-crack"].includes(effect.style)
+    ));
+    const pulseShake = pulseImpact
+      ? Math.max(0, (pulseImpact.life - classicResultAge) / pulseImpact.maxLife - .5) * Math.min(width, height) * .014
+      : 0;
     const shakePhase = Math.floor(impactAge / 16);
     const presentationImpact = classicShakeDisabled || motion.reducedMotion
       ? 0
@@ -2318,14 +2337,18 @@ export class SocialBattleRenderer {
     this.drawArena(ctx, layout.arena, {
       shakeX: (highlightShake ? Math.sin(sim.time * 97) * highlightShake : 0)
         + (impactShake ? (shakePhase % 2 === 0 ? impactShake : -impactShake) : 0)
+        + (pulseShake ? Math.sin((sim.time + classicResultAge) * 104) * pulseShake : 0)
         + presentationImpact,
       shakeY: (highlightShake ? Math.cos(sim.time * 83) * highlightShake * 0.65 : 0)
         + (impactShake ? (shakePhase % 3 === 0 ? -impactShake * 0.55 : impactShake * 0.35) : 0)
+        + (pulseShake ? Math.cos((sim.time + classicResultAge) * 91) * pulseShake * .58 : 0)
         - presentationImpact * 0.45,
       overtime: sim.overtimeStarted,
       sim,
       classicBlackTheme,
       classicTeamColors,
+      classicResultAge,
+      titleCenterY: layout.names.y + layout.names.height * .54,
     });
     if (sim.finished && sim.gameplayMode !== "classic") this.drawWinnerFieldText(ctx, sim, layout.arena);
     if (sim.gameplayMode === WORLD_CUP_MODE) {
@@ -2335,7 +2358,7 @@ export class SocialBattleRenderer {
       this.drawKingOfHillHud(ctx, sim, layout.names);
       this.drawKingOfHillStatusDock(ctx, sim, layout.abilities);
     } else {
-      if (sim.gameplayMode === "classic" && sim.finished && sim.winner) {
+      if (sim.gameplayMode === "classic" && sim.finished && (sim.winner || sim.classicDraw)) {
         const names = layout.names;
         this.drawMatchResult(ctx, sim, names.x + names.width / 2, names.y + names.height * 0.54,
           names.width * 0.94, Math.min(72, names.height * 0.6), classicBlackTheme ? "#ffffff" : "#171511");
@@ -10289,8 +10312,8 @@ export class SocialBattleRenderer {
     ctx.restore();
   }
 
-  layout(width, height, sim = null) {
-    return socialBattleLayout(width, height, this.format, sim?.arenaSize || "standard");
+  layout(width, height, sim = null, classicBlackTheme = false) {
+    return socialBattleLayout(width, height, this.format, sim?.arenaSize || "standard", classicBlackTheme);
   }
 
   updateClassicHealthMarkers(sim) {
@@ -10340,6 +10363,7 @@ export class SocialBattleRenderer {
         ? Number(fighter.classicZeusDamageMarkerAt)
         : simTime;
       const freshEvents = (sim.events || []).filter((event, eventIndex) => {
+        if (event.type === "classic-pulse-cue" && ["punch", "barrage-hit", "serious"].includes(event.cue)) return false;
         const eventTime = Number(event.time);
         if (Number.isFinite(eventTime) && eventTime <= markerEventFloor) return false;
         const eventKey = Number.isFinite(Number(event.id))
@@ -10520,6 +10544,7 @@ export class SocialBattleRenderer {
       if (opacity <= 0) return;
       const riseProgress = classicHealthMarkerRise(age);
       const fighter = (sim?.fighters || []).find((candidate) => candidate.id === marker.fighterId);
+      if (fighter?.classicWdcReserve) return;
       const centerX = Number(fighter?.x ?? marker.x);
       const centerY = Number(fighter?.y ?? marker.y);
       const fighterRadius = classicHealthMarkerRadiusFor(fighter);
@@ -10651,10 +10676,15 @@ export class SocialBattleRenderer {
       },
     );
     const titleColorFor = (fighter, teamIndex = null) => {
-      if (teamIndex !== null && classicTeamColors) return classicTeamOutlineColorFor(teamIndex);
+      if (teamIndex !== null && classicTeamColors) {
+        const teamColor = classicTeamOutlineColorFor(teamIndex);
+        return classicBlackTheme ? classicBlackInkFor(teamColor) : teamColor;
+      }
       if (fighter.type === "lazer") return "#b66cff";
       const def = CLASS_DEFS[fighter.type];
-      return classicBlackTheme ? classicVisualColorFor(fighter.type, def?.accent || "#ffffff") : def?.color || "#ffffff";
+      return classicBlackTheme
+        ? classicBlackInkFor(classicVisualColorFor(fighter.type, def?.accent || "#ffffff"))
+        : def?.color || "#ffffff";
     };
 
     if (sim.gameplayMode === "classic") {
@@ -10735,6 +10765,13 @@ export class SocialBattleRenderer {
     if (titleFighters.length >= 2) {
       const rightSegment = titleLayout.rightSegment || { x: rect.width * 0.96, width: 0 };
       drawHydrogenTimer(titleFighters[1], "right", rect.x + rightSegment.x + rightSegment.width);
+    }
+    if (classicTeamLayout && classicBlackTheme
+      && drawClassicPixelMatchup(ctx, rect, leftName, rightName, [
+        titleColorFor(titleFighters[0], 0), "#f2f2f2", titleColorFor(titleFighters[1], 1),
+      ])) {
+      ctx.restore();
+      return;
     }
     const drawRun = (segment, text, color) => {
       if (!segment || !text) return;
@@ -11102,6 +11139,8 @@ export class SocialBattleRenderer {
     sim = null,
     classicBlackTheme = false,
     classicTeamColors = true,
+    classicResultAge = 0,
+    titleCenterY = NaN,
   } = {}) {
     ctx.save();
     ctx.fillStyle = classicBlackTheme ? "#000000" : "#ffffff";
@@ -11123,7 +11162,15 @@ export class SocialBattleRenderer {
     this.drawArenaWatermark(ctx, { x: dx, y: dy, width: dw, height: dh });
     ctx.restore();
     const borderRect = { x: dx, y: dy, width: dw, height: dh };
-    if (sim?.gameplayMode === "classic" && classicTeamColors && sim.fighters?.length >= 2) {
+    const liveClassicWall = sim?.gameplayMode === "classic" && !sim.legacyClassicRules && sim.arenaBounds;
+    if (liveClassicWall) {
+      const colors = classicTeamColors && sim.fighters?.length >= 2 ? classicArenaBorderColorsFor(sim) : null;
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.scale(scale, scale);
+      drawClassicArenaWall(ctx, sim, { classicBlackTheme, colors, wallWidth: Math.max(2, Math.min(4, dw * 0.003)) / scale });
+      ctx.restore();
+    } else if (sim?.gameplayMode === "classic" && classicTeamColors && sim.fighters?.length >= 2) {
       const [firstColor, secondColor] = classicArenaBorderColorsFor(sim);
       drawSplitArenaBorder(
         ctx,
@@ -11136,6 +11183,28 @@ export class SocialBattleRenderer {
       ctx.strokeStyle = classicBlackTheme ? "#c4c7ce" : "#050505";
       ctx.lineWidth = Math.max(2, Math.min(4, dw * 0.003));
       ctx.strokeRect(dx, dy, dw, dh);
+    }
+    if (sim?.gameplayMode === "classic") {
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.scale(scale, scale);
+      const wallOptions = { classicResultAge, classicBlackTheme, flashReduction: this.flashReduction, reducedMotion: this.reducedMotion };
+      drawClassicWallDamage(ctx, sim, wallOptions);
+      drawClassicCannonOutsideArena(ctx, sim, wallOptions);
+      ctx.restore();
+    }
+    if (sim?.gameplayMode === "classic" && (
+      sim.fighters?.some((fighter) => fighter.classicWdcReserve)
+      || sim.effects?.some((effect) => effect.kind === "classic-pulse-burst")
+    )) {
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.scale(scale, scale);
+      drawClassicPulseOutsideArena(ctx, sim, {
+        classicBlackTheme, flashReduction: this.flashReduction, reducedMotion: this.reducedMotion, spaceAbove: dy / scale,
+        titleY: (titleCenterY - dy) / scale,
+      }, classicResultAge);
+      ctx.restore();
     }
   }
 
@@ -11180,7 +11249,7 @@ export class SocialBattleRenderer {
 
   drawMatchResult(ctx, sim, x, y, width, size, color, showSubscribe = false) {
     const classicTeam = sim.classicTeamNames?.[sim.winner?.classicTeamIndex];
-    const label = (classicTeam ? `${classicTeam} wins` : winnerFieldMessage(sim)).toUpperCase();
+    const label = (sim.classicDraw || (classicTeam ? `${classicTeam} wins` : winnerFieldMessage(sim))).toUpperCase();
     if (!label) return;
     ctx.save();
     ctx.textAlign = "center";
@@ -11267,21 +11336,53 @@ export class SocialBattleRenderer {
       [0, 1].forEach((side) => {
         const fighter = fighters.find((entry) => entry.classicTeamIndex === side) || fighters[side];
         if (!fighter) return;
-        const hud = buildAbilityHud(fighter, sim.time);
+        const hud = buildAbilityHud(fighter, sim.time, sim.classicEntities);
         const orbital = fighter.type === "orbital";
         const swordPhase = fighter.type === "sword" && fighter.classicSwordPhase !== "idle"
           ? fighter.classicSwordPhase
           : null;
-        const status = orbital
+        const abilityLabel = classicBlackTheme && !hud.customLabel
+          ? CLASSIC_ORBS[fighter.type]?.statLabel || hud.label
+          : hud.label;
+        const status = hud.powerActive ? hud.label : orbital
           ? `${fighter.classicOrbiters || 0} SATELLITES`
-          : (swordPhase === "active" ? "STRIKE" : swordPhase?.toUpperCase()) || hud.label;
-        const detail = orbital
+          : (swordPhase === "active" ? "STRIKE" : swordPhase?.toUpperCase()) || abilityLabel;
+        const detail = hud.powerActive ? hud.detail : orbital
           ? `+1 PER BOUNCE · ${CLASSIC_ORBS.orbital.classicAbility.satelliteDamage} DMG EACH`
-          : hud.detail?.split(" · ")[0];
-        const color = CLASSIC_ORBS[fighter.type]?.accent || CLASS_DEFS[fighter.type]?.color || "#888888";
+          : hud.powerProgress === 1 ? `HP ${Math.ceil(fighter.health)} / POWER READY` : hud.detail?.split(" · ")[0];
+        const accent = hud.color || CLASSIC_ORBS[fighter.type]?.accent || CLASS_DEFS[fighter.type]?.color || "#888888";
+        const color = classicBlackTheme ? classicBlackInkFor(accent) : accent;
         const width = rect.width * 0.4;
         const center = rect.x + rect.width * (side === 0 ? 0.24 : 0.76);
         const railY = rect.y + rect.height * 0.6;
+        if (classicBlackTheme) {
+          const meterHeight = Math.min(37, rect.height * 0.48);
+          const x = center - width / 2;
+          const y = rect.y + rect.height * 0.12;
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x, y, width, meterHeight, meterHeight * 0.27);
+          ctx.fillStyle = "#16161b";
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.clip();
+          ctx.fillStyle = color + "78";
+          ctx.fillRect(x, y, width * hud.progress, meterHeight);
+          setFittedFont(ctx, status, width * 0.92, 900, Math.min(25, meterHeight * 0.61), 11, PIXEL_FONT);
+          ctx.fillStyle = "#fffdf7";
+          ctx.fillText(status, center, y + meterHeight * 0.51);
+          ctx.restore();
+          const health = Number.isFinite(fighter.health) ? `HP ${Math.ceil(fighter.health)}` : "";
+          const readout = detail?.startsWith("HP ") ? detail : [health, detail].filter(Boolean).join(" / ");
+          if (readout) {
+            setFittedFont(ctx, readout, width, 800, Math.min(22, rect.height * 0.25), 12, PIXEL_FONT);
+            ctx.fillStyle = "#e2e0dc";
+            ctx.fillText(readout, center, rect.y + rect.height * 0.80);
+          }
+          return;
+        }
         setFittedFont(ctx, status, width, 900, Math.min(35, rect.height * 0.43), 12, PIXEL_FONT);
         ctx.fillStyle = classicBlackTheme ? color : "#191919";
         ctx.fillText(status, center, rect.y + rect.height * 0.32);

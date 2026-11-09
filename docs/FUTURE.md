@@ -6,6 +6,91 @@ serve all three, and the operation has to stay small enough to keep going.
 This note is an exploration of what to build next. It is not a promise that
 any piece is scheduled, funded, or already measured.
 
+## Classic direction
+
+Classic is the head-to-head fight. Start with one readable matchup question
+and let the two move sets answer it on the same playfield. Orb Race keeps
+its lane, layer, and finish-line identity.
+
+### What the channels show
+
+On November 8, 2026, the first nine cards in each channel's Latest Shorts
+sort had a median of about **1.3K** public views for OrbBattlegroundsSimulator
+and **38K** for Pulse Battles. The channels showed 1.61K and 12.6K
+subscribers respectively. This is a snapshot of rounded public counts with
+different upload ages and audience sizes. It can identify formats to test.
+An age-matched test on our channel is needed to estimate what changes views
+or retention. [OrbBattlegroundsSimulator Shorts](https://www.youtube.com/@OrbBattlegroundSimulator/shorts) ·
+[Pulse Battles Shorts](https://www.youtube.com/@pulsebattles/shorts)
+
+The ordered samples in displayed units were 297, 1.1K, 1.2K, 1.3K, 1.4K,
+1.3K, 1.8K, 1.3K, and 1.2K for OrbBattlegroundsSimulator, and 13K, 28K,
+39K, 38K, 71K, 99K, 28K, 37K, and 80K for Pulse Battles. The fifth value
+after sorting each nine-video sample gives the median.
+
+- **The hook is a problem one fighter has to solve.** Pulse repeatedly
+  brings back recognizable characters against new defenses. At the top of
+  its Popular sort, One Punch Man vs Gojo (3.7M) makes the defense visible
+  before the payoff. John Rod vs One Above All (1.7M) gives both moves
+  distinct shapes. One Punch Man vs Knight (1.6M) makes shield and blade
+  contact legible through the white ring and radial burst.
+  [Gojo](https://www.youtube.com/shorts/fa9f_MR-0co) ·
+  [John Rod](https://www.youtube.com/shorts/_IiOFr31zgE) ·
+  [Knight](https://www.youtube.com/shorts/38-WW75uOIc)
+- **Our audience has responded to two different kinds of stakes.**
+  Professor vs Absorber (70K) shows a visible form change against a huge
+  number wall. In Cobwebs vs Hydrogen Bomb Boss (27K), a growing web is
+  the answer to an obvious timed threat inside a black Classic arena.
+  A recent upload, Super Slammy vs Bouncer, makes the race progress clear
+  but spends its early seconds on separate lanes and wall numbers. Keep
+  those strengths in Race and use the boss duel as the Classic template.
+  [Professor vs Absorber](https://www.youtube.com/shorts/IrXUuCwMMKQ) ·
+  [Cobwebs vs Hydrogen Bomb Boss](https://www.youtube.com/shorts/Y5dXIgk7UyU) ·
+  [Super Slammy vs Bouncer](https://www.youtube.com/shorts/XomojA8SZG0)
+- **Make the reason for the HP change visible.** In WDC vs One Punch Man,
+  a portal, a beam charge, and a sale each introduce a new beat. A character
+  gets a tell, the move travels or transforms, and the result changes the
+  next decision. Carry that structure into the simulator with original
+  Orb Foundry effects and sounds. [WDC vs One Punch Man](https://www.youtube.com/shorts/GOpLtakQSk4)
+
+### Classic presentation standard
+
+The default is a black square with a thin white frame, character-colored
+pixel names, health inside the fighters, and compact ability meters.
+Keep the opening frame understandable with the audio muted. Aim for the
+first meaningful tell, clash, or dodge within about three seconds of live
+action when selecting seeds for Shorts. Leave enough space for trails
+and impact geometry to move beyond the bodies without covering the HP.
+
+Give each fighter one recognizable silhouette and one identifiable tell.
+Draw contact from the actual hitbox. Give the tell, impact, and counter
+their own sounds where they matter. Render the strongest shapes on the
+largest hits and leave recovery time so they read at phone size. A seed
+may vary move order or timing within gameplay constraints. The same seed
+and settings must replay the same fight. See the
+[Classic roster audit](CLASSIC_ROSTER.md) for the current art decisions and
+[Classic combat style](CLASSIC_STYLE.md) for the implementation and recording guide.
+
+### First release experiment
+
+Build six distinct Classic Shorts around three questions. Can WDC's beam
+beat Limitless? Can Boxer catch a 1 HP opponent during dodge recovery?
+Can Cobwebs beat the bomb before the fuse expires? Use comparable
+lengths and release slots. Compare the first seven days in Studio using
+Stayed to watch, average percentage viewed, and subscribers gained.
+Test a move-first opening in each matchup alongside a matchup-first
+opening using a different live seed. [YouTube content performance](https://support.google.com/youtube/answer/12220281)
+
+Give the best recurring matchup a public three- to five-minute episode with
+a simple scoreboard and fresh rounds. Link it from the relevant Shorts
+using the related-video feature when available. The supplied 2,900 hours
+leave about 1,100 to reach the 4,000-hour ad-revenue threshold. At an
+illustrative three minutes of average viewing per public long-form view,
+that gap corresponds to about 22,000 views before rolling-window changes.
+Judge the episode by qualified public watch hours in Studio.
+[Related video](https://support.google.com/youtube/answer/14075157) ·
+[YouTube Partner Program eligibility](https://support.google.com/youtube/answer/72851)
+
 ## What the project is for
 
 - **Study.** The simulation is deterministic: fixed step of 1/120 second,
@@ -90,8 +175,9 @@ The simulation stays the source of truth. A better picture is a new
 renderer that reads the same state and the same events. The winner is
 computed before any frame is drawn.
 
-Directions worth trying, one match at a time, against the current canvas
-as the control:
+Orb Race and longer episodes can explore the directions below against
+the current canvas as the control. Classic Shorts follow the presentation
+standard above.
 
 - **A sharper capture of the current canvas.** Higher internal resolution,
   type that stays readable on a phone, and a stable frame rate. This is

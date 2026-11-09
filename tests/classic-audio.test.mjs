@@ -24,7 +24,8 @@ const CLASSIC_IDS = Object.freeze([
     "cobwebs", "apple", "absorber", "batman", "ying-yang", "trapper", "hive-ball", "zeus",
     "glass-ball", "pistol", "shotgun", "rifle", "sawball", "cutter", "trident", "lazer", "charger",
     "parasites", "grappler", "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
-    "commander", "wdc", "one-punch-man",
+    "commander", "wdc", "one-punch-man", "gojo", "john-rod", "one-above-all", "knight",
+    "ben-10", "darth-vader", "luke-skywalker",
 ]);
 
 test("Classic announcer registry covers the launch roster with valid generated or verified clips", () => {
@@ -54,6 +55,49 @@ test("Classic matchup announcement retains Pick Your Winner", () => {
         "intro-trapper",
         "race-pick-your-winner",
     ]);
+});
+
+test("Classic powers have distinct charge, release, and impact audio", () => {
+    const base = { type: "classic-power-cue", gameplayMode: "classic", id: 142, x: 540 };
+    const families = ["sword", "blue-sun", "black-hole", "pistol", "shotgun", "rifle", "sniper", "draftmaster", "turret", "commander", "frost-ball"];
+    const releases = families.map((fighterType) => {
+        const plan = (phase) => soundPlanForEvent({ ...base, fighterType, phase });
+        const release = plan("release");
+        assert.ok(release.layers.length >= 2 && release.noises.length > 0);
+        assert.notDeepEqual(release.layers, plan("charge").layers);
+        assert.notDeepEqual(release.layers, plan("hit").layers);
+        assert.equal(samplePlanForEvent({ ...base, fighterType, phase: "release" }), null);
+        return JSON.stringify(release.layers);
+    });
+    assert.equal(new Set(releases).size, families.length);
+    assert.ok(soundPlanForEvent({ ...base, fighterType: "sword", phase: "evade" }));
+});
+
+test("Saber, movement, and Omnitrix phases route distinct original samples", () => {
+    const cases = [
+        ["luke-skywalker", "saber-swing", "classic-luke-swing", 1],
+        ["luke-skywalker", "saber-swing", "classic-luke-reverse", 2],
+        ["luke-skywalker", "force-vault", "classic-luke-vault"],
+        ["luke-skywalker", "saber-lunge", "classic-luke-lunge"],
+        ["luke-skywalker", "luke-evade", "classic-luke-evade"],
+        ["darth-vader", "saber-swing", "classic-vader-swing", 1],
+        ["darth-vader", "saber-throw", "classic-vader-throw"],
+        ["darth-vader", "saber-return", "classic-vader-return"],
+        ["ben-10", "omnitrix-tell", "classic-omnitrix-dial"],
+        ["ben-10", "omnitrix-transform", "classic-omnitrix-transform"],
+    ];
+    cases.forEach(([fighterType, cue, expected, strike], id) => {
+        const event = { id, type: "classic-pulse-cue", gameplayMode: "classic", fighterType, cue, strike };
+        assert.equal(samplePlanForEvent(event)?.sample, expected);
+        assert.ok(statSync(new URL(`../assets/audio/effects/${SAMPLE_ASSETS[expected]}`, import.meta.url)).size > 2000);
+        assert.ok(soundPlanForEvent(event), "a synthesized cue is available before sample loading");
+    });
+    assert.equal(soundPlanForEvent({
+        type: "classic-pulse-cue", gameplayMode: "classic", fighterType: "frost-ball", cue: "snow-release",
+    })?.signature, "avalanche-release");
+    const ben = { gameplayMode: "classic", fighterType: "ben-10" };
+    assert.equal(samplePlanForEvent({ ...ben, type: "classic-projectile-fired", projectileKind: "pyro-bolt" }), null);
+    assert.equal(soundPlanForEvent({ ...ben, type: "classic-pulse-cue", cue: "heatblast" })?.signature, "heatblast-flare");
 });
 
 test("Classic team announcements use Orb Race plus, category, and everyone splicing", () => {
@@ -176,7 +220,7 @@ test("Classic combat mix routes launch effects and the Race end cue", () => {
     assert.equal(
         samplePlanForEvent({ type: "classic-freeze", gameplayMode: "classic", fighterType: "frost-ball", id: 103.1 }).sample,
         "classic-snowball-freeze",
-        "Snowball should play the supplied freeze cue when an opponent becomes frozen",
+        "archived freeze events should keep the supplied cue",
     );
     for (const type of ["classic-ability-start", "classic-hazard-spawn", "classic-dot-tick", "classic-bounce-damage"]) {
         assert.equal(
@@ -266,26 +310,29 @@ test("Classic combat mix routes launch effects and the Race end cue", () => {
         "Classic wall rebounds should use the bounce sample",
     );
     const damageEvents = [
-        { type: "classic-body-hit", fighterType: "unarmed" },
-        { type: "classic-slam", fighterType: "slammy" },
+        { type: "classic-body-hit", fighterType: "unarmed", expectedSignature: "classic-knuckle-hit" },
+        { type: "classic-slam", fighterType: "slammy", expectedSignature: "classic-fault-break" },
         { type: "classic-bow-hit", fighterType: "necromancer" },
         { type: "classic-potion-hit", fighterType: "potion" },
         { type: "classic-slice-hit", fighterType: "unarmed" },
-        { type: "classic-orbital-hit", fighterType: "orbital" },
-        { type: "classic-punch-hit", fighterType: "boxer" },
+        { type: "classic-orbital-hit", fighterType: "orbital", expectedSignature: "classic-satellite-pop" },
+        { type: "classic-punch-hit", fighterType: "boxer", expectedSignature: "classic-corner-hit" },
         { type: "classic-draftmaster-sword-hit", fighterType: "draftmaster", expectedSample: "weapon-hit" },
-        { type: "classic-blue-sun-hit", fighterType: "blue-sun" },
+        { type: "classic-blue-sun-hit", fighterType: "blue-sun", expectedSignature: "classic-corona-contact" },
         { type: "classic-projectile-hit", fighterType: "black-hole", projectileKind: "parasite" },
-        { type: "classic-dot-tick", fighterType: "parasites", dotKind: "parasite" },
-        { type: "classic-dot-tick", fighterType: "virus", dotKind: "virus" },
+        { type: "classic-dot-tick", fighterType: "parasites", dotKind: "parasite", expectedSignature: "classic-burrow-drain" },
+        { type: "classic-dot-tick", fighterType: "virus", dotKind: "virus", expectedSignature: "classic-virus-propagate" },
         { type: "classic-minion-hit", fighterType: "necromancer" },
     ];
     damageEvents.forEach((event, index) => {
-        assert.equal(
-            samplePlanForEvent({ ...event, gameplayMode: "classic", id: 105 + index })?.sample,
-            event.expectedSample || "orb-collision",
-            `${event.type} should use the shared orb-collision damage cue`,
-        );
+        const contact = { ...event, gameplayMode: "classic", id: 105 + index };
+        const sample = samplePlanForEvent(contact);
+        if (event.expectedSignature) {
+            assert.equal(sample, null, `${event.type} should play a single cue`);
+            assert.equal(soundPlanForEvent(contact)?.signature, event.expectedSignature);
+        } else {
+            assert.equal(sample?.sample, event.expectedSample || "orb-collision");
+        }
     });
     assert.equal(samplePlanForEvent({ type: "classic-ability-start", gameplayMode: "classic", fighterType: "boxer", id: 105 }).sample, "classic-boxer-punch");
     assert.equal(samplePlanForEvent({ type: "classic-ability-start", gameplayMode: "classic", fighterType: "vampire", abilityKind: "vampire", latchPhase: "latched", latched: true, id: 105.5 }).sample, "classic-vampire-hiss");

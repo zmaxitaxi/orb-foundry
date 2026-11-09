@@ -1,5 +1,13 @@
 # Audio Licenses
 
+## Classic lightsabers and Omnitrix
+
+The November 2026 saber, leap, and Omnitrix samples are original oscillator
+and noise synthesis. The reproducible sources are in
+`source/classic-saber-20261108/` and `source/classic-omnitrix-20261108/`.
+The reference sounds informed the pitch and timing. The samples contain
+no audio extracted from the films or TV series.
+
 ## HeyGen Announcer
 
 The files in `assets/audio/announcer/` were generated for this project through

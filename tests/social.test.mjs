@@ -180,6 +180,7 @@ import {
   PIXEL_EFFECT_PROFILES,
   PIXEL_GEAR_PROFILES,
   PIXEL_WEAPON_PROFILES,
+  classicBlackInkFor,
   classicLazerPathFor,
   classicLazerSegmentsFor,
   impactSpriteKeyForEffect,
@@ -187,6 +188,8 @@ import {
 } from "../src/renderer.js";
 
 assert.equal(raceRenderOrbRadius(1000, 1), 45, "race rendering should use the simulation orb radius");
+assert.equal(classicBlackInkFor("#000000"), "#969696", "dark matchup labels need contrast against the black arena");
+assert.equal(classicBlackInkFor("#fff0a8"), "#fff0a8", "light character colors should retain their hue");
 assert.equal(raceRenderOrbRadius(1000, 0.5), 22.5, "Grower scale rendering should stay proportional to physics scale");
 
 const classes = Object.keys(CLASS_DEFS);
@@ -797,9 +800,7 @@ for (const asset of ["black-hole-suction.png", "black-hole-teleport.png"]) {
   assert.match(freezeRendererSource, /fighter\?\.classicFrostFrozen !== true/);
   assert.match(freezeRendererSource, /ctx\.fillStyle = "#62d7ff"/);
   assert.match(freezeRendererSource, /drawClassicFrostTrailStreak/);
-  assert.match(freezeSimulationSource, /const laidVx = Number\(fighter\.vx\);[\s\S]{0,180}Number\.isFinite\(laidVx\) \? laidVx : 1/);
-  assert.match(freezeSimulationSource, /const laidAngle = Math\.atan2\(/);
-  assert.match(freezeSimulationSource, /angle: laidAngle,[\s\S]{0,80}laidAngle,/);
+  assert.match(freezeSimulationSource, /kind: "snow-shard", damage: ability.damage/);
   assert.match(freezeRendererSource, /fall = \(time \* radius \* 1\.7/);
   assert.match(freezeRendererSource, /width: radius \* 2\.82/);
   assert.match(freezeRendererSource, /kind === "frost-trail" \|\| \(kind === "train-track" && owner\?\.type === "frost-ball"\)/);
@@ -1711,7 +1712,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20261108-wdc-duel3/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261109-classic-signature2/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -3121,12 +3122,14 @@ function run(sim, seconds = 120) {
 
 {
   const portrait = socialBattleLayout(SOCIAL_FORMATS.portrait.width, SOCIAL_FORMATS.portrait.height, "portrait");
+  const classicPortrait = socialBattleLayout(SOCIAL_FORMATS.portrait.width, SOCIAL_FORMATS.portrait.height, "portrait", "standard", true);
   const largePortrait = socialBattleLayout(SOCIAL_FORMATS.portrait.width, SOCIAL_FORMATS.portrait.height, "portrait", "large");
   const square = socialBattleLayout(SOCIAL_FORMATS.square.width, SOCIAL_FORMATS.square.height, "square");
   const landscape = socialBattleLayout(SOCIAL_FORMATS.landscape.width, SOCIAL_FORMATS.landscape.height, "landscape");
   assert.equal(ARENA.width, ARENA.height, "simulation arena must be square");
   for (const [height, layout] of [
     [SOCIAL_FORMATS.portrait.height, portrait],
+    [SOCIAL_FORMATS.portrait.height, classicPortrait],
     [SOCIAL_FORMATS.square.height, square],
     [SOCIAL_FORMATS.landscape.height, landscape],
   ]) {
@@ -3139,6 +3142,8 @@ function run(sim, seconds = 120) {
   assert.equal(portrait.names.y, 410, "portrait matchup title should sit above the reference-aligned arena");
   assert.equal(portrait.arena.y, 564, "portrait arena should begin directly below the matchup title");
   assert.equal(portrait.arena.width, Math.round(SOCIAL_FORMATS.portrait.width * 0.71), "portrait arena should match the reference width proportion");
+  assert.equal(classicPortrait.arena.width, Math.round(SOCIAL_FORMATS.portrait.width * 0.77));
+  assert.ok(classicPortrait.arena.y < portrait.arena.y, "Classic black brings the fight closer to the title");
   assert.equal(largePortrait.arena.width, Math.round(SOCIAL_FORMATS.portrait.width * 0.95), "large Classic arena should expand toward the recording edges");
   assert.ok(largePortrait.arena.width > portrait.arena.width);
 }
@@ -3646,6 +3651,11 @@ function run(sim, seconds = 120) {
     fillStyle: "",
     save() {},
     restore() {},
+    beginPath() {},
+    roundRect() {},
+    fill() {},
+    stroke() {},
+    clip() {},
     measureText(text) {
       const fontSize = Number(this.font.match(/(\d+(?:\.\d+)?)px/)?.[1] || 1);
       return { width: String(text).length * fontSize * 0.56 };
@@ -6546,4 +6556,45 @@ console.log("social tests passed");
     assert.equal(cue("beam").signature, "wdc-exoelectric-beam");
     assert.ok(cue("beam").noises[0].duration > cue("wall-break").noises[0].duration);
     assert.equal(cue("bag").category, "effects");
+}
+
+// Live contact cues keep the punch, dodge, beam, and guard distinguishable.
+{
+    const cue = (name, x = 360) => soundPlanForEvent({ type: "classic-pulse-cue", gameplayMode: "classic", cue: name, id: 45, x });
+    assert.equal(cue("serious").priorityEffects, true);
+    assert.equal(cue("dodge").pan, 0);
+    assert.ok(cue("dodge", 550).pan > 0);
+    assert.ok(cue("serious").layers[0].duration > cue("barrage-hit").layers[0].duration);
+    assert.ok(cue("purple-merge").layers[0].attack > cue("hollow-purple").layers[0].attack);
+    assert.equal(new Set(["punch", "barrage-hit", "shockwave-hit", "dodge", "limitless", "shield-block", "convergence-hit"]
+        .map((name) => cue(name).signature)).size, 7);
+    const contact = { type: "classic-punch-hit", gameplayMode: "classic" };
+    assert.equal(samplePlanForEvent({ ...contact, fighterType: "one-punch-man" }), null);
+    assert.equal(samplePlanForEvent({ ...contact, fighterType: "boxer" }), null);
+    assert.equal(soundPlanForEvent({ ...contact, fighterType: "boxer" })?.signature, "classic-corner-hit");
+}
+
+{
+    for (const [kind, signature] of [["bee", "hive-wing-buzz"], ["fairy-ammo", "fairy-wand-chime"], ["train", "train-whistle"]]) {
+        const event = { type: "classic-projectile-fired", gameplayMode: "classic", projectileKind: kind };
+        assert.equal(soundPlanForEvent(event)?.signature, signature);
+        assert.equal(samplePlanForEvent(event), null, "character effects should replace the generic gun sample");
+    }
+    assert.equal(soundPlanForEvent({ type: "classic-boxer-punch-start", gameplayMode: "classic", fighterType: "monster" })?.signature, "monster-growl");
+}
+
+{
+    const renderer = {};
+    const target = { id: "target", type: "knight", health: 200, x: 280, y: 350 };
+    const sim = { gameplayMode: "classic", time: 0, fighters: [target], events: [] };
+    SocialBattleRenderer.prototype.updateClassicHealthMarkers.call(renderer, sim);
+    target.health -= 100;
+    sim.time = 0.25;
+    const hit = { time: sim.time, fighterId: "attacker", targetId: target.id, amount: 100 };
+    sim.events = [
+        { id: 1, type: "classic-pulse-cue", cue: "serious", ...hit },
+        { id: 2, type: "classic-punch-hit", variant: "serious", ...hit },
+    ];
+    SocialBattleRenderer.prototype.updateClassicHealthMarkers.call(renderer, sim);
+    assert.deepEqual(renderer.classicHealthMarkers.map(({ delta }) => delta), [-100]);
 }

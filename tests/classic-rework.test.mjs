@@ -10,6 +10,8 @@ import {
     normalizeClassicClasses,
     normalizeClassicSpeedMode,
 } from "../src/classic-orbs.js";
+import { CLASSIC_POWER_MOVES } from "../src/classic-powers.js";
+import { classicWallStrokeRuns } from "../src/renderer.js";
 import {
     ORB_BASE_SPEED,
     ORB_RADIUS,
@@ -19,6 +21,7 @@ import {
     classicCutterVisibleZoneGeometriesFor,
     classicCutterZoneContainsPoint,
     classicOrbiterPosition,
+    classicSaberBlade,
     createSimulation,
     getWeaponSegment,
     stepSimulation,
@@ -33,7 +36,8 @@ const EXPECTED_CLASSIC_IDS = [
     "trapper", "hive-ball", "zeus", "glass-ball", "pistol", "shotgun", "rifle",
     "sawball", "cutter", "trident", "lazer", "charger", "parasites", "grappler",
     "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
-    "commander", "wdc", "one-punch-man",
+    "commander", "wdc", "one-punch-man", "gojo", "john-rod", "one-above-all", "knight",
+    "ben-10", "darth-vader", "luke-skywalker",
 ];
 
 function step(sim, count = 1) {
@@ -42,6 +46,21 @@ function step(sim, count = 1) {
 
 function runSeconds(sim, seconds) {
     step(sim, Math.ceil(seconds / STEP));
+}
+
+function eventsOverSeconds(sim, seconds, observeStep = () => {}) {
+    let eventId = -1;
+    const events = [];
+    for (let index = 0; index < Math.ceil(seconds / STEP) && !sim.finished; index += 1) {
+        step(sim);
+        const fresh = sim.events.filter(({ id }) => id > eventId);
+        if (fresh.length) {
+            eventId = fresh.at(-1).id;
+            events.push(...fresh);
+        }
+        observeStep(fresh);
+    }
+    return events;
 }
 
 function forceWallBounce(sim, fighter, side = "left", verticalVelocity = 0) {
@@ -696,7 +715,7 @@ test("Reactor charge color, Virus contact stacking, and Charger teleport state a
     assert.equal(chargerTarget.health, 995);
 });
 
-test("Glass shards, Zeus nodes, and Frost trail ticks expose seeded render/state geometry", () => {
+test("Glass shards and Zeus nodes expose seeded render and state geometry", () => {
     const glassSim = createSimulation({ classes: ["glass-ball", "hydrogen-bomb"], seed: 1405 });
     forceWallBounce(glassSim, glassSim.fighters[0], "left");
     const shards = glassSim.classicEntities.filter(({ kind }) => kind === "glass-shard");
@@ -774,52 +793,40 @@ test("Glass shards, Zeus nodes, and Frost trail ticks expose seeded render/state
         1,
         "Zeus should emit one long-thunder cue per three-node cast",
     );
+});
 
-    const frostSim = createSimulation({ classes: ["frost-ball", "hydrogen-bomb"], seed: 1407 });
-    const [frost, frostTarget] = frostSim.fighters;
-    frost.classicAbilityNextAt = 0;
-    frost.vx = frost.vy = 0;
-    frostTarget.stunUntil = Infinity;
-    frostTarget.vx = frostTarget.vy = 0;
-    frostTarget.health = frostTarget.maxHealth = 1000;
-    frostTarget.classicCoreHealth = frostTarget.classicCoreMaxHealth = 1000;
-    step(frostSim);
-    const trail = frostSim.classicEntities.find(({ kind }) => kind === "frost-trail");
-    assert.ok(trail);
-    frostTarget.x = trail.x = 500;
-    frostTarget.y = trail.y = 400;
-    frostTarget.classicAbilityNextAt = frostSim.time + 2;
-    step(frostSim);
-    assert.equal(
-        frostSim.events.filter(({ type }) => type === "classic-freeze").length,
-        1,
-        "Frost should emit one freeze cue when a target first enters the trail",
-    );
-    assert.equal(frostTarget.health, 997, "Frost should deal its flat damage when an orb enters the trail");
-    assert.equal(frostTarget.classicFrostSlowFactor, 0.5);
-    assert.equal(frostTarget.classicFrostCooldownScale, 2);
-    assert.equal(frostTarget.classicAbilityNextAt, 4);
-    assert.equal(frostTarget.classicFrostFrozen, true);
-    assert.equal(frostTarget.vx, 0);
-    assert.equal(frostTarget.vy, 0);
-    runSeconds(frostSim, 1);
-    const frostTicks = frostSim.events.filter(({ dotKind }) => dotKind === "frost-trail");
-    const frostTick = frostTicks[0];
-    assert.ok(frostTick);
-    assert.equal(frostTick.amount, 3);
-    assert.equal(frostTick.contact, true);
-    assert.equal(frostTick.tickSeconds, 0);
-    assert.equal(frostTicks.length, 1, "Frost should damage once per trail entry, not every frame");
-    assert.equal(
-        frostSim.events.filter(({ type }) => type === "classic-freeze").length,
-        1,
-        "Frost should not retrigger the freeze cue on every fixed step",
-    );
-    assert.equal(frostTarget.health, 997);
-    runSeconds(frostSim, 3.2);
-    assert.equal(trail.lifetimeState, "fading");
-    assert.ok(trail.opacity < 1);
-    assert.equal(frostTarget.classicFrostFrozen, false, "the freeze should release when the trail expires");
+test("Snowball banks an Avalanche every third wall bounce and hits moving opponents", () => {
+    const setup = { classes: ["frost-ball", "unarmed"], seed: 406, features: { replay: false } };
+    const charge = () => {
+        const sim = createSimulation(setup);
+        const [snowball] = sim.fighters;
+        forceWallBounce(sim, snowball);
+        forceWallBounce(sim, snowball);
+        assert.equal(sim.classicEntities.length, 0);
+        forceWallBounce(sim, snowball);
+        const shards = sim.classicEntities.filter(({ kind }) => kind === "snow-shard");
+        assert.equal(shards.length, 5);
+        assert.ok(shards.every(({ damage, maxWallBounces }) => damage === 4 && maxWallBounces === 2));
+        assert.deepEqual(sim.events.filter(({ cue }) => cue === "snow-pack").map(({ charge }) => charge), [1, 2]);
+        assert.equal(sim.events.filter(({ cue }) => cue === "snow-release").length, 1);
+        return captureReplayFrame(sim);
+    };
+    assert.deepEqual(charge(), charge());
+
+    const match = createSimulation(setup);
+    const opponent = match.fighters[1];
+    let speedOnHit;
+    const events = eventsOverSeconds(match, 7, (fresh) => {
+        if (fresh.some(({ projectileKind, amount }) => projectileKind === "snow-shard" && amount > 0)) {
+            speedOnHit = Math.hypot(opponent.vx, opponent.vy);
+            assert.equal(opponent.classicFrostFrozen, false);
+        }
+    });
+    assert.ok(events.some(({ type, projectileKind }) => type === "classic-projectile-wall-bounce" && projectileKind === "snow-shard"));
+    assert.ok(speedOnHit > 0);
+    assert.ok(opponent.health < opponent.maxHealth);
+    assert.ok(!events.some(({ type }) => type === "classic-freeze"));
+    assert.ok(!match.classicEntities.some(({ kind }) => kind === "frost-trail"));
 });
 
 test("Glass shards deal two damage once on opponent contact and then disappear", () => {
@@ -4546,21 +4553,43 @@ test("WDC reference duel repeats the summon, strike, sale, and escape beats", ()
 
 test("WDC cycles its real combat forms in ordinary Classic matches", () => {
     const options = {
-        classicTeams: [["wdc"], ["hydrogen-bomb"]],
+        classicTeams: [["wdc"], ["boxer"]],
         seed: 2406,
+        arenaSize: "large",
         features: { replay: false },
     };
     const first = createSimulation(options);
     const second = createSimulation(options);
-    runSeconds(first, 24);
+    runSeconds(first, 2.4);
+    const owner = first.fighters[0];
+    const summon = first.classicEntities.find(({ kind }) => kind === "wdc-summon");
+    assert.equal(owner.classicWdcReserve, true);
+    assert.equal(owner.classicWdcForm.entityId, summon?.id);
+    assert.equal(summon?.health, 100);
+    assert.equal(summon?.solid, true);
+    assert.notEqual(summon?.x, owner.x);
+    const cuesById = new Map();
+    for (const seconds of [0, 5.6, 8, 8]) {
+        runSeconds(first, seconds);
+        for (const event of first.events) {
+            if (event.type === "classic-wdc-cue") cuesById.set(event.id, event);
+        }
+    }
     runSeconds(second, 24);
     assert.equal(first.classicWdcDuel, undefined);
-    const cues = first.events.filter(({ type }) => type === "classic-wdc-cue");
-    assert.deepEqual(cues.filter(({ cue }) => cue === "portal").map(({ form }) => form),
-        ["unarmed", "exoelectric", "emerald"]);
-    assert.ok(cues.some(({ cue }) => cue === "beam"));
-    assert.ok(cues.some(({ cue }) => cue === "sell"));
+    const cues = [...cuesById.values()];
+    const forms = cues.filter(({ cue }) => cue === "summon").map(({ form }) => form);
+    assert.deepEqual([...forms].sort(), ["emerald", "exoelectric", "unarmed"]);
+    assert.ok(cues.some(({ cue, amount }) => cue === "beam-hit" && amount > 0));
+    assert.ok(cues.some(({ cue, coins }) => cue === "sell" && coins === 100));
     assert.deepEqual(captureReplayFrame(first), captureReplayFrame(second));
+    assert.deepEqual(first.events, second.events);
+
+    const alternate = createSimulation({ ...options, seed: 1 });
+    runSeconds(alternate, 3);
+    const alternateFirst = alternate.events.find(({ cue }) => cue === "summon");
+    assert.ok(alternateFirst);
+    assert.notEqual(alternateFirst.form, forms[0]);
 });
 
 
@@ -4580,4 +4609,335 @@ test("One Punch Man wins a regular bout with a real 100 damage glove contact", (
     assert.equal(hit?.targetId, target.id);
     assert.equal(target.health, 0);
     assert.equal(sim.winner, punchMan);
+});
+
+test("Classic One Punch Man picks real range-appropriate strikes from a seeded move pool", () => {
+    const run = (seed, distance) => {
+        const sim = createSimulation({
+            classicTeams: [["one-punch-man"], ["hydrogen-bomb"]],
+            classicTeamOptions: [{}, { "hydrogen-bomb": { health: 400 } }],
+            seed,
+            features: { replay: false },
+        });
+        const [fighter, target] = sim.fighters;
+        Object.assign(fighter, { x: 160, y: 300, vx: 0, vy: 1, baselineSpeed: 1, classicAbilityNextAt: 0 });
+        Object.assign(target, { x: 160 + distance, y: 301, vx: 0, vy: 1, baselineSpeed: 1 });
+        runSeconds(sim, 3);
+        return sim;
+    };
+    const barrage = run(3, 110);
+    assert.deepEqual(barrage.events, run(3, 110).events);
+    assert.deepEqual(barrage.events.filter(({ cue }) => cue === "barrage-hit").map(({ amount }) => amount), [15, 15, 15]);
+    assert.ok(barrage.events.some(({ cue, amount }) => cue === "punch" && amount === 18));
+    const serious = run(1, 110);
+    assert.ok(serious.events.some(({ cue, amount }) => cue === "serious" && amount === 100));
+    const ranged = run(3, 280);
+    const wave = ranged.events.find(({ cue }) => cue === "shockwave");
+    const impact = ranged.events.find(({ cue }) => cue === "shockwave-hit");
+    assert.ok(wave && impact?.time > wave.time, "the detached glove travels before landing");
+    assert.equal(impact?.amount, 44);
+});
+
+test("One Punch Man sidesteps repeated real strikes without a cooldown", () => {
+    const sim = createSimulation({
+        classicTeams: [["one-punch-man"], ["boxer"]],
+        seed: 2406,
+        features: { replay: false },
+    });
+    const [fighter, boxer] = sim.fighters;
+    const lineUpPunch = () => {
+        Object.assign(fighter, { x: 240, y: 300, vx: 0, vy: 1, baselineSpeed: 1, classicAbilityNextAt: Infinity });
+        Object.assign(boxer, {
+            x: 350, y: 301, vx: 0, vy: 1, baselineSpeed: 1,
+            classicAbilityNextAt: sim.time, classicPunchPhase: "idle",
+        });
+    };
+    lineUpPunch();
+    runSeconds(sim, 0.65);
+    const dodge = sim.events.find(({ cue }) => cue === "dodge");
+    assert.equal(dodge?.sourceId, boxer.id);
+    assert.equal(fighter.health, 1);
+    assert.ok(fighter.y > 310 || fighter.y < 290, "the dodge moves the gameplay body");
+    assert.ok(fighter.classicDodgeUntil < sim.time);
+    lineUpPunch();
+    runSeconds(sim, 0.65);
+    assert.equal(fighter.health, 1);
+    assert.equal(sim.finished, false);
+    assert.equal(sim.events.filter(({ cue, sourceId }) => cue === "dodge" && sourceId === boxer.id).length, 2);
+});
+
+test("One Punch Man survives a detonation and mirror fights end in a draw", () => {
+    const options = { seed: 3, classicOpening: false, features: { replay: false } };
+    const bomb = createSimulation({ ...options, classicTeams: [["one-punch-man"], ["hydrogen-bomb"]] });
+    const [fighter, hydrogen] = bomb.fighters;
+    Object.assign(hydrogen, { classicHydrogenCountdownStarted: true, classicHydrogenCountdownStartedAt: -60 });
+    step(bomb);
+    assert.ok(bomb.events.some(({ type }) => type === "classic-hydrogen-detonate"));
+    assert.ok(bomb.events.some(({ cue, sourceId }) => cue === "dodge" && sourceId === hydrogen.id));
+    assert.equal(fighter.health, 1);
+
+    const mirror = createSimulation({ ...options, classicTeams: [["one-punch-man"], ["one-punch-man"]] });
+    runSeconds(mirror, 36.1);
+    assert.ok(mirror.finished && mirror.time >= 36);
+    assert.equal(mirror.winner, null);
+    assert.equal(mirror.classicDraw, "DODGE STALEMATE");
+    assert.ok(mirror.fighters.every(({ health }) => health === 1));
+    assert.equal(mirror.events.filter(({ type }) => type === "classic-draw").length, 1);
+});
+
+test("The original Classic roster has distinct specials that use real damage and repeat with a seed", () => {
+    const originals = EXPECTED_CLASSIC_IDS.slice(0, EXPECTED_CLASSIC_IDS.indexOf("wdc"));
+    assert.deepEqual(Object.keys(CLASSIC_POWER_MOVES).sort(), originals.sort());
+    assert.equal(new Set(Object.values(CLASSIC_POWER_MOVES).map(({ name }) => name)).size, originals.length);
+
+    const run = (orb, seed) => {
+        const sim = createSimulation({
+            classicTeams: [[orb], ["unarmed"]], seed, arenaSize: "large",
+            classicOrbOptions: { [orb]: { health: 450 }, unarmed: { health: 450 } },
+            features: { replay: false },
+        });
+        let attackFrame;
+        const events = eventsOverSeconds(sim, 13, (fresh) => {
+            if (fresh.some(({ type, fighterType, phase }) => type === "classic-power-cue" && fighterType === orb && phase === "hit")) {
+                attackFrame = captureReplayFrame(sim);
+            }
+        });
+        return {
+            sim,
+            attackFrame,
+            cues: events.filter(({ type, fighterType }) => type === "classic-power-cue" && fighterType === orb),
+        };
+    };
+    for (const [orb, seed, geometry, amount] of [
+        ["sword", 3, "lane", 17], ["blue-sun", 1, "ring", 28], ["black-hole", 2, "orbiter", 34],
+        ["pistol", 1, "lane", 24], ["shotgun", 3, "ring", 27], ["rifle", 3, "lane", 29],
+        ["sniper", 1, "zone", 31], ["draftmaster", 3, "lane", 26], ["turret", 1, "lane", 25],
+        ["commander", 3, "zone", 29],
+    ]) {
+        const { sim, attackFrame, cues } = run(orb, seed);
+        assert.deepEqual(cues.map(({ phase }) => phase), ["charge", "release", "hit"], orb);
+        assert.equal(cues[2].amount, amount, orb);
+        assert.equal(cues[2].targetId, sim.fighters[1].id, orb);
+        assert.equal(sim.fighters[0].classicPowerMove.phase, "spent", orb);
+        assert.ok(attackFrame.fighters[0].classicPowerMove.pose.some(({ shape, live }) => shape === geometry && live), orb);
+        const repeat = run(orb, seed);
+        assert.deepEqual(cues, repeat.cues, orb);
+        assert.deepEqual(attackFrame, repeat.attackFrame, orb);
+    }
+    assert.deepEqual(run("draftmaster", 1).cues.map(({ phase }) => phase), ["charge", "release"], "an escaped hitbox never emits a hit cue");
+});
+
+test("Sword can spend Slipstream to evade exactly once", () => {
+    const sim = createSimulation({
+        classicTeams: [["sword"], ["boxer"]], classicOpening: false, seed: 2406, features: { replay: false },
+    });
+    sim.time = 2;
+    const [sword, boxer] = sim.fighters;
+    const punch = () => {
+        Object.assign(sword, { x: 240, y: 300, vx: 0, vy: 1, baselineSpeed: 1, classicSwordPhase: "idle" });
+        Object.assign(boxer, {
+            x: 350, y: 301, vx: 0, vy: 1, baselineSpeed: 1,
+            classicAbilityNextAt: sim.time, classicPunchPhase: "idle",
+        });
+    };
+    punch();
+    runSeconds(sim, 0.65);
+    const first = sim.events.filter(({ type, fighterType }) => type === "classic-power-cue" && fighterType === "sword");
+    assert.deepEqual(first.map(({ phase }) => phase), ["evade"]);
+    assert.equal(sword.health, sword.maxHealth);
+    assert.ok(Math.abs(sword.y - 300) > 10, "Slipstream moves the body off the punch line");
+    punch();
+    const nextPunch = sim.time;
+    const followUp = eventsOverSeconds(sim, 5).filter(({ time }) => time > nextPunch);
+    assert.ok(sword.health < sword.maxHealth);
+    assert.ok(!followUp.some(({ type, fighterType }) => type === "classic-power-cue" && fighterType === "sword"));
+});
+
+test("The Pulse Classics defend and damage real opponents in regular fights", () => {
+    const run = (left, right, seconds) => {
+        const sim = createSimulation({
+            classicTeams: [[left], [right]],
+            seed: 2406,
+            arenaSize: "large",
+            features: { replay: false },
+        });
+        runSeconds(sim, seconds);
+        return sim;
+    };
+    const beam = run("gojo", "knight", 14);
+    const beamCues = beam.events.filter(({ type }) => type === "classic-pulse-cue");
+    assert.ok(beamCues.some(({ cue }) => cue === "shield-bash"));
+    assert.ok(beamCues.some(({ cue }) => cue === "limitless"));
+    assert.ok(beamCues.some(({ cue, amount }) => cue === "purple-hit" && amount === 48));
+    assert.ok(beam.fighters[1].health < beam.fighters[1].maxHealth);
+    const wrap = run("john-rod", "one-above-all", 10);
+    assert.ok(wrap.events.some(({ cue, amount }) => cue === "wrap-hit" && amount === 42));
+    assert.ok(wrap.events.some(({ cue, amount }) => cue === "convergence-hit" && amount === 62));
+    assert.deepEqual(captureReplayFrame(wrap), captureReplayFrame(run("john-rod", "one-above-all", 10)));
+});
+
+test("Classic team duels circle before a real collision and replay the seeded opening", () => {
+    const options = { classicTeams: [["unarmed"], ["slammy"]], seed: 67, arenaSize: "large", features: { replay: false } };
+    const first = createSimulation(options);
+    const other = createSimulation({ ...options, seed: 406 });
+    const position = (sim) => sim.fighters.map(({ x, y }) => [x, y]);
+    assert.notDeepEqual(position(first), position(other));
+    const bearing = (sim) => {
+        const [a, b] = sim.fighters;
+        return Math.atan2(b.y - a.y, b.x - a.x);
+    };
+    const initial = bearing(first);
+    runSeconds(first, 0.44);
+    const turn = bearing(first) - initial;
+    assert.ok(Math.abs(Math.atan2(Math.sin(turn), Math.cos(turn))) > 0.75);
+    assert.equal(first.classicOpening.phase, "orbit");
+    assert.equal(first.collisions, 0);
+    const repeat = createSimulation(options);
+    let afterClash;
+    eventsOverSeconds(first, 1.25, (fresh) => {
+        if (fresh.some(({ cue, opening }) => cue === "lateral-clash" && opening)) {
+            afterClash = first.fighters.map(({ vx, vy, baselineSpeed }) => ({ vx, vy, baselineSpeed }));
+        }
+    });
+    runSeconds(repeat, 1.69);
+    assert.equal(first.classicOpening.phase, "clash");
+    assert.ok(first.classicOpening.clashAt > 0.65 && first.classicOpening.clashAt < 1.40);
+    assert.ok(first.events.some(({ type, time }) => type === "impact" && time === first.classicOpening.clashAt));
+    assert.ok(afterClash[0].vx * afterClash[1].vx < 0, "the opening kicks both bodies toward opposite sides");
+    assert.ok(afterClash.every(({ vx, vy, baselineSpeed }) => Math.abs(vx) > baselineSpeed * 1.75 && Math.abs(vx) > Math.abs(vy) * 1.8));
+    assert.ok(first.fighters.every(({ vx, vy, baselineSpeed }) => Math.abs(Math.hypot(vx, vy) - baselineSpeed) < 1e-6), "the boost fades back to regular speed");
+    assert.deepEqual(captureReplayFrame(first), captureReplayFrame(repeat));
+});
+
+test("Ben 10's shuffled forms all cause damage, with a real XLR8 dodge", () => {
+    const options = {
+        classicTeams: [["ben-10"], ["turret"]],
+        classicPowerMoves: false,
+        classicOrbOptions: { "ben-10": { health: 260 }, turret: { health: 400 } },
+        seed: 3, arenaSize: "large", features: { replay: false },
+    };
+    const sim = createSimulation(options);
+    const ben = sim.fighters[0];
+    let dodgeVerified = false;
+    let largestRoll = 0;
+    let rollSpeed;
+    let leftArena = false;
+    let lastHp = ben.health;
+    const events = eventsOverSeconds(sim, 28, (fresh) => {
+        if (ben.classicOmnitrix?.form === "cannonbolt") {
+            largestRoll = Math.max(largestRoll, ben.classicOmnitrix.rush?.radius || 0);
+            if (fresh.some(({ cue }) => cue === "cannonbolt")) rollSpeed ??= Math.hypot(ben.vx, ben.vy);
+            const { x, y, width, height } = sim.arenaBounds;
+            leftArena ||= ben.classicCannonOutside === true && (ben.x < x || ben.x > x + width || ben.y < y || ben.y > y + height);
+        }
+        if (fresh.some(({ cue }) => cue === "xlr8-dodge")) {
+            assert.equal(ben.health, lastHp);
+            assert.ok(Math.hypot(ben.vx, ben.vy) > ben.baselineSpeed * 2);
+            dodgeVerified = true;
+        }
+        lastHp = ben.health;
+    });
+    const forms = events.filter(({ cue }) => cue === "omnitrix-transform").map(({ form }) => form);
+    assert.deepEqual(forms.slice(0, 5).sort(), ["cannonbolt", "diamondhead", "four-arms", "heatblast", "xlr8"]);
+    assert.ok(forms.every((form, index) => index === 0 || forms[index - 1] !== form));
+    const moves = {
+        "roll-hit": 30, "four-arms-grab": 3, "four-arms-wall-hit": 19, "xlr8-tornado-hit": 5,
+        "heatblast-hit": 7, "diamond-charge-hit": 32,
+    };
+    for (const [cue, amount] of Object.entries(moves)) {
+        assert.ok(events.some((event) => event.fighterType === "ben-10" && event.cue === cue && event.amount === amount), cue);
+    }
+    assert.equal(largestRoll * 2, sim.arenaBounds.width / 3);
+    assert.ok(Math.abs(rollSpeed - ben.baselineSpeed * 3.10 * 0.75) < 1e-6);
+    assert.ok(leftArena);
+    const exits = events.filter(({ cue }) => cue === "cannonbolt-exit");
+    const entries = events.filter(({ cue }) => cue === "cannonbolt-enter");
+    assert.equal(exits.length, 1);
+    assert.equal(entries.length, 1);
+    const [exit] = exits;
+    const [enter] = entries;
+    assert.ok(enter.time > exit.time);
+    assert.ok(Math.abs(exit.x - enter.x) === sim.arenaBounds.width || Math.abs(exit.y - enter.y) === sim.arenaBounds.height);
+    assert.ok(events.some(({ cue }) => cue === "four-arms-throw"));
+    assert.ok(sim.classicWallDeformations.some(({ kind, side }) => kind === "dent" && side));
+    assert.equal(sim.classicWallDeformations.filter(({ kind }) => kind === "breach").length, 1);
+    assert.ok(!sim.effects.some(({ kind }) => kind === "classic-wall-debris"), "the wall remains after the debris fades");
+    assert.deepEqual(captureReplayFrame(sim).classicWallDeformations, sim.classicWallDeformations);
+    assert.ok(!events.some(({ fighterType, type }) => fighterType === "ben-10" && type === "classic-projectile-fired"));
+    assert.ok(dodgeVerified);
+    assert.ok(events.some(({ cue }) => cue === "diamond-guard"));
+    const repeat = createSimulation(options);
+    assert.deepEqual(eventsOverSeconds(repeat, 28), events);
+    assert.deepEqual(captureReplayFrame(repeat), captureReplayFrame(sim));
+    const alternate = createSimulation({ ...options, seed: 67 });
+    assert.notEqual(eventsOverSeconds(alternate, 1.3).find(({ cue }) => cue === "omnitrix-transform")?.form, forms[0]);
+});
+
+test("A dent replaces the straight border and a breach leaves an actual gap", () => {
+    const arenaBounds = { x: 20, y: 30, width: 400, height: 400 };
+    const dents = [{ kind: "dent", side: "right", x: 420, y: 230, span: 60, depth: 35 }];
+    const breach = { kind: "breach", side: "top", x: 230, y: 30, span: 65, depth: 20 };
+    const runs = classicWallStrokeRuns({ arenaBounds, classicWallDeformations: [...dents, breach] });
+    const dent = runs.find(({ side }) => side === "right").points;
+    assert.ok(dent.filter(({ y }) => Math.abs(y - 230) < 22).every(({ x }) => x < 394));
+    const top = runs.filter(({ side }) => side === "top");
+    assert.equal(top.length, 2);
+    assert.ok(top[0].points.at(-1).x <= 165 && top[1].points[0].x >= 295);
+    assert.ok(top[0].points.at(-1).y > arenaBounds.y, "the breach has a fractured lip");
+
+    const circle = classicWallStrokeRuns({
+        arenaBounds, arenaShape: "circle",
+        classicWallDeformations: [{ ...breach, side: "circle", x: 420, y: 230 }],
+    });
+    assert.equal(circle.length, 1);
+    const [before, after] = [circle[0].points[0], circle[0].points.at(-1)];
+    assert.ok(before.y > 280 && after.y < 180, "the gap crosses the circle's path seam");
+});
+
+test("Luke closes gaps and can land both combo strikes while Vader grips and recalls his saber", () => {
+    const options = {
+        classicTeams: [["luke-skywalker"], ["darth-vader"]],
+        seed: 3, arenaSize: "large", features: { replay: false },
+    };
+    const sim = createSimulation(options);
+    for (const fighter of sim.fighters) {
+        const blade = classicSaberBlade(fighter, 0);
+        assert.ok(Math.hypot(blade.x1 - fighter.x, blade.y1 - fighter.y) - blade.width * 1.62 > fighter.radius);
+    }
+    let burned = null;
+    let heldPosition = null;
+    const events = eventsOverSeconds(sim, 23, (fresh) => {
+        const luke = sim.fighters[0];
+        if (fresh.some(({ cue }) => cue === "force-grip")) heldPosition = [luke.x, luke.y];
+        if (sim.time < (luke.classicHeldUntil || 0)) {
+            assert.equal(luke.classicHeldKind, "force-choke");
+            assert.deepEqual([luke.x, luke.y, luke.vx, luke.vy], [...heldPosition, 0, 0]);
+        }
+        if (!burned && fresh.some(({ cue }) => cue === "saber-wall-scorch")) {
+            burned = captureReplayFrame(sim).effects.find(({ kind }) => kind === "classic-saber-burn");
+        }
+    });
+    const hit = (event, move, strike) => event.cue === "saber-hit" && event.move === move && event.strike === strike && event.amount > 0;
+    assert.ok(events.some(({ cue }) => cue === "force-vault"));
+    assert.ok(events.some((event) => hit(event, "saber-lunge", 1)));
+    assert.ok(events.some((event, index) => hit(event, "saber-combo", 1) && events.slice(index + 1)
+        .some((next) => next.time - event.time < 0.63 && hit(next, "saber-combo", 2))));
+    const grip = events.find(({ cue }) => cue === "force-grip");
+    const release = events.find(({ cue }) => cue === "force-release");
+    assert.ok(heldPosition && release.time - grip.time >= 0.65);
+    assert.deepEqual(events.filter(({ cue, time }) => cue === "force-choke-tick" && time < release.time)
+        .map(({ tick, amount }) => [tick, amount]), [[2, 4], [3, 4], [4, 4]]);
+    assert.ok(events.some((event) => hit(event, "vader-sweep", 1) && event.amount === 34));
+    assert.ok(!events.some((event) => hit(event, "vader-sweep", 2)));
+    assert.ok(events.some((event) => hit(event, "saber-throw", 1)));
+    assert.ok(events.some((event) => hit(event, "saber-throw", 2)));
+    assert.ok(events.some(({ cue }) => cue === "saber-return") && events.some(({ cue }) => cue === "saber-catch"));
+    assert.equal(burned?.marks.length, 1);
+    assert.equal(burned.color, undefined);
+    const { x, y, width, height } = sim.arenaBounds;
+    assert.ok(burned.marks.every((mark) => [x, x + width].includes(mark.x) || [y, y + height].includes(mark.y)));
+    assert.ok(!sim.effects.some(({ key }) => key === burned.key), "the first scorch should fade out");
+    const repeat = createSimulation(options);
+    assert.deepEqual(eventsOverSeconds(repeat, 23), events);
+    assert.deepEqual(captureReplayFrame(repeat), captureReplayFrame(sim));
 });

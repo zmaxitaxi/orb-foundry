@@ -4,12 +4,19 @@ import {
   classicCutterZoneGeometryFor,
   classicCutterVisibleZoneGeometriesFor,
   classicOrbiterPosition,
+  classicPulseBlade,
+  classicSaberBlade,
+  classicThrownSaberBlade,
+  classicWdcSummonPunchPose,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261108-wdc-duel3";
-import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261108-wdc-duel3";
-import { classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261108-wdc-duel3";
-import { themeById } from "./presentation.js?v=20261108-wdc-duel3";
+} from "./simulation.js?v=20261109-classic-signature2";
+import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-signature2";
+import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261109-classic-signature2";
+import { drawClassicSignatureAmbient, drawClassicSignatures } from "./classic-signature-renderer.js?v=20261109-classic-signature2";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
+import { drawClassicLegacyPowerMotif } from "./classic-legacy-power-art.js?v=20261109-classic-signature2";
+import { themeById } from "./presentation.js?v=20261109-classic-signature2";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
 import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";
@@ -76,6 +83,26 @@ const CLASSIC_RACE_VISUAL_IDS = Object.freeze({
 export function classicVisualColorFor(type, fallback = "#ffffff") {
   const raceId = CLASSIC_RACE_VISUAL_IDS[type] || type;
   return ORB_RACERS[raceId]?.color || fallback;
+}
+
+const classicInkCache = new Map();
+
+export function classicBlackInkFor(color) {
+  if (classicInkCache.has(color)) return classicInkCache.get(color);
+  const base = /^#[0-9a-f]{6}$/i.test(color) ? color : "#f0f0f7";
+  const rgb = [1, 3, 5].map((offset) => Number.parseInt(base.slice(offset, offset + 2), 16));
+  const luminance = (channels) => channels.reduce((total, channel, index) => {
+    const srgb = channel / 255;
+    const linear = srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+    return total + linear * [0.2126, 0.7152, 0.0722][index];
+  }, 0);
+  let legible = rgb;
+  for (let blend = 0.10; luminance(legible) < 0.23 && blend <= 1; blend += 0.10) {
+    legible = rgb.map((channel) => Math.round(channel + (250 - channel) * blend));
+  }
+  const ink = "#" + legible.map((channel) => channel.toString(16).padStart(2, "0")).join("");
+  classicInkCache.set(color, ink);
+  return ink;
 }
 
 export function classicFrostTrailAngleFor(entity) {
@@ -1103,7 +1130,20 @@ export class ArenaRenderer {
     this.drawDecoys(ctx, sim.decoys || [], sim.time);
     this.drawClassicPotionTriangles(ctx, sim.classicPotionTriangles || []);
     if (sim.gameplayMode === "classic") {
+      if (!sim.legacyClassicRules) {
+        drawClassicActionStage(ctx, sim, this.options);
+        for (const fighter of sim.fighters) {
+          if (fighter.alive) drawClassicPulseGround(ctx, fighter, sim, this.options);
+        }
+      }
       this.drawClassicEntities(ctx, sim.classicEntities || [], sim.time);
+      if (!sim.legacyClassicRules) {
+        ctx.save();
+        clipClassicPulseArena(ctx, sim);
+        drawClassicSignatureAmbient(ctx, sim, this.options);
+        drawClassicSignatures(ctx, sim.effects, this.options, sim.fighters);
+        ctx.restore();
+      }
     }
     for (const fighter of sim.fighters) {
       if (fighter.alive && fighter.type === "orbital") this.drawClassicOrbiters(ctx, fighter, sim.time);
@@ -1115,8 +1155,13 @@ export class ArenaRenderer {
     for (const fighter of sim.fighters) {
       const classicTrailEnabled = sim.gameplayMode === "classic"
         && (fighter.classicFadingTrailsEnabled === true || fighter.classicSolidTrailsEnabled === true);
-      if (fighter.alive && (this.options.motionTrails || fighter.type === "shade" || classicTrailEnabled)) {
-        this.drawTrail(ctx, fighter);
+      if (fighter.alive && !fighter.classicWdcReserve) {
+        if (!this.options.reducedMotion && drawClassicActionTrail(ctx, fighter, sim.time)) continue;
+        if (!this.options.reducedMotion && sim.time < (fighter.classicPulseLaunchUntil || 0)) {
+          drawClassicPulseEchoes(ctx, fighter, CLASS_DEFS[fighter.type].color);
+        } else if (this.options.motionTrails || fighter.type === "shade" || classicTrailEnabled) {
+          this.drawTrail(ctx, fighter);
+        }
       }
     }
     for (const projectile of sim.projectiles || []) {
@@ -1126,9 +1171,6 @@ export class ArenaRenderer {
     if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) {
       for (const fighter of sim.fighters) {
         if (fighter.alive && fighter.type === "snake") this.drawClassicSnakeTail(ctx, fighter, sim.time);
-        if (fighter.alive && fighter.classicWdcForm) {
-          drawClassicWdcFormEffects(ctx, fighter, sim.time, sim.arenaBounds, this.options.flashReduction);
-        }
       }
       for (const fighter of sim.fighters) {
         if (fighter.alive) this.drawWeapon(ctx, fighter, sim.time);
@@ -1161,6 +1203,9 @@ export class ArenaRenderer {
       }
       this.drawClassicVampireDrainParticles(ctx, sim, sim.time);
       this.drawClassicImpactBursts(ctx, sim, sim.time);
+      for (const fighter of sim.fighters) {
+        if (fighter.alive) drawClassicPulseForeground(ctx, fighter, sim, this.options);
+      }
     } else {
       for (const fighter of sim.fighters) this.drawFighter(ctx, fighter, sim.time);
       for (const fighter of sim.fighters) {
@@ -1171,7 +1216,13 @@ export class ArenaRenderer {
     for (const effect of sim.effects) {
       if (this.isOverlayEffect(effect)) this.drawEffect(ctx, effect);
     }
-    if (this.options.arenaBorder) this.drawWalls(ctx, theme);
+    if (this.options.arenaBorder) {
+      if (sim.gameplayMode === "classic" && !sim.legacyClassicRules && sim.arenaBounds) {
+        drawClassicArenaWall(ctx, sim, this.options);
+        drawClassicWallDamage(ctx, sim, this.options);
+        drawClassicCannonOutsideArena(ctx, sim, this.options);
+      } else this.drawWalls(ctx, theme);
+    }
   }
 
   drawHazards(ctx, hazards, time, theme) {
@@ -1386,6 +1437,7 @@ export class ArenaRenderer {
   drawArenaBounds(ctx, sim) {
     const bounds = sim.arenaBounds;
     if (!bounds) return;
+    if (sim.gameplayMode === "classic" && !sim.legacyClassicRules) return;
     const isDefaultBounds =
       bounds.x === ARENA.padding &&
       bounds.y === ARENA.padding &&
@@ -1568,7 +1620,9 @@ export class ArenaRenderer {
     if (this.lastSim?.gameplayMode === "classic"
       && !fighter.classicFadingTrailsEnabled && !fighter.classicSolidTrailsEnabled) {
       if (this.options.motionTrails) {
-        const points = fighter.trail.slice(0, 8).reverse();
+        const opening = this.lastSim.classicOpening;
+        const circling = opening && (opening.phase === "orbit" || opening.phase === "converge");
+        const points = fighter.trail.slice(0, circling ? 18 : 8).reverse();
         points.push(fighter);
         drawMotionStreak(ctx, points, fighter.radius, classicVisualColorFor(fighter.type, def.color));
       }
@@ -2005,6 +2059,22 @@ export class ArenaRenderer {
       const x = visibleOrigin.x;
       const y = visibleOrigin.y;
       const radius = Math.max(3, Number(entity.radius) || Number(entity.r) || 10);
+      if (CLASSIC_ACTION_PROJECTILES.has(kind)) {
+        if (time < entity.expiresAt) {
+          ctx.save();
+          clipClassicPulseArena(ctx, this.lastSim);
+          drawClassicActionProjectile(ctx, entity, time, this.options);
+          ctx.restore();
+        }
+        continue;
+      }
+      if (kind === "wdc-summon" || kind === "pulse-punch-wave") {
+        if (entity.alive !== false && time < entity.expiresAt) {
+          if (kind === "wdc-summon") drawClassicWdcSummon(ctx, entity, time, this.lastSim, this.options);
+          else drawClassicPunchWave(ctx, entity, time, this.options.reducedMotion);
+        }
+        continue;
+      }
       const useStuckAngle = ["stuck-wall", "stuck-orb"].includes(entity.phase)
         && Number.isFinite(Number(entity.stuckAngle));
       const projectileUsesVelocityHeading = [
@@ -2346,7 +2416,9 @@ export class ArenaRenderer {
           ctx.restore();
         }
       } else if (kind === "artist-drawing") {
-        this.drawClassicArtistDrawing(ctx, entity, Math.max(radius, Number(owner?.radius) * 0.72 || radius), time);
+        const brushRadius = Math.max(radius, Number(owner?.radius) * 0.72 || radius);
+        if (this.options.classicBlackTheme) drawClassicPaintStroke(ctx, entity, brushRadius, time);
+        this.drawClassicArtistDrawing(ctx, entity, brushRadius, time);
       } else if (["artist-monster", "artist-fairy"].includes(kind)) {
         const spriteId = kind === "artist-monster" ? "artistMonster" : "artistFairy";
         const sprite = this.classicPresentationSprites.get(spriteId);
@@ -2406,7 +2478,7 @@ export class ArenaRenderer {
         const visualRadius = Math.max(radius * 1.35, Number(owner?.radius) * 0.5 || radius * 1.35);
         const fadeProgress = Math.max(0, Math.min(1, Number(entity.fadeProgress) || 0));
         const fadeDelay = Math.max(0, Number(entity.fadeDelay) || 3);
-        const trailOpacity = Math.max(0, Math.min(1, Number(entity.opacity) || 1));
+        const trailOpacity = Math.max(0, Math.min(1, Number(entity.opacity) || 1)) * (this.options.classicBlackTheme ? 0.78 : 1);
         const ageFrame = age < fadeDelay
           ? Math.floor(age * 2.4) % 2
           : 2 + Math.min(1, Math.floor(fadeProgress * 2));
@@ -2460,14 +2532,8 @@ export class ArenaRenderer {
           ctx.lineTo(railX, 13);
           ctx.stroke();
         }
-      } else if (kind.includes("train")) {
-        ctx.fillStyle = "#171717";
-        ctx.strokeStyle = "#f5b72f";
-        ctx.lineWidth = 4;
-        ctx.fillRect(-radius * 1.6, -radius * 0.72, radius * 3.2, radius * 1.44);
-        ctx.strokeRect(-radius * 1.6, -radius * 0.72, radius * 3.2, radius * 1.44);
-        ctx.fillStyle = "#d93838";
-        ctx.fillRect(radius * 0.7, -radius * 0.5, radius * 0.58, radius);
+      } else if (kind === "train") {
+        drawClassicLocomotive(ctx, radius, age, this.options.reducedMotion);
       } else if (["pistol-ammo", "shotgun-ammo", "rifle-ammo", "sniper-ammo", "draftmaster-ammo"].includes(kind)) {
         if (!this.drawClassicAmmoSprite(ctx, entity, kind, radius)) {
           // Keep a readable fallback for a slow-loading static asset; the
@@ -2556,7 +2622,14 @@ export class ArenaRenderer {
         // deterministic Gameplay-owned effects.
         this.drawClassicAmmoSprite(ctx, entity, kind, radius);
       } else if (kind === "fairy-ammo") {
-        if (!this.drawClassicSheetFrame(ctx, "fairyProjectile", radius, {
+        if (this.options.classicBlackTheme) {
+          pulseLine(ctx, -radius * 2.9, 0, -radius * 0.22, 0, "#bd8fec85", radius * 0.39);
+          pulseRing(ctx, 0, 0, radius * 0.90, "#e4b6ffa0", radius * 0.08);
+          classicFourPointStar(ctx, 0, 0, radius * 0.93, "#fff2cd");
+          if (!this.options.reducedMotion) {
+            classicFourPointStar(ctx, -radius * 1.9, Math.sin(age * 21) * radius * 0.5, radius * 0.23, "#e7b3ff");
+          }
+        } else if (!this.drawClassicSheetFrame(ctx, "fairyProjectile", radius, {
           frameCount: 4,
           frame: Math.floor(age * 12) % 4,
           width: radius * CLASSIC_FAIRY_PROJECTILE_RENDER_SCALE,
@@ -2669,7 +2742,8 @@ export class ArenaRenderer {
           ctx.stroke();
         }
       } else if (kind.includes("bee")) {
-        if (!this.drawClassicPresentationSprite(ctx, "hiveBee", radius, {
+        if (this.options.classicBlackTheme) drawClassicFoundryBee(ctx, radius, time, this.options.reducedMotion);
+        else if (!this.drawClassicPresentationSprite(ctx, "hiveBee", radius, {
           width: radius * 3.8,
           height: radius * 3.8,
         })) {
@@ -3241,7 +3315,8 @@ export class ArenaRenderer {
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#5b5149";
+    const rail = this.options.classicBlackTheme ? "#7a797e" : "#5b5149";
+    ctx.strokeStyle = rail;
     ctx.lineWidth = 5;
     for (const path of paths) {
       const startX = path.start.x - originX;
@@ -3259,7 +3334,7 @@ export class ArenaRenderer {
         ctx.lineTo(endX + normalX * offset, endY + normalY * offset);
         ctx.stroke();
       }
-      ctx.strokeStyle = "#9a846f";
+      ctx.strokeStyle = this.options.classicBlackTheme ? "#a87752" : "#9a846f";
       ctx.lineWidth = 3;
       const ties = Math.max(2, Math.floor(length / 22));
       for (let index = 0; index <= ties; index += 1) {
@@ -3271,7 +3346,7 @@ export class ArenaRenderer {
         ctx.lineTo(centerX + normalX * 13, centerY + normalY * 13);
         ctx.stroke();
       }
-      ctx.strokeStyle = "#5b5149";
+      ctx.strokeStyle = rail;
       ctx.lineWidth = 5;
       this.drawClassicWebClamp(ctx, startX, startY, path.angle);
       if (path.active === false || path.endWallContact) this.drawClassicWebClamp(ctx, endX, endY, path.angle);
@@ -5125,12 +5200,33 @@ export class ArenaRenderer {
       ctx.beginPath();
       ctx.arc(0, 0, radius * 0.84, 0, TAU);
       ctx.fill();
+      // The eight simulation-owned blue-sun-laser entities draw the attacks.
+      // The short corona tips show charge on the body.
+      ctx.globalAlpha = 0.65 + chargeProgress * 0.35;
+      pulseRing(ctx, 0, 0, radius * 0.88, "#6edbff", radius * 0.055);
+      ctx.rotate(this.options.reducedMotion ? 0 : time * 0.45);
+      for (let tip = 0; tip < 6; tip += 1) {
+        ctx.rotate(TAU / 6);
+        wdcPolygon(ctx, [[radius * 0.86, -radius * 0.16], [radius * (1.03 + chargeProgress * 0.16), 0],
+          [radius * 0.86, radius * 0.16]], tip % 3 ? "#46bdfd" : "#bceeff");
+      }
       ctx.restore();
-      // The eight simulation-owned blue-sun-laser entities are the sole ray
-      // renderer. Drawing a second local fan here doubled the rays and made
-      // Blue Sun look like a dense blue star instead of the Orb Racer design.
     } else if (fighter.type === "black-hole") {
-      this.drawClassicPresentationSprite(ctx, "black-hole", radius, { width: radius * 1.75, height: radius * 1.75, angle: time * 0.32 });
+      ctx.save();
+      const tilt = -0.48 + (this.options.reducedMotion ? 0 : Math.sin(time * 1.9) * 0.19);
+      wdcDisc(ctx, 0, 0, radius * 0.70, "#0a0710", "#7942c1", radius * 0.058);
+      ctx.strokeStyle = "#bb8bff";
+      ctx.lineWidth = radius * 0.095;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 1.03, radius * 0.57, tilt, 0.12, 2.68);
+      ctx.stroke();
+      ctx.strokeStyle = "#6946a4";
+      ctx.lineWidth = radius * 0.056;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, radius * 1.03, radius * 0.57, tilt, 3.12, 6.02);
+      ctx.stroke();
+      ctx.restore();
       if (active) this.drawStatusRing(ctx, "#9f73ff", radius * 1.45 * pulse, -time * 12);
     } else if (fighter.type === "hydrogen-bomb") {
       // The radiation symbol is the fighter body and is drawn before this
@@ -5269,8 +5365,6 @@ export class ArenaRenderer {
         );
         ctx.restore();
       }
-    } else if (fighter.type === "hive-ball") {
-      // Hive is a plain orb; its dedicated generated bee is the attack.
     } else if (fighter.type === "zeus") {
       this.drawClassicCrown(ctx, radius * 0.72);
       this.drawClassicZeusHandLightning(ctx, radius, targetAngle, time);
@@ -5369,15 +5463,18 @@ export class ArenaRenderer {
       else if (punchPhase.includes("extend") || punchPhase.includes("follow")) frame = 1;
       else if (punchActive) frame = [0, 1, 2, 1][Math.floor(Math.max(0, time - punchStartedAt) * 12) % 4];
       else frame = 0;
+      if (this.options.classicBlackTheme) drawClassicFoundryPunchWindup(ctx, fighter, radius, time, monster);
       this.drawClassicBoxerSmoke(ctx, fighter, radius, time);
       const punchAngle = punchActive && Number.isFinite(Number(fighter.classicPunchAngle))
         ? Number(fighter.classicPunchAngle)
         : targetAngle;
-      this.drawClassicBoxerGloves(ctx, fighter, radius, punchAngle, frame, time, monster);
-    } else if (fighter.type === "artist") {
-      // Artist is intentionally a plain orange orb in this pass. Its
-      // monochrome brush animation is rendered by the pending entity before
-      // the orb, then the generated summon appears after 1.5 seconds.
+      if (monster && this.options.classicBlackTheme && fighter.classicPunchGloves?.length) {
+        drawClassicFoundryMonsterGloves(ctx, fighter, punchAngle);
+      } else {
+        this.drawClassicBoxerGloves(ctx, fighter, radius, punchAngle, frame, time, monster);
+      }
+    } else if (fighter.type === "fairy" && this.options.classicBlackTheme) {
+      drawClassicFoundryFairy(ctx, fighter, radius, targetAngle, time, this.options.reducedMotion);
     } else if (fighter.type === "fairy") {
       this.drawClassicPresentationSprite(ctx, "artistFairy", radius, { width: radius * 1.5, height: radius * 1.5 });
       const accessories = this.classicPresentationSprites.get("fairyAccessories");
@@ -5522,6 +5619,11 @@ export class ArenaRenderer {
   drawFighter(ctx, fighter, time) {
     const def = CLASS_DEFS[fighter.type];
     const country = WORLD_CUP_COUNTRIES[fighter.countryId];
+    if (fighter.classicWdcReserve || fighter.classicCannonOutside) return;
+    if (this.lastSim?.gameplayMode === "classic" && fighter.type === "john-rod") {
+      if (fighter.alive) drawClassicJohnRod(ctx, fighter, time, this.options.classicBlackTheme);
+      return;
+    }
     if (!fighter.alive) {
       ctx.save();
       ctx.globalAlpha = 0.25;
@@ -5599,9 +5701,13 @@ export class ArenaRenderer {
         });
         this.drawSimpleOrb(ctx, fighter, 0, 0, true, time);
       }
+    } else if (this.lastSim?.gameplayMode === "classic" && CLASSIC_ACTION_BODIES.has(fighter.type)) {
+      drawClassicActionBody(ctx, fighter, time, this.options);
+    } else if (this.lastSim?.gameplayMode === "classic" && this.options.classicBlackTheme && CLASSIC_BODY_COLORS[fighter.type]) {
+      this.drawSimpleOrb(ctx, fighter, 0, 0, true, time);
+      drawClassicFoundryBody(ctx, fighter, time, this.options.reducedMotion);
     } else if (this.lastSim?.gameplayMode === "classic" && fighter.type === "frost-ball") {
-      // Classic Snowball keeps Frost's exact deterministic trail/freeze rules,
-      // but adopts Orb Racer's complete rolling snowball body and rotation.
+      // Use the shared rolling shell on both the Avalanche and archived Frost art.
       const drawnSnowball = this.drawClassicPresentationSprite(ctx, "snowballOrb", fighter.radius, {
         width: fighter.radius * 2.42,
         height: fighter.radius * 2.42,
@@ -5727,17 +5833,7 @@ export class ArenaRenderer {
     }
 
     if (fighter.type === "one-punch-man" && this.lastSim?.gameplayMode === "classic") {
-      const glove = fighter.classicPunchGloves?.find(({ punchingHand }) => punchingHand);
-      if (glove) {
-        const shoulder = { x: glove.x1 - fighter.x, y: glove.y1 - fighter.y };
-        const fist = {
-          x: (glove.hitX1 + glove.hitX2) / 2 - fighter.x,
-          y: (glove.hitY1 + glove.hitY2) / 2 - fighter.y,
-        };
-        wdcPunchArm(ctx, shoulder, fist, fighter.radius, fighter.classicPunchAngle, glove.active);
-      }
-    } else if (fighter.classicWdcForm?.id === "emerald") {
-      wdcPickaxe(ctx, 0, 0, fighter.radius, time * 3.6);
+      drawClassicOnePunchMan(ctx, fighter, time, this.options.reducedMotion);
     }
     this.drawClassicHealthText(ctx, fighter, fighter.radius);
 
@@ -5798,11 +5894,14 @@ export class ArenaRenderer {
         : null;
       ctx.fillStyle = classicImpactFlash
         ? "#f7f0e5"
-        : flashColor || WDC_SUMMONS[fighter.classicWdcForm?.id]?.color
-          || classicOrbColor || fighter.hillColor || country?.color || def.color;
+        : flashColor || classicOrbColor || fighter.hillColor || country?.color || def.color;
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, TAU);
       ctx.fill();
+      if (classicOrbColor && this.options.classicBlackTheme) {
+        const ink = classicBlackInkFor(classicOrbColor);
+        if (ink !== classicOrbColor.toLowerCase()) pulseRing(ctx, 0, 0, radius * .99, ink + "bf", radius * .043);
+      }
       if (classicZeusElectroPulse > 0) {
         ctx.save();
         ctx.globalAlpha = Math.min(0.9, classicZeusElectroPulse * 0.82);
@@ -6199,6 +6298,12 @@ export class ArenaRenderer {
   }
 
   drawEffect(ctx, effect) {
+    if (["classic-signature", "classic-action-burst", "classic-saber-scar", "classic-saber-burn", "classic-wall-debris", "classic-power-impact"].includes(effect.kind)) return;
+    if (effect.kind === "classic-pulse-burst") {
+      const life = effect.life - (this.options.classicResultAge || 0);
+      if (life > 0 && !classicPulseIsWide(effect.style)) drawClassicPulseBurst(ctx, { ...effect, life }, this.options);
+      return;
+    }
     if (!shouldRenderHitEffect(this.lastSim?.gameplayMode, effect.kind)) return;
     const progress = 1 - effect.life / effect.maxLife;
     ctx.save();
@@ -6478,6 +6583,12 @@ const WDC_PIXEL_GLYPHS = Object.freeze({
     S: [15, 16, 16, 14, 1, 1, 30], T: [31, 4, 4, 4, 4, 4, 4], U: [17, 17, 17, 17, 17, 17, 14],
     V: [17, 17, 17, 17, 17, 10, 4], W: [17, 17, 17, 21, 21, 27, 17], X: [17, 17, 10, 4, 10, 17, 17],
     Y: [17, 17, 10, 4, 4, 4, 4], Z: [31, 1, 2, 4, 8, 16, 31], ":": [0, 4, 4, 0, 4, 4, 0],
+    0: [14, 17, 19, 21, 25, 17, 14], 1: [4, 12, 4, 4, 4, 4, 14],
+    2: [14, 17, 1, 6, 8, 16, 31], 3: [30, 1, 1, 14, 1, 1, 30],
+    4: [2, 6, 10, 18, 31, 2, 2], 5: [31, 16, 16, 30, 1, 17, 14],
+    6: [6, 8, 16, 30, 17, 17, 14], 7: [31, 1, 2, 4, 8, 8, 8],
+    8: [14, 17, 17, 14, 17, 17, 14], 9: [14, 17, 17, 15, 1, 2, 12],
+    "+": [0, 4, 4, 31, 4, 4, 0], "-": [0, 0, 0, 31, 0, 0, 0], "×": [0, 17, 10, 4, 10, 17, 0],
 });
 const wdcTitlePaths = new Map();
 
@@ -6505,6 +6616,25 @@ function wdcPixelText(ctx, label, x, y, scaleX, scaleY, color) {
     ctx.fillStyle = color;
     ctx.fill(wdcTitlePaths.get(label));
     ctx.restore();
+}
+
+export function drawClassicPixelMatchup(ctx, rect, left, right, colors) {
+    if (!left || !right || [...(left + right)].some((letter) => letter !== " " && !Object.hasOwn(WDC_PIXEL_GLYPHS, letter))) return false;
+    const labels = [left, "VS", right];
+    const widths = labels.map((label, index) => wdcPixelWidth(label) * (index === 1 ? .70 : 1));
+    const gap = 3.8;
+    const units = widths[0] + widths[1] + widths[2] + gap * 2;
+    const xScale = Math.min(rect.width * .91 / units, rect.height * .064);
+    const yScale = Math.min(xScale * .78, rect.height * .050);
+    let x = rect.x + (rect.width - units * xScale) / 2;
+    for (let index = 0; index < labels.length; index += 1) {
+        const width = widths[index] * xScale;
+        const versus = index === 1;
+        wdcPixelText(ctx, labels[index], x + width / 2, rect.y + rect.height * .54,
+            xScale * (versus ? .70 : 1), yScale * (versus ? .70 : 1), colors[index]);
+        x += width + gap * xScale;
+    }
+    return true;
 }
 
 function wdcPolygon(ctx, points, color, stroke = null, width = 1) {
@@ -6633,7 +6763,7 @@ function wdcGlove(ctx, x, y, radius, angle, serious = false) {
     ctx.restore();
 }
 
-function wdcPunchArm(ctx, shoulder, fist, radius, angle, serious = false) {
+function wdcPunchArm(ctx, shoulder, fist, radius, angle, serious = false, fistRadius = radius * (serious ? .60 : .49)) {
     const dx = fist.x - shoulder.x;
     const dy = fist.y - shoulder.y;
     ctx.save();
@@ -6650,7 +6780,7 @@ function wdcPunchArm(ctx, shoulder, fist, radius, angle, serious = false) {
     ctx.strokeStyle = "#f5cc5c";
     ctx.lineWidth = radius * .29;
     ctx.stroke();
-    wdcGlove(ctx, fist.x, fist.y, radius * (serious ? .60 : .49), angle, serious);
+    wdcGlove(ctx, fist.x, fist.y, fistRadius, angle, serious);
     ctx.restore();
 }
 
@@ -6847,21 +6977,1862 @@ function wdcGroceries(ctx, x, y, size, time) {
     ctx.restore();
 }
 
-function drawClassicWdcFormEffects(ctx, fighter, time, bounds, flashReduction) {
-    const { at, beam } = fighter.classicWdcForm;
-    if (time - at < .80) wdcPortal(ctx, fighter.x, fighter.y, fighter.radius * .72, time - at, .8);
-    if (!beam || time >= beam.endsAt) return;
-    const fired = beam.fired === true;
-    const startsAt = fired ? beam.firesAt : beam.startsAt;
-    const endsAt = fired ? beam.endsAt : beam.firesAt;
-    const progress = Math.max(0, Math.min(1, (time - startsAt) / (endsAt - startsAt)));
-    ctx.save();
+function pulseLine(ctx, x1, y1, x2, y2, color, width) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
     ctx.beginPath();
-    ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+function pulseRing(ctx, x, y, radius, color, width) {
+    if (radius > 0) wdcDisc(ctx, x, y, radius, "transparent", color, width);
+}
+
+function clipClassicPulseArena(ctx, sim) {
+    const bounds = sim.arenaBounds;
+    ctx.beginPath();
+    if (sim.arenaShape === "circle") {
+        ctx.arc(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, Math.min(bounds.width, bounds.height) / 2, 0, TAU);
+    } else {
+        ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    }
     ctx.clip();
-    wdcDisintegrator(ctx, fighter, fighter.radius, bounds.width,
-        { angle: beam.angle, phase: fired ? "fire" : "charge", progress }, time, flashReduction);
+}
+
+const CLASSIC_ACTION_BODIES = new Set(["ben-10", "darth-vader", "luke-skywalker"]);
+const CLASSIC_ACTION_PROJECTILES = new Set(["classic-saber-throw", "snow-shard"]);
+const CLASSIC_ALIEN_SHELLS = {
+    xlr8: "#102846",
+    heatblast: "#6f2225",
+    diamondhead: "#1c594d",
+    "four-arms": "#98283b",
+    cannonbolt: "#947f59",
+};
+
+function drawClassicActionBody(ctx, fighter, time, options) {
+    const { radius: r, classicOmnitrix: state } = fighter;
+    ctx.save();
+    ctx.shadowBlur = 0;
+    if (fighter.type === "darth-vader") {
+        wdcPolygon(ctx, [[-r * 1.08, r * 0.75], [-r * 0.65, -r * 0.71], [0, -r * 1.09],
+            [r * 0.65, -r * 0.71], [r * 1.08, r * 0.75]], "#211e28", "#df5261", r * 0.063);
+        wdcDisc(ctx, 0, 0, r * 0.87, "#15141d");
+        wdcPolygon(ctx, [[-r * 0.59, -r * 0.52], [0, -r * 0.34], [r * 0.59, -r * 0.52],
+            [r * 0.40, -r * 0.22], [-r * 0.40, -r * 0.22]], "#555565");
+        wdcPolygon(ctx, [[-r * 0.32, r * 0.64], [0, r * 0.41], [r * 0.32, r * 0.64]], "#a5a5b6");
+    } else if (fighter.type === "luke-skywalker") {
+        wdcDisc(ctx, 0, 0, r, "#beaa84", "#88f18d", r * 0.065);
+        ctx.strokeStyle = "#f5e8ca";
+        ctx.lineWidth = r * 0.24;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.73, -2.9, -0.35);
+        ctx.stroke();
+        ctx.fillStyle = "#504236";
+        ctx.fillRect(-r * 0.65, r * 0.57, r * 1.3, r * 0.18);
+    } else if (state?.phase === "alien") {
+        const form = CLASSIC_ALIENS[state.form];
+        if (state.form === "cannonbolt" && state.rush) {
+            ctx.scale(state.rush.radius / r, state.rush.radius / r);
+        }
+        wdcDisc(ctx, 0, 0, r, CLASSIC_ALIEN_SHELLS[state.form], form.color, r * 0.075);
+        drawClassicAlienWeapon(ctx, fighter, state, form, time, options);
+    } else {
+        wdcDisc(ctx, 0, 0, r, "#20392b", "#a7ff70", r * 0.07);
+        ctx.strokeStyle = "#65c446";
+        ctx.lineWidth = r * 0.22;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.78, 0.28, 2.86);
+        ctx.stroke();
+        drawClassicOmnitrixDial(ctx, 0, -r * 0.81, r * 0.37, state?.phase === "reset" ? "#ff6c53" : "#9eff62");
+    }
     ctx.restore();
+}
+
+function drawClassicOmnitrixDial(ctx, x, y, r, color) {
+    wdcDisc(ctx, x, y, r, "#0a2015", color, r * 0.14);
+    wdcPolygon(ctx, [[x - r * 0.61, y - r * 0.62], [x, y - r * 0.15], [x + r * 0.61, y - r * 0.62],
+        [x + r * 0.61, y + r * 0.62], [x, y + r * 0.15], [x - r * 0.61, y + r * 0.62]], color);
+}
+
+function drawClassicFourArms(ctx, fighter, state, time, options) {
+    const r = fighter.radius;
+    const grab = state.grab;
+    const gripping = grab && time < grab.releaseAt;
+    const gap = gripping ? Math.hypot(grab.x - fighter.x, grab.y - fighter.y) : 0;
+    const load = state.attackAt ? Math.max(0, Math.min(1, (time - state.attackStartedAt) / (state.attackAt - state.attackStartedAt))) : 0;
+    const age = time - (state.strikeAt ?? -Infinity);
+    const extension = age < 0.30 ? (1 - age / 0.30) ** 1.65 : 0;
+    const aim = gripping ? Math.atan2(grab.y - fighter.y, grab.x - fighter.x) : state.angle ?? 0;
+    const fist = r * (gripping ? 1.50 : 1.22);
+    for (const side of [-1, 1]) {
+        for (const outer of [false, true]) {
+            const spread = outer ? 2.24 : 0.64;
+            const fan = gripping ? outer ? 0.59 : 0.23 : spread - (outer ? 1.16 : 0.22) * Math.max(load * 0.75, extension);
+            const a = aim + side * fan;
+            const reach = gripping ? Math.max(r * 1.08, gap - r * (outer ? 0.91 : 0.34))
+                : r * (1.08 - load * 0.13 + extension * (outer ? 1.31 : 1.74));
+            ctx.save();
+            ctx.rotate(a);
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "#a72f45";
+            ctx.lineWidth = r * 0.22;
+            ctx.beginPath();
+            ctx.moveTo(r * 0.74, 0);
+            ctx.lineTo(reach, 0);
+            ctx.stroke();
+            wdcPolygon(ctx, [[reach - fist * 0.21, -fist * 0.23], [reach + fist * 0.14, -fist * 0.25],
+                [reach + fist * 0.36, -fist * 0.09], [reach + fist * 0.33, fist * 0.18],
+                [reach + fist * 0.10, fist * 0.26], [reach - fist * 0.24, fist * 0.19]],
+            "#f64f5c", "#ffb2a1", r * 0.056);
+            ctx.strokeStyle = "#912a3d";
+            ctx.lineWidth = r * 0.032;
+            for (const knuckle of [-0.11, 0.025, 0.16]) {
+                ctx.beginPath();
+                ctx.moveTo(reach + fist * 0.10, fist * knuckle);
+                ctx.lineTo(reach + fist * 0.28, fist * knuckle);
+                ctx.stroke();
+            }
+            if (!options.reducedMotion && extension > 0.18) {
+                ctx.globalAlpha = extension * 0.65;
+                ctx.strokeStyle = "#ffae98";
+                ctx.lineWidth = r * 0.051;
+                ctx.beginPath();
+                ctx.moveTo(r * 1.12, -r * 0.28);
+                ctx.lineTo(reach - r * 0.09, -r * 0.31);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+}
+
+function drawClassicAlienWeapon(ctx, fighter, state, form, time, options) {
+    const r = fighter.radius;
+    if (state.form === "xlr8") {
+        ctx.scale(fighter.vx < 0 ? -1 : 1, 1);
+        wdcPolygon(ctx, [[-r * 1.16, -r * 0.83], [r * 0.38, -r * 0.95], [r * 0.93, -r * 0.47],
+            [r * 0.78, -r * 0.20], [-r * 0.52, -r * 0.29]], "#43c7ff", form.accent, r * 0.043);
+        wdcPolygon(ctx, [[-r * 0.18, -r * 0.67], [r * 0.59, -r * 0.65], [r * 0.83, -r * 0.41],
+            [r * 0.68, -r * 0.30], [-r * 0.16, -r * 0.44]], "#102739");
+    } else if (state.form === "heatblast") {
+        const wave = options.reducedMotion ? 0 : 0.14 * Math.sin(time * 18);
+        wdcPolygon(ctx, [[-r * 0.72, -r * 0.49], [-r * 0.65, -r * 1.16], [-r * 0.30, -r * 0.94],
+            [r * 0.09, -r * (1.54 + wave)], [r * 0.40, -r * 0.98], [r * 0.62, -r * (1.22 - wave)],
+            [r * 0.76, -r * 0.46]], "#fa6b30", form.accent, r * 0.055);
+        wdcPolygon(ctx, [[-r * 0.33, -r * 0.48], [r * 0.12, -r * (1.22 + wave)], [r * 0.37, -r * 0.49]], "#ffe677");
+    } else if (state.form === "diamondhead") {
+        const h = state.guard > 0 ? 1.31 : 1.12;
+        wdcPolygon(ctx, [[-r * 0.89, -r * 0.44], [-r * 0.66, -r * 1.00], [-r * 0.34, -r * 0.79],
+            [r * 0.04, -r * h], [r * 0.36, -r * 0.69], [r * 0.72, -r * 0.98],
+            [r * 0.83, -r * 0.37]], "#60e5b8", form.accent, r * 0.05);
+        wdcPolygon(ctx, [[-r * 0.33, -r * 0.51], [r * 0.04, -r * h], [r * 0.18, -r * 0.51]], form.accent);
+    } else if (state.form === "four-arms") {
+        drawClassicFourArms(ctx, fighter, state, time, options);
+    } else {
+        ctx.rotate(options.reducedMotion ? 0 : state.rush ? (time - state.rush.at) * 12 : time * 1.4);
+        ctx.strokeStyle = form.color;
+        ctx.lineWidth = r * 0.27;
+        for (const offset of [0, Math.PI]) {
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.77, offset - 0.89, offset + 0.89);
+            ctx.stroke();
+        }
+    }
+}
+
+function drawClassicSaberBlade(ctx, blade, color, options, thrown = false) {
+    ctx.save();
+    ctx.lineCap = "round";
+    const hilt = blade.width * 1.62;
+    ctx.save();
+    ctx.translate(blade.x1, blade.y1);
+    ctx.rotate(blade.angle);
+    ctx.fillStyle = "#151921";
+    ctx.fillRect(-hilt, -blade.width * 0.54, hilt, blade.width * 1.08);
+    ctx.fillStyle = "#a4a8b7";
+    ctx.fillRect(-hilt, -blade.width * 0.43, hilt * 0.22, blade.width * 0.86);
+    ctx.fillRect(-hilt * 0.35, -blade.width * 0.57, hilt * 0.32, blade.width * 1.14);
+    ctx.fillStyle = color;
+    ctx.fillRect(-hilt * 0.67, -blade.width * 0.18, hilt * 0.13, blade.width * 0.36);
+    ctx.restore();
+    const bladePath = new Path2D();
+    bladePath.moveTo(blade.x1, blade.y1);
+    bladePath.lineTo(blade.x2, blade.y2);
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = blade.active ? 0.37 : 0.22;
+    ctx.lineWidth = blade.width * (options.flashReduction ? 1.40 : 2.32);
+    ctx.stroke(bladePath);
+    ctx.globalAlpha = thrown || blade.active ? 1 : 0.90;
+    ctx.lineWidth = blade.width * 1.12;
+    ctx.stroke(bladePath);
+    ctx.strokeStyle = "#fffdf1";
+    ctx.lineWidth = blade.width * 0.39;
+    ctx.stroke(bladePath);
+    ctx.restore();
+}
+
+function drawHeldClassicSaber(ctx, fighter, blade, color, options) {
+    const r = fighter.radius;
+    const vader = fighter.type === "darth-vader";
+    ctx.save();
+    ctx.translate(fighter.x, fighter.y);
+    ctx.rotate(blade.angle);
+    wdcPolygon(ctx, [[r * 0.72, r * 0.20], [r * 0.92, r * 0.34], [r * 1.31, r * 0.16],
+        [r * 1.37, r * 0.04], [r * 1.15, -r * 0.04], [r * 0.81, r * 0.07]],
+    vader ? "#292437" : "#c4ae88", vader ? "#897c9b" : "#f4e4c2", r * 0.045);
+    ctx.restore();
+    drawClassicSaberBlade(ctx, blade, color, options);
+    ctx.save();
+    ctx.translate(fighter.x, fighter.y);
+    ctx.rotate(blade.angle);
+    wdcPolygon(ctx, [[r * 1.12, r * 0.19], [r * 1.16, -r * 0.02], [r * 1.30, -r * 0.14],
+        [r * 1.43, -r * 0.07], [r * 1.39, r * 0.16], [r * 1.29, r * 0.24]],
+    vader ? "#292333" : "#c49774", vader ? "#b497bf" : "#ffdbad", r * 0.042);
+    ctx.restore();
+}
+
+function drawClassicSaberScar(ctx, effect, alpha) {
+    const { cuts } = effect;
+    if (cuts.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = ctx.fillStyle = effect.color;
+    ctx.globalAlpha = alpha * 0.18;
+    ctx.beginPath();
+    cuts.forEach(({ x2, y2 }, i) => i ? ctx.lineTo(x2, y2) : ctx.moveTo(x2, y2));
+    for (let i = cuts.length - 1; i >= 0; i -= 1) {
+        const { x1, y1, x2, y2 } = cuts[i];
+        ctx.lineTo(x2 + (x1 - x2) * 0.43, y2 + (y1 - y2) * 0.43);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    cuts.forEach(({ x2, y2 }, i) => i ? ctx.lineTo(x2, y2) : ctx.moveTo(x2, y2));
+    ctx.globalAlpha = alpha * 0.68;
+    ctx.lineWidth = Math.max(1, cuts[0].width * 0.66 * alpha);
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    ctx.restore();
+}
+
+function classicWallOutlineSide(length, pointAt, marks, circular = false) {
+    const knots = new Set([0, length]);
+    if (circular) {
+        for (let i = 1; i < 144; i += 1) knots.add(length * i / 144);
+    }
+    for (const { center, span, kind } of marks) {
+        const offsets = kind === "breach" ? [-1.27, -1.10, -1, 1, 1.10, 1.27] : [-1, -0.72, -0.40, -0.16, 0.14, 0.42, 0.74, 1];
+        for (const offset of offsets) knots.add(Math.max(0, Math.min(length, center + offset * span)));
+    }
+    const distances = [...knots].sort((a, b) => a - b);
+    const position = (along) => {
+        let depth = 0;
+        for (const mark of marks) {
+            const offset = (along - mark.center) / mark.span;
+            const distance = Math.abs(offset);
+            if (mark.kind === "dent" && distance < 1) {
+                const recess = Math.min(1, (1 - distance) * 1.72) * (0.92 + 0.08 * Math.cos(offset * 16));
+                depth = Math.max(depth, mark.depth * recess);
+            } else if (mark.kind === "breach" && distance >= 1 && distance < 1.27) {
+                const lip = Math.max(0, 1 - (distance - 1) / 0.27);
+                depth = Math.max(depth, mark.depth * lip * (distance > 1.06 && distance < 1.15 ? 0.37 : 1));
+            }
+        }
+        const join = circular ? 1 : Math.min(1, along / 18, (length - along) / 18);
+        return pointAt(along, depth * join);
+    };
+    const runs = [];
+    let run = null;
+    for (let i = 1; i < distances.length; i += 1) {
+        const from = distances[i - 1];
+        const to = distances[i];
+        if (marks.some(({ kind, center, span }) => kind === "breach" && Math.abs((from + to) / 2 - center) < span)) {
+            run = null;
+            continue;
+        }
+        if (!run) {
+            run = [position(from)];
+            runs.push(run);
+        }
+        run.push(position(to));
+    }
+    return runs;
+}
+
+export function classicWallStrokeRuns(sim) {
+    const { x, y, width, height } = sim.arenaBounds;
+    const deformations = sim.classicWallDeformations || [];
+    if (sim.arenaShape === "circle") {
+        const radius = Math.min(width, height) / 2;
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+        const length = TAU * radius;
+        const marks = deformations.filter(({ side }) => side === "circle").flatMap((mark) => {
+            const position = (Math.atan2(mark.y - cy, mark.x - cx) + TAU) % TAU * radius;
+            return [-length, 0, length].map((shift) => ({ ...mark, center: position + shift }));
+        });
+        const points = classicWallOutlineSide(length, (along, depth) => ({
+            x: cx + Math.cos(along / radius) * (radius - depth),
+            y: cy + Math.sin(along / radius) * (radius - depth),
+        }), marks, true);
+        return points.map((run) => ({ side: "circle", points: run }));
+    }
+    const sides = [
+        ["top", width, (along, depth) => ({ x: x + along, y: y + depth })],
+        ["right", height, (along, depth) => ({ x: x + width - depth, y: y + along })],
+        ["bottom", width, (along, depth) => ({ x: x + along, y: y + height - depth })],
+        ["left", height, (along, depth) => ({ x: x + depth, y: y + along })],
+    ];
+    return sides.flatMap(([side, length, pointAt]) => {
+        const horizontal = side === "top" || side === "bottom";
+        const marks = deformations.filter((mark) => mark.side === side).map((mark) => ({
+            ...mark, center: horizontal ? mark.x - x : mark.y - y,
+        }));
+        return classicWallOutlineSide(length, pointAt, marks).map((points) => ({ side, points }));
+    });
+}
+
+export function drawClassicArenaWall(ctx, sim, options = {}) {
+    const { colors, classicBlackTheme, wallWidth = 2.4 } = options;
+    const { x, y, width, height } = sim.arenaBounds;
+    const neutral = classicBlackTheme ? "#c4c7ce" : "#111018";
+    ctx.save();
+    ctx.lineWidth = wallWidth;
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+    ctx.strokeStyle = neutral;
+    if (!colors && sim.arenaShape !== "circle" && !sim.classicWallDeformations?.length) {
+        ctx.strokeRect(x, y, width, height);
+    } else {
+        let circleInk = neutral;
+        if (colors && sim.arenaShape === "circle") {
+            circleInk = ctx.createLinearGradient(x, y, x + width, y + height);
+            circleInk.addColorStop(0, colors[1]);
+            circleInk.addColorStop(0.5, colors[1]);
+            circleInk.addColorStop(0.5, colors[0]);
+            circleInk.addColorStop(1, colors[0]);
+        }
+        for (const { side, points } of classicWallStrokeRuns(sim)) {
+            ctx.strokeStyle = side === "circle" ? circleInk : colors?.[side === "top" || side === "right" ? 0 : 1] || neutral;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (const point of points.slice(1)) ctx.lineTo(point.x, point.y);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicWallDebris(ctx, effect, life, options) {
+    if (options.reducedMotion) return;
+    const { radius, angle, x, y, open } = effect;
+    const fade = life / effect.maxLife;
+    const travel = 1 - fade;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.globalAlpha = fade * 0.90;
+    for (let i = 0; i < 9; i += 1) {
+        const side = (i - 4) / 5;
+        const sy = radius * side * (0.46 + travel * 1.27);
+        const sx = travel * radius * (open ? -0.94 : 0.92) * (0.58 + (i % 3) * 0.24);
+        const chip = Math.min(radius * 0.16, 9);
+        wdcPolygon(ctx, [[sx, sy], [sx + chip, sy - chip * 0.45], [sx + chip * 0.57, sy + chip * 0.76]],
+            open ? "#e2e4ee" : "#ffdbaf");
+    }
+    ctx.restore();
+}
+
+export function drawClassicWallDamage(ctx, sim, options) {
+    const resultAge = options.classicResultAge || 0;
+    for (const burn of sim.effects || []) {
+        if (burn.kind === "classic-wall-debris" && burn.life > resultAge) {
+            drawClassicWallDebris(ctx, burn, burn.life - resultAge, options);
+            continue;
+        }
+        if (burn.kind !== "classic-saber-burn" || burn.life <= resultAge) continue;
+        const alpha = Math.min(1, (burn.life - resultAge) / (burn.maxLife * 0.55));
+        for (const [index, mark] of burn.marks.entries()) {
+            const { x, y, width, angle } = mark;
+            const heat = Math.max(0, 1 - (sim.time + resultAge - mark.at) / 0.46);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            const length = width * (1.45 + 0.34 * Math.sin(index * 2.31));
+            const smudge = [[-width * 0.79, -width * 0.33], [width * 0.16, -width * 0.61], [length, -width * 0.17],
+                [length * 0.68, width * 0.32], [width * 0.12, width * 0.50], [-width * 0.53, width * 0.23]];
+            ctx.globalAlpha = alpha * 0.88;
+            wdcPolygon(ctx, smudge, "#281a17");
+            ctx.scale(0.87, 0.56);
+            wdcPolygon(ctx, smudge, "#090606");
+            if (heat > 0) {
+                ctx.globalAlpha = heat * alpha * (options.flashReduction ? 0.50 : 0.82);
+                wdcPolygon(ctx, [[-width * 0.31, -width * 0.11], [length * 0.71, -width * 0.27], [length * 0.42, width * 0.16]], "#ff9b47");
+                if (!options.reducedMotion && index % 3 === 0) {
+                    for (const side of [-1, 1]) {
+                        wdcDisc(ctx, width * (0.9 + (1 - heat) * 3), width * (1 - heat) * side * 2, Math.max(0.9, width * 0.18 * heat), "#ffe0a0");
+                    }
+                }
+            }
+            ctx.restore();
+        }
+    }
+}
+
+function drawClassicActionProjectile(ctx, entity, time, options) {
+    if (entity.kind === "classic-saber-throw") {
+        drawClassicSaberBlade(ctx, classicThrownSaberBlade(entity, time), "#ff3d53", options, true);
+        return;
+    }
+    const { x, y, radius: r } = entity;
+    const color = "#a5f0ff";
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(entity.angle);
+    if (!options.reducedMotion) {
+        const trail = ctx.createLinearGradient(-r * 4.4, 0, 0, 0);
+        trail.addColorStop(0, "transparent");
+        trail.addColorStop(1, color);
+        ctx.globalAlpha = 0.72;
+        wdcPolygon(ctx, [[-r * 4.4, 0], [r * 0.10, -r * 0.66], [r * 0.10, r * 0.66]], trail);
+        ctx.globalAlpha = 1;
+    }
+    wdcPolygon(ctx, [[-r, r * 0.38], [-r * 0.63, -r * 0.70], [r * 1.26, -r * 0.18], [r * 0.27, r * 0.80]], color, "#f1ffff", r * 0.12);
+    wdcPolygon(ctx, [[-r * 0.63, -r * 0.70], [r * 1.26, -r * 0.18], [-r * 0.15, r * 0.14]], "#f1ffff");
+    ctx.restore();
+}
+
+function drawClassicActionTrail(ctx, fighter, time) {
+    if (time < (fighter.classicHeldUntil || 0)) return false;
+    const thrown = time < (fighter.classicWallThrow?.until || 0);
+    const kicked = thrown || time < (fighter.classicCollisionKick?.until || 0);
+    if (!kicked && time >= (fighter.classicPulseLaunchUntil || 0)) return false;
+    const state = fighter.classicOmnitrix;
+    const form = state?.phase === "alien" && CLASSIC_ALIENS[state.form];
+    const dodge = time < (fighter.classicDodgeUntil || 0);
+    const saberMove = fighter.classicSaberMove?.key;
+    const leaping = saberMove === "force-vault" || saberMove === "saber-lunge";
+    if (!(form && (state.rush || dodge)) && !leaping && !kicked) return false;
+    const color = thrown ? "#ff906b" : leaping ? "#a4ff92" : form?.color || CLASS_DEFS[fighter.type].accent;
+    const points = fighter.trail.slice(0, state?.form === "xlr8" ? 22 : 16).reverse();
+    points.push(fighter);
+    drawMotionStreak(ctx, points, fighter.radius * (state?.form === "xlr8" ? 0.62 : 0.93), color);
+    drawClassicPulseEchoes(ctx, fighter, color);
+    if (state?.form === "xlr8") {
+        ctx.save();
+        ctx.strokeStyle = "#a2efff";
+        ctx.lineCap = "round";
+        ctx.lineWidth = Math.max(1.5, fighter.radius * 0.065);
+        for (let i = 1; i < points.length; i += 1) {
+            const start = points[i - 1];
+            const end = points[i];
+            const distance = Math.hypot(end.x - start.x, end.y - start.y);
+            if (distance < 0.5 || distance > fighter.radius * 2.6) continue;
+            const offset = (end.x - start.x) / distance * fighter.radius * 0.53;
+            const rise = (end.y - start.y) / distance * fighter.radius * 0.53;
+            ctx.globalAlpha = i / points.length * 0.58;
+            for (const side of [-1, 1]) {
+                ctx.beginPath();
+                ctx.moveTo(start.x + rise * side, start.y - offset * side);
+                ctx.lineTo(end.x + rise * side, end.y - offset * side);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    return true;
+}
+
+function drawClassicForceHand(ctx, fighter, angle, extension, gripping) {
+    const r = fighter.radius;
+    const palm = r * (0.87 + extension * 0.65);
+    ctx.save();
+    ctx.translate(fighter.x, fighter.y);
+    ctx.rotate(angle);
+    wdcPolygon(ctx, [[r * 0.68, -r * 0.20], [palm - r * 0.15, -r * 0.18],
+        [palm + r * 0.16, -r * 0.28], [palm + r * 0.24, r * 0.19],
+        [palm, r * 0.31], [r * 0.68, r * 0.26]], "#171521", "#9a759f", r * 0.061);
+    for (const [index, splay] of [-0.28, -0.11, 0.07, 0.23].entries()) {
+        const tip = r * (gripping ? 0.42 : 0.65) * (index === 0 || index === 3 ? 0.85 : 1);
+        const y = r * splay;
+        const curl = y * (gripping ? 0.59 : 1.53);
+        wdcPolygon(ctx, [[palm + r * 0.04, y - r * 0.06], [palm + tip, curl - r * 0.055],
+            [palm + tip + r * 0.10, curl + (gripping ? -y * 0.27 : r * 0.06)],
+            [palm + r * 0.10, y + r * 0.08]], "#241c30", gripping ? "#d68dff" : "#8a7099", r * 0.036);
+    }
+    ctx.restore();
+    return palm + r * 0.48;
+}
+
+function drawClassicForceGrip(ctx, fighter, sim, options) {
+    const move = fighter.classicSaberMove;
+    if (move.key !== "force-choke" || !["tell", "grip"].includes(move.phase)) return;
+    const target = sim.fighters.find(({ id }) => id === move.targetId)
+        || sim.classicEntities.find(({ id }) => id === move.targetId);
+    if (!target?.alive) return;
+    const gripping = move.phase === "grip" && target.classicHeldKind === "force-choke" && sim.time < (target.classicHeldUntil || 0);
+    if (move.phase === "grip" && !gripping) return;
+    const age = sim.time - move.at;
+    const reach = gripping ? 0.98 + (options.reducedMotion ? 0 : 0.058 * Math.sin(age * 17)) : 1.56 + (0.35 - age);
+    const angle = Math.atan2(target.y - fighter.y, target.x - fighter.x);
+    const hand = drawClassicForceHand(ctx, fighter, angle, Math.min(1, age / 0.33), gripping);
+    ctx.save();
+    ctx.globalAlpha = gripping ? 0.81 : 0.41;
+    ctx.strokeStyle = "#c287ff";
+    ctx.lineWidth = Math.max(2, fighter.radius * 0.075);
+    ctx.setLineDash([fighter.radius * 0.32, fighter.radius * 0.27]);
+    ctx.lineDashOffset = options.reducedMotion ? 0 : -age * fighter.radius * 2.7;
+    ctx.beginPath();
+    ctx.moveTo(fighter.x + Math.cos(angle) * hand, fighter.y + Math.sin(angle) * hand);
+    ctx.lineTo(target.x - Math.cos(angle) * target.radius * reach, target.y - Math.sin(angle) * target.radius * reach);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    for (const side of [-1, 1]) {
+        const start = angle + side * Math.PI * 0.48;
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, target.radius * (0.53 + reach * 0.66), start - 0.62, start + 0.62);
+        ctx.stroke();
+    }
+    if (gripping) {
+        const r = target.radius;
+        ctx.globalAlpha = 0.95;
+        ctx.fillStyle = "#efc5ff";
+        ctx.font = `900 ${Math.max(12, r * 0.42)}px ${PIXEL_FONT}`;
+        const labelRight = target.x < sim.arenaBounds.x + sim.arenaBounds.width * 0.5;
+        ctx.textAlign = labelRight ? "left" : "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText("STUNNED", target.x + r * (labelRight ? 1.54 : -1.54), target.y);
+        for (const side of [-1, 1]) {
+            const x = target.x + r * 1.10 * side;
+            const y = target.y - r * 1.14;
+            wdcPolygon(ctx, [[x - r * 0.17, y], [x, y - r * 0.12], [x + r * 0.17, y], [x, y + r * 0.12]], "#f3bcff");
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicActionTell(ctx, fighter, time, options) {
+    const { radius: r, classicOmnitrix: state } = fighter;
+    const saber = fighter.classicSaberMove;
+    if (saber?.key === "vader-sweep" && saber.phase === "tell") {
+        const blade = classicSaberBlade(fighter, time);
+        const charge = Math.min(1, (time - saber.at) / 0.47);
+        ctx.save();
+        ctx.strokeStyle = "#ff6167";
+        ctx.globalAlpha = 0.26 + 0.54 * charge;
+        ctx.lineWidth = Math.max(2, r * 0.069);
+        ctx.beginPath();
+        ctx.arc(fighter.x, fighter.y, r * 1.30, blade.angle - 0.34, blade.angle + 0.42);
+        ctx.stroke();
+        ctx.restore();
+    }
+    if (state?.phase === "transform" || (state?.phase === "alien" && state.attackAt !== null)) {
+        const form = CLASSIC_ALIENS[state.form];
+        const transform = state.phase === "transform";
+        const p = transform ? Math.min(1, (time - state.at) / (state.until - state.at)) : 1 - Math.min(1, (state.attackAt - time) / 0.24);
+        ctx.save();
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(options.reducedMotion ? 0 : (transform ? p * 1.45 : state.angle || 0));
+        ctx.strokeStyle = transform ? "#a0ff5b" : form.color;
+        ctx.globalAlpha = 0.52 + p * 0.43;
+        ctx.lineWidth = Math.max(2, r * 0.084);
+        const count = transform ? 10 : state.form === "four-arms" ? 4 : 3;
+        for (let i = 0; i < count; i += 1) {
+            ctx.rotate(TAU / count);
+            const offset = r * (1.14 + 0.38 * (1 - p));
+            ctx.beginPath();
+            ctx.moveTo(offset, -r * 0.11);
+            ctx.lineTo(offset + r * 0.24, 0);
+            ctx.lineTo(offset, r * 0.11);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    if (fighter.type === "frost-ball") {
+        const packed = fighter.classicBounces % 3;
+        const angle = options.reducedMotion ? 0 : time * 2.4;
+        for (let i = 0; i < packed; i += 1) {
+            const a = angle + i * Math.PI;
+            const x = fighter.x + Math.cos(a) * r * 1.15;
+            const y = fighter.y + Math.sin(a) * r * 1.15;
+            wdcPolygon(ctx, [[x, y - r * 0.21], [x + r * 0.18, y], [x, y + r * 0.21], [x - r * 0.18, y]], "#c4f7ff", "#fff", r * 0.04);
+        }
+    }
+}
+
+function drawClassicActionBurst(ctx, effect, alpha, options) {
+    const { cue, radius: r, color } = effect;
+    const p = 1 - alpha;
+    const snow = cue.startsWith("snow-");
+    const spark = cue.endsWith("-hit") || cue.endsWith("-bank") || cue === "force-choke-tick";
+    const dash = ["xlr8", "xlr8-dodge", "force-vault", "saber-lunge"].includes(cue);
+    const crystal = cue.startsWith("diamond");
+    const transform = cue === "omnitrix-transform";
+    ctx.save();
+    ctx.translate(effect.x, effect.y);
+    ctx.rotate(effect.angle);
+    ctx.globalAlpha = alpha * (options.flashReduction ? 0.63 : 0.88);
+    ctx.strokeStyle = color;
+    ctx.lineCap = "round";
+    ctx.lineWidth = Math.max(1.4, r * 0.044 * (0.65 + alpha));
+    if (cue === "cannonbolt-exit" || cue === "cannonbolt-enter") {
+        const side = cue === "cannonbolt-exit" ? -1 : 1;
+        ctx.lineWidth = Math.max(2, r * 0.045 * alpha);
+        for (let i = 0; i < 3; i += 1) {
+            const width = r * (0.52 + i * 0.17 + p * 0.30);
+            ctx.beginPath();
+            ctx.ellipse(side * r * p * 0.36, 0, width * 0.46, width, 0, 0, TAU);
+            ctx.stroke();
+        }
+    } else if (cue === "lateral-clash") {
+        for (const side of [-1, 1]) {
+            const width = r * (0.44 + p * 0.83) * side;
+            ctx.beginPath();
+            ctx.moveTo(width * 0.69, -r * 0.32 * alpha);
+            ctx.quadraticCurveTo(width * 1.27, 0, width * 0.69, r * 0.32 * alpha);
+            ctx.stroke();
+        }
+    } else if (dash) {
+        for (const lane of [-1, 0, 1]) {
+            const shift = lane * r * 0.31;
+            ctx.beginPath();
+            ctx.moveTo(-r * (0.83 + p), shift);
+            ctx.lineTo(r * (0.46 + p * 0.51), shift);
+            ctx.lineTo(r * (0.64 + p * 0.51), shift * 0.51);
+            ctx.stroke();
+        }
+    } else if (transform) {
+        for (let i = 0; i < 8; i += 1) {
+            ctx.rotate(TAU / 8);
+            const distance = r * (0.40 + p * 0.85);
+            wdcPolygon(ctx, [[distance, 0], [distance + r * 0.39, -r * 0.15], [distance + r * 0.25, r * 0.07]], color);
+        }
+    } else if (snow || crystal || spark) {
+        const count = cue === "snow-release" ? 10 : spark ? 6 : 7;
+        const angle = cue === "snow-release" ? 1.72 : TAU;
+        for (let i = 0; i < count; i += 1) {
+            const a = angle * (i / count - 0.5);
+            const distance = r * (0.36 + p * (0.91 + (i % 3) * 0.20));
+            const x = Math.cos(a) * distance;
+            const y = Math.sin(a) * distance;
+            const size = r * (0.068 + (i % 2) * 0.043) * (0.74 + alpha);
+            wdcPolygon(ctx, [[x - size, y], [x, y - size * 0.8], [x + size * 1.75, y + size * 0.18], [x, y + size]], color);
+        }
+    } else {
+        const sides = cue === "four-arms" ? 10 : 5;
+        const size = r * (cue === "four-arms" ? 1 + p * 0.14 : 0.49 + p * 0.75);
+        ctx.beginPath();
+        for (let i = 0; i <= sides; i += 1) {
+            const a = i * TAU / sides;
+            const edge = size * (i % 2 ? 0.89 : 1);
+            ctx.lineTo(Math.cos(a) * edge, Math.sin(a) * edge);
+        }
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicFlameBlast(ctx, pose, time, options) {
+    const length = Math.hypot(pose.x2 - pose.x1, pose.y2 - pose.y1);
+    if (length < 1) return;
+    const flicker = options.reducedMotion ? 0 : time * 41;
+    ctx.save();
+    ctx.translate(pose.x1, pose.y1);
+    ctx.rotate(pose.angle);
+    const glow = ctx.createLinearGradient(0, 0, length, 0);
+    glow.addColorStop(0, "#fff3a7");
+    glow.addColorStop(0.23, "#ffb632");
+    glow.addColorStop(0.67, "#ff692b");
+    glow.addColorStop(1, "#cf2d10");
+    for (const [scale, color, alpha] of [[1, glow, 0.75], [0.65, "#ff9924", 0.79], [0.29, "#fff2a5", 0.96]]) {
+        ctx.globalAlpha = alpha * (options.flashReduction ? 0.82 : 1);
+        const points = [];
+        for (const side of [-1, 1]) {
+            for (let index = 0; index <= 17; index += 1) {
+                const step = (side === -1 ? index : 17 - index) / 17;
+                const fan = pose.near + (pose.far - pose.near) * step;
+                const taper = step > 0.89 ? 1 - (step - 0.89) * 6 : 1;
+                const edge = 0.77 + 0.16 * Math.sin(flicker - step * 22 + side * 0.78) + 0.09 * Math.sin(step * 56 - flicker * 1.43);
+                points.push([length * step, fan * taper * edge * side * scale]);
+            }
+        }
+        wdcPolygon(ctx, points, color);
+    }
+    ctx.restore();
+}
+
+function drawClassicTornado(ctx, fighter, target, rush, time, options) {
+    const r = fighter.radius * 2.02 + target.radius * 0.76;
+    const progress = Math.min(1, (time - rush.spunAt) / 0.90);
+    const swirl = options.reducedMotion ? 0 : (time - rush.spunAt) * rush.turn * 14;
+    ctx.save();
+    ctx.translate(target.x, target.y);
+    ctx.lineCap = "round";
+    for (let band = 0; band < 4; band += 1) {
+        const distance = r * (0.56 + band * 0.17);
+        const center = r * (0.67 - band * 0.36);
+        const length = Math.PI * (1.18 + 0.12 * Math.sin(progress * Math.PI));
+        const start = swirl + band * 1.36;
+        ctx.globalAlpha = Math.min(0.89, 0.42 + band * 0.14) * (options.flashReduction ? 0.77 : 1);
+        ctx.strokeStyle = band % 2 ? "#57dcff" : "#c5f6ff";
+        ctx.lineWidth = r * (0.025 + band * 0.009);
+        ctx.beginPath();
+        ctx.ellipse(0, center, distance, distance * 0.31, -0.14, start, start + length);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicAlienStage(ctx, fighter, sim, options) {
+    const state = fighter.classicOmnitrix;
+    if (state?.phase !== "alien") return;
+    if (state.flame?.pose) drawClassicFlameBlast(ctx, state.flame.pose, sim.time, options);
+    const rush = state.rush;
+    if (state.form === "xlr8" && rush?.phase === "tornado") {
+        const target = sim.fighters.find(({ id }) => id === rush.targetId)
+            || sim.classicEntities.find(({ id }) => id === rush.targetId);
+        if (target?.alive) drawClassicTornado(ctx, fighter, target, rush, sim.time, options);
+    }
+    if (state.form === "diamondhead" && (rush || state.attackAt !== null)) {
+        const r = fighter.radius;
+        const angle = rush ? Math.atan2(fighter.vy, fighter.vx) : state.angle;
+        const extension = rush ? 1 : Math.max(0, (sim.time - state.attackStartedAt) / (state.attackAt - state.attackStartedAt));
+        const tip = r * (1.10 + extension * 0.61);
+        ctx.save();
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(angle);
+        wdcPolygon(ctx, [[r * 0.51, -r * 0.97], [tip, -r * 0.28], [tip + r * 0.17, 0], [tip, r * 0.28], [r * 0.51, r * 0.97]],
+            "#2c9d8a", "#afffed", r * 0.072);
+        wdcPolygon(ctx, [[r * 0.76, 0], [tip, -r * 0.28], [tip + r * 0.17, 0], [tip, r * 0.28]], "#c5fff1");
+        ctx.restore();
+    }
+}
+
+function drawClassicPowerLane(ctx, line, profile, warning, options, index = 0) {
+    const { x1, y1, x2, y2, width } = line;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.hypot(dx, dy);
+    if (length < 1) return;
+    const color = profile.layout === "cross" && index % 2 ? "#fff0bb" : profile.color;
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.strokeStyle = color;
+    if (line.socket) {
+        if (profile.layout === "relay") {
+            wdcDisc(ctx, 0, 0, width * 0.44, "#b7793b", "#ffe7a1", width * 0.095);
+            wdcPolygon(ctx, [[-width * .22, 0], [0, -width * .30], [width * .22, 0], [0, width * .30]], "#fff1be");
+        } else {
+            wdcPolygon(ctx, [[-width * .48, -width * .45], [width * .62, -width * .32],
+                [width * .76, width * .32], [-width * .48, width * .45]], "#533747", color, width * .065);
+        }
+    }
+    if (warning) {
+        ctx.globalAlpha *= 0.58;
+        ctx.lineWidth = Math.max(1.8, width * .068);
+        ctx.setLineDash([width * .42, width * .38]);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(length, 0);
+        ctx.stroke();
+    } else if (line.glow > 0) {
+        const alpha = ctx.globalAlpha * line.glow * (options.flashReduction ? 0.74 : 1);
+        ctx.globalAlpha = alpha * .22;
+        ctx.fillStyle = color;
+        ctx.fillRect(0, -width * .5, length, width);
+        ctx.globalAlpha = alpha * .77;
+        ctx.fillRect(0, -width * .23, length, width * .46);
+        ctx.fillStyle = "#fff9e8";
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(0, -width * .063, length, Math.max(2.2, width * .126));
+        if (!options.reducedMotion) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(1.5, width * .066);
+            ctx.globalAlpha = alpha * .78;
+            const phase = (line.age || 0) * 205;
+            for (let position = 20 + (phase % 54); position < length - 20; position += 54) {
+                ctx.beginPath();
+                ctx.moveTo(position - width * .19, -width * .56);
+                ctx.lineTo(position + width * .25, -width * .23);
+                ctx.moveTo(position - width * .19, width * .56);
+                ctx.lineTo(position + width * .25, width * .23);
+                ctx.stroke();
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerRing(ctx, ring, profile, warning, options, progress) {
+    const { x, y, radius, angle, arc, width } = ring;
+    if (radius <= 0) return;
+    const alpha = ctx.globalAlpha;
+    const color = profile.color;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    const start = -arc / 2;
+    const end = arc / 2;
+    const solar = profile.layout === "solar";
+    if (warning) {
+        ctx.setLineDash([Math.max(7, radius * .07), Math.max(4, radius * .034)]);
+        ctx.lineWidth = Math.max(2, width * .08);
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, start, end);
+        ctx.stroke();
+    } else {
+        if (arc < TAU) {
+            const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius + width / 2);
+            glow.addColorStop(0, "transparent");
+            glow.addColorStop(.76, "transparent");
+            glow.addColorStop(1, color);
+            ctx.fillStyle = glow;
+            ctx.globalAlpha = alpha * .46;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius + width / 2, start, end);
+            ctx.closePath();
+            ctx.fill();
+        }
+        const motion = options.reducedMotion ? 0 : progress;
+        ctx.globalAlpha = alpha * (options.flashReduction ? .55 : .82);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(3, width * .48);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, start, end);
+        ctx.stroke();
+        ctx.globalAlpha = alpha * .94;
+        ctx.strokeStyle = solar ? "#fff6c7" : "#fef5e1";
+        ctx.lineWidth = Math.max(2, width * .14);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, start, end);
+        ctx.stroke();
+        if (!options.reducedMotion) {
+            const count = solar ? 24 : arc < TAU ? 10 : 14;
+            ctx.globalAlpha = alpha * .77;
+            for (let i = 0; i < count; i += 1) {
+                const at = start + arc * (i + .5) / count;
+                const flare = width * (.32 + .41 * Math.max(0, Math.sin(i * 2.4 - motion * 16)));
+                const span = Math.min(.14, width / Math.max(radius, 1));
+                const point = (a, r) => [Math.cos(a) * r, Math.sin(a) * r];
+                wdcPolygon(ctx, [point(at - span, radius), point(at + span * .52, radius + flare), point(at + span, radius)],
+                    solar && i % 3 === 0 ? "#ffdd82" : color);
+            }
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerZone(ctx, zone, profile, warning, options) {
+    const { x, y, radius, sourceX, sourceY } = zone;
+    ctx.save();
+    const alpha = ctx.globalAlpha;
+    if (!warning && zone.glow <= 0) {
+        ctx.restore();
+        return;
+    }
+    const progress = warning ? 0 : Math.min(1, (zone.age || 0) / .27);
+    const bright = warning ? .60 : zone.glow * (options.flashReduction ? .72 : 1);
+    if (sourceX !== undefined) {
+        ctx.globalAlpha = alpha * (warning ? .25 : bright);
+        ctx.strokeStyle = profile.color;
+        ctx.lineWidth = warning ? 2.2 : Math.max(2, radius * .095 * (1 - progress * .6));
+        ctx.setLineDash(warning ? [10, 10] : []);
+        ctx.beginPath();
+        ctx.moveTo(sourceX, sourceY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    }
+    ctx.translate(x, y);
+    ctx.setLineDash(warning ? [radius * .19, radius * .09] : []);
+    ctx.strokeStyle = profile.color;
+    ctx.lineWidth = Math.max(2, radius * (warning ? .028 : .071));
+    ctx.globalAlpha = alpha * bright;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, TAU);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (warning) {
+        for (const sign of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(radius * .73 * sign, 0);
+            ctx.lineTo(radius * .93 * sign, 0);
+            ctx.moveTo(0, radius * .73 * sign);
+            ctx.lineTo(0, radius * .93 * sign);
+            ctx.stroke();
+        }
+    } else {
+        ctx.globalAlpha = alpha * bright * .25;
+        wdcDisc(ctx, 0, 0, radius, profile.color);
+        ctx.globalAlpha = alpha * bright * .86;
+        ctx.strokeStyle = "#fff5de";
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * (.24 + progress * .76), 0, TAU);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerWell(ctx, well, profile, warning, progress, options) {
+    const { x, y, radius, angle = 0 } = well;
+    const gravity = profile.gravity;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(options.reducedMotion ? angle : angle + progress * 3.6);
+    if (gravity) {
+        const halo = ctx.createRadialGradient(0, 0, radius * .40, 0, 0, radius * 1.24);
+        halo.addColorStop(0, "#05020c");
+        halo.addColorStop(.74, "#44236a");
+        halo.addColorStop(1, "transparent");
+        wdcDisc(ctx, 0, 0, radius * 1.24, halo);
+        wdcDisc(ctx, 0, 0, radius * .76, "#05020b", "#aa70fd", Math.max(2, radius * .035));
+    } else {
+        ctx.globalAlpha *= warning ? .63 : .9;
+        wdcDisc(ctx, 0, 0, radius, "#15131d", profile.color, Math.max(2, radius * .084));
+    }
+    ctx.strokeStyle = profile.color;
+    ctx.lineWidth = Math.max(2, radius * (gravity ? .069 : .10));
+    for (const direction of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radius * (gravity ? 1.27 : .90), radius * (gravity ? .40 : .43), direction * .29, 0, Math.PI * 1.45);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerField(ctx, shape, profile, time, options) {
+    ctx.save();
+    ctx.translate(shape.x, shape.y);
+    const rotation = options.reducedMotion ? 0 : time * (profile.layout === "swirl" ? 5.6 : 2.1);
+    ctx.rotate(rotation);
+    ctx.strokeStyle = profile.color;
+    ctx.lineWidth = Math.max(2, shape.radius * .031);
+    const alpha = ctx.globalAlpha;
+    for (let i = 0; i < 3; i += 1) {
+        ctx.globalAlpha = alpha * (.34 + i * .15);
+        ctx.beginPath();
+        ctx.arc(0, 0, shape.radius * (.48 + i * .24), i * 1.8, i * 1.8 + 4.65);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerRush(ctx, fighter, power, profile, warning, options) {
+    const r = fighter.radius;
+    if (warning) {
+        const speed = fighter.baselineSpeed || Math.hypot(fighter.vx, fighter.vy);
+        const reach = Math.min(r * profile.size, speed * (profile.speed || 2.85) * profile.duration);
+        ctx.save();
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(power.angle);
+        ctx.strokeStyle = profile.color;
+        ctx.lineWidth = Math.max(2, r * .06);
+        for (let i = 1; i <= 4; i += 1) {
+            const x = reach * i / 5;
+            ctx.beginPath();
+            ctx.moveTo(x - r * .32, -r * .43);
+            ctx.lineTo(x, 0);
+            ctx.lineTo(x - r * .32, r * .43);
+            ctx.stroke();
+        }
+        ctx.restore();
+        return;
+    }
+    const path = power.mode === "evade" ? [power.center, ...power.path] : power.path;
+    if (!options.reducedMotion) drawMotionStreak(ctx, path, r * (power.mode === "evade" ? .76 : 1.16), profile.color);
+    ctx.save();
+    ctx.strokeStyle = profile.color;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    const alpha = ctx.globalAlpha;
+    for (let i = 1; i < path.length; i += 1) {
+        const a = path[i - 1];
+        const b = path[i];
+        const width = i / path.length;
+        ctx.globalAlpha = alpha * width;
+        ctx.lineWidth = Math.max(2, r * .13 * width);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+    }
+    if (power.phase === "active") {
+        const angle = Math.atan2(fighter.vy, fighter.vx);
+        ctx.globalAlpha = alpha * .86;
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(angle);
+        const start = power.mode === "evade" ? -1.3 : -.84;
+        wdcPolygon(ctx, [[r * start, -r * .73], [r * 1.33, 0], [r * start, r * .73], [r * .54, 0]], profile.color);
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerImpact(ctx, effect, alpha, options) {
+    const { x, y, radius, angle, color } = effect;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.globalAlpha = alpha * (options.flashReduction ? .64 : .92);
+    const burst = 1 - alpha;
+    const count = options.reducedMotion ? 5 : 12;
+    for (let i = 0; i < count; i += 1) {
+        ctx.rotate(TAU / count);
+        const distance = radius * (.40 + burst * (1.76 + (i % 3) * .27));
+        const chip = radius * (.12 + (i % 3) * .046) * (.70 + alpha);
+        wdcPolygon(ctx, [[distance - chip, 0], [distance, -chip * .51], [distance + chip * 2.1, 0], [distance, chip * .51]],
+            i % 3 === 0 ? "#fff7d4" : color);
+    }
+    ctx.restore();
+}
+
+function drawClassicPowerStage(ctx, fighter, sim, options) {
+    const power = fighter.classicPowerMove;
+    const time = sim.time + (options.classicResultAge || 0);
+    if (!power || power.phase === "spent" || time >= power.recoverUntil) return;
+    const profile = CLASSIC_POWER_MOVES[fighter.type];
+    const warning = power.phase === "charge" && time < power.endAt;
+    const fading = time >= power.endAt;
+    const phaseStart = warning ? power.startedAt : fading ? power.endAt : power.activeAt;
+    const phaseEnd = warning ? power.activeAt : fading ? power.recoverUntil : power.endAt;
+    const progress = Math.max(0, Math.min(1, (time - phaseStart) / Math.max(.001, phaseEnd - phaseStart)));
+    const r = fighter.radius;
+    ctx.save();
+    ctx.globalAlpha = fading ? (1 - progress) * .58 : warning ? .58 + progress * .36 : 1;
+    const pose = warning ? power.blueprint : power.pose || [];
+    if (profile.layout === "relay" && !warning && !fading) {
+        const relay = pose.find(({ age }) => age >= 0 && age < 0.14);
+        if (relay) {
+            ctx.save();
+            ctx.globalAlpha *= (1 - relay.age / 0.14) * 0.78;
+            ctx.strokeStyle = "#ffecc6";
+            ctx.lineWidth = r * 0.07;
+            ctx.beginPath();
+            ctx.moveTo(fighter.x, fighter.y);
+            ctx.lineTo(relay.x1, relay.y1);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+    for (const [index, shape] of pose.entries()) {
+        if (shape.shape === "lane" && profile.kind !== "rush") drawClassicPowerLane(ctx, shape, profile, warning, options, index);
+        if (shape.shape === "zone") drawClassicPowerZone(ctx, shape, profile, warning, options);
+        if (shape.shape === "ring") drawClassicPowerRing(ctx, shape, profile, false, options, progress);
+        if (shape.shape === "orbiter") drawClassicPowerWell(ctx, shape, profile, false, progress, options);
+        if (shape.shape === "field") drawClassicPowerField(ctx, shape, profile, time, options);
+    }
+    if (warning && profile.kind === "orbit") {
+        for (const shape of power.pose || []) drawClassicPowerWell(ctx, shape, profile, true, progress, options);
+    }
+    if (warning && ["ring", "guard", "field"].includes(profile.kind)) {
+        const radius = r * (profile.layout === "inward" ? profile.size : 1.64 + progress * .56);
+        drawClassicPowerRing(ctx, { ...power.center, radius, width: r * .6, angle: power.angle, arc: profile.layout === "cone" ? 2.16 : TAU },
+            profile, true, options, progress);
+    }
+    if (profile.kind === "rush") drawClassicPowerRush(ctx, fighter, power, profile, warning, options);
+    if (profile.motif) {
+        const center = profile.kind === "rush" ? fighter : power.center;
+        drawClassicLegacyPowerMotif(ctx, {
+            motif: profile.motif, color: profile.color, x: center.x, y: center.y, radius: r, angle: power.angle,
+            phase: power.phase, progress, reducedMotion: options.reducedMotion, flashReduction: options.flashReduction,
+            dark: options.classicBlackTheme,
+        });
+    }
+    if (profile.gravity && !warning && power.pose?.length > 1) {
+        ctx.globalAlpha = fading ? (1 - progress) * .55 : .61;
+        ctx.strokeStyle = "#bd8aff";
+        ctx.lineWidth = Math.max(2, r * .075);
+        ctx.beginPath();
+        ctx.moveTo(power.pose[0].x, power.pose[0].y);
+        ctx.quadraticCurveTo(power.center.x - r * .75, power.center.y + r * .75, power.pose[1].x, power.pose[1].y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawClassicActionStage(ctx, sim, options) {
+    ctx.save();
+    clipClassicPulseArena(ctx, sim);
+    const resultAge = options.classicResultAge || 0;
+    for (const effect of sim.effects) {
+        const alpha = (effect.life - resultAge) / effect.maxLife;
+        if (alpha <= 0) continue;
+        if (effect.kind === "classic-saber-scar") drawClassicSaberScar(ctx, effect, alpha);
+        else if (effect.kind === "classic-action-burst") drawClassicActionBurst(ctx, effect, alpha, options);
+        else if (effect.kind === "classic-power-impact") drawClassicPowerImpact(ctx, effect, alpha, options);
+    }
+    for (const fighter of sim.fighters) {
+        if (!fighter.alive) continue;
+        drawClassicPowerStage(ctx, fighter, sim, options);
+        drawClassicAlienStage(ctx, fighter, sim, options);
+        drawClassicActionTell(ctx, fighter, sim.time, options);
+        if (fighter.type !== "darth-vader" && fighter.type !== "luke-skywalker") continue;
+        const thrown = sim.classicEntities.some((entity) => entity.kind === "classic-saber-throw" && entity.ownerId === fighter.id && entity.expiresAt > sim.time);
+        if (!thrown) drawHeldClassicSaber(ctx, fighter, classicSaberBlade(fighter, sim.time), fighter.type === "darth-vader" ? "#ff3b52" : "#70ff75", options);
+        if (fighter.classicSaberMove) drawClassicForceGrip(ctx, fighter, sim, options);
+    }
+    ctx.restore();
+}
+
+export function drawClassicCannonOutsideArena(ctx, sim, options) {
+    const outside = (sim.fighters || []).filter((fighter) => fighter.alive && fighter.classicCannonOutside);
+    if (!outside.length) return;
+    for (const fighter of outside) {
+        ctx.save();
+        ctx.translate(fighter.x, fighter.y);
+        drawClassicActionBody(ctx, fighter, sim.time, options);
+        ctx.font = `900 ${fighter.radius * 0.70}px ${CLASSIC_NUMBER_FONT}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = Math.max(3, fighter.radius * 0.12);
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "#050505";
+        ctx.fillStyle = "#fff";
+        const label = String(Math.ceil(fighter.health));
+        ctx.strokeText(label, 0, 1);
+        ctx.fillText(label, 0, 1);
+        ctx.restore();
+    }
+}
+
+const CLASSIC_BODY_COLORS = Object.freeze({
+    "hive-ball": ["#4f2a13", "#fbbf3e"],
+    "frost-ball": ["#529fcd", "#defaff"],
+    boxer: ["#8c1521", "#ff624e"],
+    monster: ["#19382a", "#7fd565"],
+    artist: ["#462748", "#ff9d66"],
+    fairy: ["#4d287a", "#e6b8fc"],
+    train: ["#222c37", "#f2bd75"],
+});
+
+const CLASSIC_ARTIST_INKS = Object.freeze({
+    "artist-monster": "#6de3a0",
+    "artist-fairy": "#e397ff",
+    "artist-soldier": "#ffc070",
+});
+
+function classicSixSidedMark(ctx, x, y, radius, color, rim) {
+    const points = Array.from({ length: 6 }, (_, index) => {
+        const angle = index * TAU / 6;
+        return [x + Math.cos(angle) * radius, y + Math.sin(angle) * radius];
+    });
+    wdcPolygon(ctx, points, color, rim, radius * 0.13);
+}
+
+function drawClassicFoundryBody(ctx, fighter, time, reducedMotion) {
+    const { radius, type } = fighter;
+    const [fill, accent] = CLASSIC_BODY_COLORS[type];
+    ctx.save();
+    ctx.scale(radius, radius);
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, TAU);
+    ctx.clip();
+    wdcDisc(ctx, 0, 0, 1, fill);
+    if (type === "hive-ball") {
+        ctx.rotate(-0.19);
+        ctx.fillStyle = "#d4821b";
+        ctx.fillRect(-1, -.61, 2, .51);
+        ctx.fillRect(-1, .17, 2, .45);
+        for (const [x, y] of [[-.70, -.31], [-.44, -.31], [-.57, -.09], [.48, .28], [.74, .28], [.61, .50]]) {
+            classicSixSidedMark(ctx, x, y, .16, "#edaa29", "#ffd86b");
+        }
+        wdcPolygon(ctx, [[-.30, -.73], [.23, -.73], [.40, -.61], [.23, -.48], [-.30, -.48], [-.43, -.61]], "#362013", accent, .039);
+        pulseLine(ctx, -.17, -.605, .16, -.605, accent, .038);
+    } else if (type === "frost-ball") {
+        if (!reducedMotion) ctx.rotate(time * .66);
+        wdcPolygon(ctx, [[-.92, -.36], [-.45, -.86], [.37, -.98], [.75, -.67], [.34, -.11], [-.43, -.14]], "#d7f8ff");
+        wdcPolygon(ctx, [[.92, -.45], [.84, .64], [.25, .97], [-.32, .81], [.20, .22]], "#6ed7f2");
+        wdcPolygon(ctx, [[-.85, -.20], [-.45, -.13], [-.39, .35], [-.74, .67], [-1, .21]], "#8ddcf2");
+        for (let index = 0; index < 6; index += 1) {
+            const angle = index * TAU / 6;
+            const x = Math.cos(angle);
+            const y = Math.sin(angle);
+            pulseLine(ctx, x * .63, y * .63, x * .84, y * .84, "#f2feff", .051);
+            pulseLine(ctx, x * .72, y * .72, x * .78 - y * .10, y * .78 + x * .10, "#f2feff", .038);
+            pulseLine(ctx, x * .72, y * .72, x * .78 + y * .10, y * .78 - x * .10, "#f2feff", .038);
+        }
+    } else if (type === "boxer") {
+        wdcPolygon(ctx, [[-.97, -.47], [-.63, -.72], [.61, -.72], [.97, -.49], [.87, -.34], [-.90, -.34]], "#ed4f43");
+        wdcPolygon(ctx, [[-.89, -.68], [-.56, -.81], [.58, -.80], [.91, -.66], [.78, -.51], [-.78, -.51]], "#ffddd1");
+        wdcPolygon(ctx, [[-.95, .57], [-.53, .67], [.60, .66], [.94, .51], [.93, .84], [-.93, .86]], "#4b1427");
+        for (let index = 0; index < 7; index += 1) {
+            const x = -.55 + index * .18;
+            pulseLine(ctx, x, .69, x + .045, .79, "#fdb297", .029);
+        }
+    } else if (type === "monster") {
+        wdcPolygon(ctx, [[-.96, -.41], [-.70, -.76], [-.39, -.81], [-.20, -.43], [-.60, -.54], [-.94, -.22]], "#74ac56");
+        wdcPolygon(ctx, [[.98, -.42], [.64, -.79], [.34, -.74], [.24, -.42], [.58, -.56], [.91, -.22]], "#90d66f");
+        wdcPolygon(ctx, [[-.82, .41], [-.56, .53], [.55, .52], [.85, .36], [.71, .77], [0, .86], [-.73, .72]], "#18191d");
+        for (const [x, y] of [[-.62, .50], [-.35, .61], [.38, .61], [.62, .49]]) {
+            wdcPolygon(ctx, [[x - .09, y], [x + .105, y], [x + .02, y + .21]], "#e4e6b0");
+        }
+        pulseLine(ctx, -.81, -.16, -.65, .17, "#badf7c", .047);
+        pulseLine(ctx, .81, -.12, .67, .21, "#badf7c", .045);
+    } else if (type === "artist") {
+        wdcPolygon(ctx, [[-.96, .19], [-.91, -.52], [-.46, -.88], [.03, -.94], [.68, -.72], [.83, -.37],
+            [.53, -.24], [.31, -.44], [-.25, -.54], [-.48, -.28], [-.49, .11], [-.75, .37]], "#8c4d66");
+        for (const [x, y, color] of [[-.62, -.42, "#75dccb"], [-.23, -.71, "#ff9e5d"], [.23, -.67, "#f9d278"],
+            [.63, -.46, "#d18bfc"], [.67, .41, "#e76f82"], [.31, .70, "#4da8df"], [-.22, .69, "#aee88c"]]) {
+            wdcDisc(ctx, x, y, .139, color, "#1d1424", .027);
+            wdcDisc(ctx, x - .039, y - .039, .043, "#ffffff68");
+        }
+    } else if (type === "fairy") {
+        wdcPolygon(ctx, [[-.91, .35], [-.88, -.32], [-.47, -.76], [-.08, -.87], [-.32, -.44], [-.52, .24], [-.26, .76]],
+            "#9065c8");
+        wdcPolygon(ctx, [[.92, .44], [.83, -.44], [.45, -.74], [.28, -.35], [.57, .05], [.33, .72]], "#754ab0");
+        for (const side of [-1, 1]) {
+            classicFourPointStar(ctx, side * .67, .20, .13, "#f4deff");
+            classicFourPointStar(ctx, side * .37, -.65, .085, "#ffe6a3");
+        }
+    } else if (type === "train") {
+        wdcPolygon(ctx, [[-.95, .42], [-.70, -.74], [.70, -.74], [.94, .40], [.59, .90], [-.61, .90]],
+            "#3e5060", "#a57243", .044);
+        ctx.fillStyle = "#b9453d";
+        ctx.fillRect(-1, .40, 2, .29);
+        for (let index = 0; index < 3; index += 1) {
+            const ready = index < (fighter.classicBounces || 0) % 3;
+            wdcDisc(ctx, -.38 + index * .38, -.62, .111, ready ? "#ffe6a2" : "#342f2b", accent, .023);
+        }
+        for (const side of [-1, 1]) pulseLine(ctx, side * .70, -.35, side * .62, .39, "#a5b7be", .075);
+    }
+    pulseRing(ctx, 0, 0, .969, accent, .063);
+    ctx.restore();
+}
+
+function classicFourPointStar(ctx, x, y, size, color) {
+    wdcPolygon(ctx, [[x, y - size], [x + size * .26, y - size * .26], [x + size, y],
+        [x + size * .26, y + size * .26], [x, y + size], [x - size * .26, y + size * .26],
+        [x - size, y], [x - size * .26, y - size * .26]], color);
+}
+
+function drawClassicFoundryBee(ctx, radius, time, reducedMotion) {
+    ctx.save();
+    ctx.scale(radius, radius);
+    const flap = reducedMotion ? .82 : .48 + Math.abs(Math.sin(time * 29)) * .62;
+    for (const side of [-1, 1]) {
+        wdcPolygon(ctx, [[-.20, side * .13], [-.62, side * .62 * flap], [-.35, side * 1.08 * flap],
+            [.11, side * .88 * flap], [.30, side * .29]], "#e6f4ffd9", "#9cc7e6", .062);
+    }
+    wdcPolygon(ctx, [[-1.10, 0], [-.70, -.30], [-.37, -.53], [.37, -.55], [.81, -.31], [.99, 0],
+        [.81, .32], [.37, .54], [-.40, .51], [-.72, .32]], "#f0b93d", "#48271a", .10);
+    for (const stripe of [-.52, -.15]) {
+        wdcPolygon(ctx, [[stripe, -.44], [stripe + .19, -.51], [stripe + .29, .46], [stripe + .07, .50]], "#44271c");
+    }
+    wdcDisc(ctx, .55, -.16, .118, "#271a16");
+    wdcDisc(ctx, .59, -.19, .046, "#fff7cd");
+    wdcPolygon(ctx, [[-.87, -.14], [-1.24, 0], [-.87, .15]], "#c88c4a");
+    ctx.restore();
+}
+
+function drawClassicFoundryFairy(ctx, fighter, radius, targetAngle, time, reducedMotion) {
+    const casting = time < (fighter.classicAbilityActiveUntil || 0);
+    const flap = reducedMotion ? .92 : .82 + Math.sin(time * (casting ? 23 : 15)) * .16;
+    ctx.save();
+    ctx.scale(radius, radius);
+    for (const side of [-1, 1]) {
+        wdcPolygon(ctx, [[side * .76, -.12], [side * 1.02, -.71 * flap], [side * 1.48, -.93 * flap],
+            [side * 1.74, -.70 * flap], [side * 1.55, -.14], [side * 1.24, .14], [side * 1.46, .55 * flap],
+            [side * 1.22, .73 * flap], [side * .87, .43]], "#b891f0b8", "#f2d5ff", .045);
+        pulseLine(ctx, side * 1.47, -.66 * flap, side * .92, .20, "#e9d7ffb5", .028);
+    }
+    wdcPolygon(ctx, [[-.35, -.91], [-.27, -1.18], [-.09, -1.04], [0, -1.30], [.12, -1.04], [.31, -1.18],
+        [.38, -.91]], "#f1cb78", "#5d3869", .039);
+    const angle = casting && Number.isFinite(fighter.classicFairyCastAngle) ? fighter.classicFairyCastAngle : targetAngle;
+    ctx.rotate(angle);
+    pulseLine(ctx, .82, .14, 1.63, .14, "#5b3354", .15);
+    pulseLine(ctx, .82, .14, 1.63, .14, "#efc78b", .082);
+    classicFourPointStar(ctx, 1.68, .14, casting ? .34 : .24, "#fff1c1");
+    if (casting) pulseRing(ctx, 1.68, .14, .36 + .10 * Math.sin(time * 21), "#ebc9ff", .029);
+    ctx.restore();
+}
+
+function drawClassicPaintStroke(ctx, entity, radius, time) {
+    const color = CLASSIC_ARTIST_INKS[entity.drawingKind] || "#ffc070";
+    const progress = Math.max(0, Math.min(1, entity.drawingProgress));
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = radius * .19;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius * 1.64, -.8 * Math.PI, -.8 * Math.PI + progress * TAU);
+    ctx.stroke();
+    for (let index = 0; index < 6; index += 1) {
+        const angle = -.8 * Math.PI + progress * TAU - index * .21;
+        const spread = radius * (1.68 + index * .07);
+        wdcDisc(ctx, Math.cos(angle) * spread, Math.sin(angle) * spread,
+            radius * (.093 - index * .009) * (.90 + .10 * Math.sin(time * 15 + index)), color);
+    }
+    ctx.restore();
+}
+
+function drawClassicFoundryPunchWindup(ctx, fighter, radius, time, monster) {
+    if (fighter.classicPunchPhase !== "retract" && fighter.classicPunchPhase !== "impact") return;
+    const color = monster ? "#9ee582" : "#ffd2ad";
+    const offset = time - fighter.classicPunchStartedAt;
+    const phase = fighter.classicPunchPhase;
+    ctx.save();
+    ctx.rotate(fighter.classicPunchAngle);
+    ctx.globalAlpha *= phase === "impact" ? .60 : .42;
+    ctx.lineCap = "round";
+    for (const side of [-1, 1]) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = radius * (monster ? .066 : .042);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * (1.14 + (phase === "impact" ? offset * .78 : 0)), side * .78 - .34, side * .78 + .34);
+        ctx.stroke();
+        if (monster) {
+            const x = radius * .96;
+            const y = side * radius * .94;
+            wdcPolygon(ctx, [[x, y], [x * 1.47, y * .94], [x * 1.25, y * 1.33]], color);
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicFoundryMonsterGloves(ctx, fighter, angle) {
+    for (const glove of fighter.classicPunchGloves) {
+        const x = (glove.hitX1 + glove.hitX2) / 2 - fighter.x;
+        const y = (glove.hitY1 + glove.hitY2) / 2 - fighter.y;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.scale(glove.visualLength, glove.visualWidth);
+        const shell = glove.active ? "#739a51" : "#527748";
+        wdcPolygon(ctx, [[-.49, -.27], [-.31, -.44], [.12, -.48], [.40, -.37], [.49, -.22],
+            [.48, .34], [.26, .46], [-.20, .47], [-.47, .29]], shell, "#222b1f", .075);
+        wdcPolygon(ctx, [[-.45, -.26], [-.28, -.34], [-.23, .41], [-.45, .27]], "#432845", "#9d6295", .038);
+        for (const ridge of [-.30, -.06, .19]) {
+            wdcPolygon(ctx, [[.20, ridge - .07], [.41, ridge - .06], [.46, ridge + .09],
+                [.25, ridge + .10]], "#c6e69c", "#405238", .031);
+        }
+        ctx.restore();
+    }
+}
+
+function drawClassicLocomotive(ctx, radius, age, reducedMotion) {
+    ctx.save();
+    ctx.scale(radius, radius);
+    if (!reducedMotion) {
+        for (let index = 0; index < 5; index += 1) {
+            const drift = ((age * 3.1 + index * .23) % 1);
+            wdcDisc(ctx, .48 - drift * (1.8 + index * .10), -.75 - drift * 1.07,
+                .11 + drift * .27, "rgba(190,211,221," + (.46 * (1 - drift)) + ")");
+        }
+    }
+    wdcPolygon(ctx, [[-1.28, -.48], [-1.21, -.96], [-.50, -.96], [-.49, -.44],
+        [.94, -.44], [1.27, -.20], [1.25, .43], [-1.29, .47]], "#344753", "#cad5ce", .067);
+    wdcPolygon(ctx, [[-1.43, -.99], [-1.28, -1.13], [-.46, -1.13], [-.37, -.98]], "#863e34", "#e0b681", .046);
+    ctx.fillStyle = "#efd086";
+    ctx.fillRect(-1.07, -.88, .35, .30);
+    ctx.fillStyle = "#21282a";
+    ctx.fillRect(.56, -.78, .27, .42);
+    ctx.fillRect(.48, -.83, .42, .12);
+    for (const x of [-.34, .04, .43, .80]) pulseLine(ctx, x, -.38, x, .40, "#788d93", .062);
+    wdcPolygon(ctx, [[-1.42, .35], [1.26, .34], [1.53, .62], [1.15, .76], [-1.43, .65]], "#ab4635", "#412a22", .066);
+    for (const x of [-.96, -.26, .49]) {
+        wdcDisc(ctx, x, .61, .28, "#25262e", "#af997e", .051);
+        const spin = reducedMotion ? 0 : age * 23;
+        pulseLine(ctx, x - Math.cos(spin) * .20, .61 - Math.sin(spin) * .20,
+            x + Math.cos(spin) * .20, .61 + Math.sin(spin) * .20, "#d7a97a", .068);
+        wdcDisc(ctx, x, .61, .072, "#d7a97a");
+    }
+    wdcDisc(ctx, 1.13, -.19, .207, "#fbcf73", "#664122", .056);
+    wdcDisc(ctx, 1.17, -.20, .115, "#fff6cf");
+    ctx.restore();
+}
+
+function drawClassicPulseEchoes(ctx, body, color) {
+    const trail = body.trail || [];
+    ctx.save();
+    for (let index = Math.min(20, trail.length - 1); index > 1; index -= 3) {
+        ctx.globalAlpha = Math.max(0, 0.35 - index * 0.014);
+        const point = trail[index];
+        wdcDisc(ctx, point.x, point.y, body.radius * (1 - index * 0.008), color, "#f3f5fc", body.radius * 0.024);
+    }
+    ctx.restore();
+}
+
+function drawWdcSummonOrb(ctx, point, r, form, health, aim = 0, energized = false) {
+    const { color, rim } = WDC_SUMMONS[form];
+    ctx.save();
+    wdcOrb(ctx, point, r, color, rim, health, form === "unarmed");
+    ctx.translate(point.x, point.y);
+    if (form === "unarmed") {
+        ctx.fillStyle = "#26303c";
+        ctx.fillRect(-r * 0.72, -r * 0.68, r * 1.44, r * 0.25);
+        for (const side of [-1, 1]) {
+            const x = side * r * 0.94;
+            wdcPolygon(ctx, [[x - r * 0.23, r * 0.31], [x - r * 0.18, r * 0.05], [x + r * 0.19, r * 0.04],
+                [x + r * 0.30, r * 0.27], [x + r * 0.13, r * 0.61], [x - r * 0.22, r * 0.55]],
+            "#e8ecef", "#6f8193", r * 0.072);
+        }
+    } else if (form === "exoelectric") {
+        ctx.rotate(aim);
+        wdcPolygon(ctx, [[r * 0.66, -r * 0.68], [r * 1.19, -r * 0.43], [r * 1.33, 0], [r * 1.19, r * 0.43], [r * 0.66, r * 0.68]],
+            "#3f2630", "#ffaf7f", r * 0.057);
+        wdcDisc(ctx, r * 1.13, 0, r * 0.29, energized ? "#fff5a5" : "#ce4e36", energized ? "#ff8f41" : "#f68168", r * 0.087);
+        wdcDisc(ctx, r * 0.58, -r * 0.73, r * 0.13, "#ffb650", "#662b36", r * 0.06);
+        wdcDisc(ctx, r * 0.58, r * 0.73, r * 0.13, "#ffb650", "#662b36", r * 0.06);
+    } else {
+        wdcPolygon(ctx, [[-r * 0.68, -r * 0.46], [-r * 0.52, -r * 0.92], [-r * 0.13, -r * 1.24],
+            [r * 0.36, -r * 1.14], [r * 0.66, -r * 0.67], [r * 0.30, -r * 0.46]],
+        "#3a8050", "#aff293", r * 0.066);
+        wdcPolygon(ctx, [[-r * 0.13, -r * 1.24], [r * 0.36, -r * 1.14], [r * 0.30, -r * 0.46]], "#84df68");
+        wdcPolygon(ctx, [[-r * 0.30, r * 0.63], [r * 0.04, r * 0.47], [r * 0.32, r * 0.66], [r * 0.02, r * 0.83]], "#c2ee84");
+    }
+    ctx.restore();
+}
+
+function drawClassicWdcSummon(ctx, summon, time, sim, options) {
+    const { x, y, radius } = summon;
+    const { color } = WDC_SUMMONS[summon.formId];
+    ctx.save();
+    if (!options.reducedMotion && (time < (summon.classicPulseLaunchUntil || 0) || summon.formId === "unarmed")) {
+        drawClassicPulseEchoes(ctx, summon, color);
+    }
+    const beam = summon.beam;
+    if (beam) {
+        const start = beam.fired ? beam.firesAt : beam.startsAt;
+        const end = beam.fired ? beam.endsAt : beam.firesAt;
+        const progress = Math.max(0, Math.min(1, (time - start) / (end - start)));
+        ctx.save();
+        clipClassicPulseArena(ctx, sim);
+        wdcDisintegrator(ctx, beam.origin || summon, radius, sim.arenaBounds.width,
+            { angle: beam.angle, phase: beam.fired ? "fire" : "charge", progress }, time, options.flashReduction);
+        ctx.restore();
+    }
+    if (summon.formId === "emerald") wdcPickaxe(ctx, x, y, radius, classicPulseBlade(summon, time).angle);
+    const fist = classicWdcSummonPunchPose(summon, time);
+    if (fist) wdcPunchArm(ctx, summon, fist, radius, fist.angle);
+    drawWdcSummonOrb(ctx, summon, radius, summon.formId, summon.health, beam?.angle ?? Math.atan2(summon.vy, summon.vx), Boolean(beam));
+    if (summon.flash > 0 && !options.flashReduction) {
+        ctx.globalAlpha = Math.min(0.8, summon.flash * 6);
+        pulseRing(ctx, x, y, radius * 1.02, "#ffffff", radius * 0.1);
+    }
+    ctx.restore();
+}
+
+function drawClassicOnePunchMan(ctx, fighter, time, reducedMotion) {
+    const { radius, classicPunchPhase: phase, classicPunchVariant: variant } = fighter;
+    const glove = fighter.classicPunchGloves?.find(({ punchingHand }) => punchingHand);
+    if (time < (fighter.classicDodgeUntil || 0)) pulseRing(ctx, 0, 0, radius * 1.13, "#fff0af", radius * 0.032);
+    if (!glove) return;
+    const charged = variant && variant !== "jab";
+    if (charged) {
+        pulseRing(ctx, 0, 0, radius * 1.45, "#ffe687", radius * 0.048);
+        if (variant === "shockwave" && ["impact", "recover"].includes(phase)) return;
+    }
+    const shoulder = { x: glove.x1 - fighter.x, y: glove.y1 - fighter.y };
+    const fist = {
+        x: (glove.hitX1 + glove.hitX2) / 2 - fighter.x,
+        y: (glove.hitY1 + glove.hitY2) / 2 - fighter.y,
+    };
+    const angle = fighter.classicPunchAngle;
+    const size = glove.visualLength * 0.53;
+    if (!reducedMotion && (phase === "extend" || phase === "impact")) {
+        const echoCount = variant === "barrage" ? 4 : charged ? 3 : 1;
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        ctx.save();
+        for (let index = echoCount; index >= 1; index -= 1) {
+            ctx.globalAlpha = 0.50 - index * 0.093;
+            const distance = radius * index * (variant === "barrage" ? 0.84 : 0.61);
+            const stagger = radius * (index % 2 ? 0.45 : -0.37);
+            const x = fist.x - dx * distance - dy * stagger;
+            const y = fist.y - dy * distance + dx * stagger;
+            pulseLine(ctx, x - dx * size * 1.5, y - dy * size * 1.5, x, y, "#fff1c9", radius * 0.033);
+            wdcGlove(ctx, x, y, size * (1 - index * 0.07), angle, false);
+        }
+        ctx.restore();
+    }
+    wdcPunchArm(ctx, shoulder, fist, radius, angle, fighter.classicPunchSerious, size);
+}
+
+function drawClassicPunchWave(ctx, wave, time, reducedMotion) {
+    const { x, y, radius, angle } = wave;
+    const age = time - wave.startedAt;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    const length = Math.min(radius * 8, age * Math.hypot(wave.vx, wave.vy) + radius * 1.4);
+    if (!reducedMotion) {
+        wdcPolygon(ctx, [[-length, 0], [-radius * .26, -radius * .87], [radius * .72, 0],
+            [-radius * .26, radius * .87]], "#d9e4f744");
+        for (let index = 0; index < 8; index += 1) {
+            const spread = (index - 3.5) * radius * 0.24;
+            const lead = radius * (0.8 - (index % 3) * 0.72);
+            pulseLine(ctx, -length * (0.52 + index % 3 * 0.16), spread * 0.53, lead, spread,
+                index % 2 ? "#ffffff75" : "#efcf8570", Math.max(1, radius * 0.045));
+        }
+    }
+    ctx.fillStyle = "#edc04a";
+    ctx.fillRect(-radius * 1.03, -radius * 0.43, radius * 0.46, radius * 0.79);
+    wdcGlove(ctx, 0, 0, radius, 0, true);
+    pulseRing(ctx, radius * .22, 0, radius * 1.25, "#e6eff6bb", radius * .052);
+    ctx.restore();
+}
+
+function drawClassicJohnRod(ctx, fighter, time, dark) {
+    const { x, y, radius } = fighter;
+    const color = dark ? "#f9faff" : "#242231";
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(radius, radius);
+    const stride = Math.sin(time * 11.8) * 0.14 * Math.sign(fighter.vx || 1);
+    const pose = fighter.classicPulseMove?.phase;
+    const lean = pose === "wrap" ? Math.sin(time * 16) * .11 : stride * .3;
+    const outline = [
+        [-.25 + lean, -.55], [-.54, -.45], [-.82, -.17], [-.54, .13], [-.36, .11], [-.54, -.15],
+        [-.36, -.28], [-.44, .29], [-.36 + stride, .73], [-.61 + stride, .94], [-.24 + stride, .97],
+        [0, .37], [.27 - stride, .97], [.62 - stride, .95], [.40 - stride, .76], [.44, .26],
+        [.36, -.28], [.54, -.14], [.37, .09], [.55, .13], [.82, -.17], [.53, -.47], [.25 + lean, -.55],
+    ];
+    wdcPolygon(ctx, outline, dark ? "#06070a" : "#f0f0f5", color, .043);
+    wdcDisc(ctx, lean, -.78, .27, dark ? "#0b0d13" : "#f7f7fa", color, .044);
+    ctx.restore();
+    ctx.save();
+    ctx.font = "900 " + radius * .46 + "px Arial, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.lineWidth = radius * .085;
+    ctx.strokeStyle = dark ? "#090a12" : "#f7f7fa";
+    ctx.fillStyle = color;
+    ctx.strokeText(String(Math.ceil(fighter.health)), x, y + radius * .11);
+    ctx.fillText(String(Math.ceil(fighter.health)), x, y + radius * .11);
+    ctx.restore();
+}
+
+function drawClassicKnightBlade(ctx, fighter, time) {
+    const blade = classicPulseBlade(fighter, time);
+    const length = Math.hypot(blade.x2 - blade.x1, blade.y2 - blade.y1);
+    const r = fighter.radius;
+    ctx.save();
+    ctx.translate(blade.x1, blade.y1);
+    ctx.rotate(blade.angle);
+    wdcPolygon(ctx, [[-r * .12, -r * .064], [r * .44, -r * .070], [r * .50, r * .066],
+        [-r * .13, r * .086]], "#594837", "#15131a", r * .044);
+    wdcPolygon(ctx, [[r * .45, -r * .17], [r * .70, -r * .12], [length, 0], [r * .68, r * .17],
+        [r * .45, r * .11]], "#ccdbef", "#263140", r * .034);
+    wdcPolygon(ctx, [[r * .53, .012 * r], [length - r * .048, 0], [r * .72, r * .147], [r * .49, r * .092]], "#8398b4");
+    pulseLine(ctx, r * .48, -.22 * r, r * .38, .24 * r, "#e2c686", r * .082);
+    pulseLine(ctx, r * .58, -.10 * r, length - r * .13, 0, "#f6fbff", r * .021);
+    wdcDisc(ctx, -r * .097, 0, r * .084, "#dcb877", "#2c2530", r * .022);
+    ctx.restore();
+}
+
+function drawClassicPurple(ctx, fighter, move, time, flashReduction) {
+    const { radius } = fighter;
+    const progress = Math.min(1, (time - move.at) / (move.firesAt - move.at));
+    ctx.save();
+    if (move.phase === "charge") {
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(move.angle);
+        const separation = radius * (1.15 * (1 - progress) + .07);
+        const center = radius * (1.38 + progress * .42);
+        for (const side of [-1, 1]) {
+            const y = side * separation;
+            const x = center + Math.cos(time * 9 + side) * separation * .24;
+            const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * .67);
+            glow.addColorStop(0, side < 0 ? "#eaf5ff" : "#fff0f0");
+            glow.addColorStop(.22, side < 0 ? "#3c88ff" : "#ff463a");
+            glow.addColorStop(1, "transparent");
+            wdcDisc(ctx, x, y, radius * .67, glow);
+            wdcDisc(ctx, x, y, radius * .13, "#fffaff");
+            for (let index = 0; index < 6; index += 1) {
+                const angle = index * TAU / 6 + time * 3;
+                const offset = radius * (.33 + index * .028);
+                wdcDisc(ctx, x + Math.cos(angle) * offset, y + Math.sin(angle) * offset, radius * .021, side < 0 ? "#92c7ff" : "#ff847a");
+            }
+        }
+        if (progress > .79) wdcDisc(ctx, center, 0, radius * (progress - .72), "#f7e3ff");
+    } else {
+        const age = Math.max(0, time - move.firesAt);
+        const length = Math.min(1, age / .16 + .04) * move.length;
+        const half = move.width / 2;
+        if (length < .5) { ctx.restore(); return; }
+        ctx.translate(move.x, move.y);
+        ctx.rotate(move.angle);
+        ctx.globalAlpha = Math.min(1, (move.until - time) / .20) * (flashReduction ? .72 : 1);
+        wdcPolygon(ctx, [[0, -.12 * half], [length * .14, -half], [length, -.78 * half],
+            [length, .80 * half], [length * .16, half], [0, .13 * half]], "#713add");
+        wdcPolygon(ctx, [[0, -.11 * half], [length * .22, -.54 * half], [length, -.38 * half],
+            [length, .52 * half], [length * .27, .53 * half], [0, .12 * half]], "#d8acff");
+        wdcPolygon(ctx, [[0, 0], [length * .27, -.20 * half], [length, -.11 * half], [length, .18 * half],
+            [length * .3, .27 * half]], "#fff0ff");
+        for (let index = 0; index < 27; index += 1) {
+            const start = ((index * .618034 + age * 2.15) % 1) * length;
+            const offset = Math.sin(index * 4.3) * half * .88;
+            const span = half * (.48 + (index % 5) * .33);
+            pulseLine(ctx, start, offset, Math.min(length, start + span), offset, index % 3 ? "#49266ea4" : "#fffaffbf", 1 + index % 3);
+        }
+        if (age < .18) wdcDisc(ctx, length, 0, half * .61, "#fef4ff", "#be82fc", half * .28);
+    }
+    ctx.restore();
+}
+
+function drawClassicWrap(ctx, fighter, move, time, dark) {
+    const age = time - move.at;
+    const assembling = move.phase === "charge";
+    const impact = move.phase === "impact";
+    const progress = assembling ? age / (move.lockAt - move.at) : Math.min(1, (time - move.lockAt) / (move.firesAt - move.lockAt));
+    const size = move.radius * (assembling ? 1.12 : impact ? .70 + (time - move.firesAt) * .87 : 1.12 - .42 * progress);
+    const { x, y } = move;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineCap = "round";
+    const wire = dark ? "#f3f4fc" : "#393849";
+    if (assembling) {
+        const spin = age * 6;
+        for (const side of [-1, 1]) {
+            const turn = spin + side * 1.3;
+            const cx = Math.cos(turn) * size * (.83 + .24 * (1 - progress));
+            const cy = Math.sin(turn) * size * (.83 + .24 * (1 - progress));
+            pulseLine(ctx, cx - Math.cos(turn + 1.3) * size * .39, cy - Math.sin(turn + 1.3) * size * .39,
+                cx + Math.cos(turn + 1.3) * size * .39, cy + Math.sin(turn + 1.3) * size * .39, wire, fighter.radius * .055);
+        }
+    } else {
+        const tilt = size * .25;
+        const corners = [[-size, -size], [size, -size], [size, size], [-size, size]];
+        ctx.globalAlpha = impact ? Math.max(0, 1 - (time - move.firesAt) / (move.until - move.firesAt)) : .96;
+        wdcPolygon(ctx, corners, "#8560e71c", "#a688ff", fighter.radius * .065);
+        wdcPolygon(ctx, corners.map(([cx, cy]) => [cx + tilt, cy - tilt]), "#3c22542e", "#8065e0", fighter.radius * .037);
+        for (const [cx, cy] of corners) pulseLine(ctx, cx, cy, cx + tilt, cy - tilt, wire, fighter.radius * .036);
+        for (let index = -1; index <= 1; index += 1) {
+            const offset = size * index * .52;
+            const fold = Math.sin(progress * 3.4 + index * 1.3) * size * .38;
+            pulseLine(ctx, -size, offset, fold, -fold, wire, fighter.radius * .047);
+            pulseLine(ctx, fold, -fold, size, -offset, "#acbbdc", fighter.radius * .043);
+            pulseLine(ctx, offset, -size, -fold, fold, wire, fighter.radius * .047);
+            pulseLine(ctx, -fold, fold, -offset, size, "#acbbdc", fighter.radius * .043);
+        }
+    }
+    ctx.restore();
+}
+
+function drawClassicConvergence(ctx, fighter, move, sim, dark) {
+    const age = sim.time - move.at;
+    const { radius: r } = fighter;
+    const t = Math.min(1, age / (move.lockAt - move.at));
+    const ink = dark ? "#fbfcff" : "#52597e";
+    ctx.save();
+    ctx.translate(fighter.x, fighter.y);
+    for (const side of [-1, 1]) {
+        const tilt = side * .54;
+        const cos = Math.cos(tilt);
+        const sin = Math.sin(tilt);
+        const orbit = r * (1.15 + t * .78);
+        for (let index = 0; index < 13; index += 1) {
+            const angle = index * TAU / 13 + age * (side * 3.75);
+            const x = Math.cos(angle) * orbit;
+            const y = Math.sin(angle) * orbit * .52;
+            const depth = (1 + Math.sin(angle)) / 2;
+            const size = r * (.064 + depth * .043);
+            wdcDisc(ctx, x * cos - y * sin, x * sin + y * cos, size,
+                index % 4 ? "#f6f7ff" : "#fff1c1", depth > .5 ? "#a6bee9" : "#777c9c", size * .40);
+        }
+    }
+    pulseRing(ctx, 0, 0, r * 1.22, ink, r * .035);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(move.x, move.y);
+    const radius = r * (.44 + t * .76);
+    if (move.phase === "edit") pulseRing(ctx, 0, 0, move.radius, dark ? "#bcccf48c" : "#8389ae8c", r * .027);
+    pulseRing(ctx, 0, 0, radius, ink, r * .034);
+    pulseRing(ctx, 0, 0, radius * .76, dark ? "#b6caff9c" : "#8389aea3", r * .032);
+    for (let index = 0; index < 12; index += 1) {
+        const angle = index * TAU / 12 + age * 1.2;
+        pulseLine(ctx, Math.cos(angle) * radius * .48, Math.sin(angle) * radius * .48,
+            Math.cos(angle) * radius * 1.25, Math.sin(angle) * radius * 1.25, ink, r * .019);
+    }
+    if (move.phase === "edit") {
+        const progress = (sim.time - move.lockAt) / (move.firesAt - move.lockAt);
+        const height = r * (1.15 + .85 * Math.sin(Math.PI * Math.min(1, progress)));
+        pulseLine(ctx, 0, -height, 0, height, ink, r * .12);
+        for (const side of [-1, 1]) pulseLine(ctx, -r * .40, side * height, r * .40, side * height, ink, r * .10);
+        const target = sim.fighters.find(({ id }) => id === move.targetId);
+        if (target) {
+            ctx.font = "900 " + Math.round(r * .32) + "px " + PIXEL_FONT;
+            ctx.fillStyle = ink;
+            ctx.textAlign = "center";
+            ctx.fillText(target.name.slice(0, Math.max(1, Math.ceil(target.name.length * (1 - progress)))), 0, -height - r * .20);
+        }
+    } else {
+        wdcDisc(ctx, 0, 0, r * .17, "#fff7e2", "#b7c6ee", r * .08);
+    }
+    ctx.restore();
+}
+
+function drawClassicPulseGround(ctx, fighter, sim, options) {
+    const { time, arenaBounds: bounds } = sim;
+    const form = fighter.classicWdcForm;
+    if (form?.phase === "portal" || (form?.phase === "summon" && time - form.at < .97)) {
+        wdcPortal(ctx, form.portal.x, form.portal.y, fighter.radius * .84, time - form.at, .97, options.reducedMotion);
+    }
+    if (form?.id === "emerald" && form.phase === "summon") {
+        const shopX = bounds.x + bounds.width * .5;
+        const shopY = bounds.y + fighter.radius * .26;
+        wdcMarket(ctx, shopX, shopY, bounds.width * .88,
+            { age: time - form.reserveAt, coins: form.coins, merchant: true }, time);
+        if (form.soldAt && time - form.soldAt < .65) {
+            drawClassicPulseBurst(ctx, { style: "sale", x: shopX, y: shopY + bounds.width * .17,
+                radius: fighter.radius, life: .65 - (time - form.soldAt), maxLife: .65 }, options);
+        }
+    }
+    const move = fighter.classicPulseMove;
+    if (fighter.type === "gojo") {
+        ctx.save();
+        clipClassicPulseArena(ctx, sim);
+        if (fighter.classicPulseField || time < (fighter.classicPulseGuardUntil || 0)) {
+            const r = fighter.radius * 4.45;
+            wdcDisc(ctx, fighter.x, fighter.y, r, options.classicBlackTheme ? "#142540be" : "#9bb6e744",
+                options.classicBlackTheme ? "#ebf4ff" : "#5277b2", fighter.radius * .05);
+            pulseRing(ctx, fighter.x, fighter.y, r * .975, "#7a96c7b4", fighter.radius * .025);
+        }
+        if (move) drawClassicPurple(ctx, fighter, move, time, options.flashReduction);
+        ctx.restore();
+    } else if (fighter.type === "knight") {
+        drawClassicKnightBlade(ctx, fighter, time);
+        if (time < (fighter.classicPulseGuardUntil || 0)) {
+            pulseRing(ctx, fighter.x, fighter.y, fighter.radius * 1.91, options.classicBlackTheme ? "#f5f7ff" : "#5775ad", fighter.radius * .050);
+        }
+    }
+}
+
+function drawClassicPulseForeground(ctx, fighter, sim, options) {
+    const move = fighter.classicPulseMove;
+    if (!move) return;
+    if (fighter.type === "john-rod") drawClassicWrap(ctx, fighter, move, sim.time, options.classicBlackTheme);
+    else if (fighter.type === "one-above-all") drawClassicConvergence(ctx, fighter, move, sim, options.classicBlackTheme);
+}
+
+function classicPulseIsWide(style) {
+    return style === "serious-punch" || style === "shield-crack" || style === "shockwave";
+}
+
+function drawClassicPulseBurst(ctx, effect, options) {
+    const { x, y, radius: r, style } = effect;
+    const p = Math.max(0, Math.min(1, 1 - effect.life / effect.maxLife));
+    const dark = options.classicBlackTheme;
+    const ink = dark ? "#f2f6ff" : "#565d73";
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(effect.angle || 0);
+    ctx.globalAlpha = (1 - p) * (options.flashReduction ? .68 : .94);
+    if (classicPulseIsWide(style)) {
+        const steel = style === "shield-crack";
+        const scale = options.reducedMotion ? .67 : 1;
+        const reach = r * (1.7 + p * (steel ? 9.0 : 7.2)) * scale;
+        for (const offset of [0, .17, .31]) {
+            pulseRing(ctx, 0, 0, reach * (1 - offset), offset ? ink : (steel ? "#a2b9dc" : "#efddaf"), r * (.044 + offset * .11));
+        }
+        if (!options.reducedMotion) {
+            for (let index = 0; index < (steel ? 38 : 24); index += 1) {
+                const angle = index * 2.39996;
+                const start = r * (.82 + (index % 5) * .32 + p * .54);
+                const end = start + r * (1.8 + (index % 9) * .61) * (.68 + p * 2);
+                pulseLine(ctx, Math.cos(angle) * start, Math.sin(angle) * start, Math.cos(angle) * end, Math.sin(angle) * end,
+                    index % 4 ? ink : (steel ? "#9ab2d9" : "#e2c68e"), r * (.022 + index % 4 * .012));
+            }
+            for (const side of [-1, 1]) {
+                const offset = side * r * (steel ? 2.1 : 1.5);
+                const edge = r * (4.0 + p * 7.6) * side;
+                wdcPolygon(ctx, [[edge, offset - r * .38], [edge, offset + r * .58], [r * side * .24, 0]],
+                    steel ? "#cfddf399" : "#b8bece63");
+            }
+        }
+        pulseRing(ctx, 0, 0, r * (1.05 + p * 2.0), effect.blocked ? "#cde1ff" : ink, r * .071);
+    } else if (style === "mine" || style === "sale") {
+        if (style === "mine") {
+            for (const side of [-1, 1]) {
+                pulseLine(ctx, 0, 0, r * .22, side * r * .47, "#a7acaa", r * .052);
+                pulseLine(ctx, r * .22, side * r * .47, -r * .055, side * r * .95, "#a7acaa", r * .039);
+                pulseLine(ctx, r * .22, side * r * .47, r * .49, side * r * .66, "#a7acaa", r * .027);
+            }
+        }
+        for (let index = 0; index < 6; index += 1) {
+            const gx = style === "sale" ? (index - 2.5) * r * p * .4 : r * (.18 + p * (index % 3 + .55));
+            const gy = style === "sale" ? -r * (p * (1.4 + index * .17)) : Math.sin(index * 3.75) * r * (p * 1.1 + .3);
+            const size = r * (.10 + index % 3 * .030);
+            if (style === "sale") wdcDisc(ctx, gx, gy, size, "#efbe53", "#fff0a6", size * .21);
+            else wdcPolygon(ctx, [[gx - size, gy], [gx, gy - size * .82], [gx + size, gy],
+                [gx + size * .35, gy + size * .85], [gx - size * .35, gy + size * .85]], "#69ec69", "#276136", size * .18);
+        }
+    } else if (style === "edit-pixels") {
+        for (let index = 0; index < (options.reducedMotion ? 14 : 36); index += 1) {
+            const angle = index * 2.39996;
+            const offset = r * (.31 + (index % 7) * .11 + p * (.4 + index % 6 * .25));
+            const size = r * (.055 + index % 4 * .044) * (1 - p * .6);
+            ctx.fillStyle = ["#9fe9ff", "#3f9aed", "#e7f8ff"][index % 3];
+            ctx.fillRect(Math.cos(angle) * offset, Math.sin(angle) * offset - p * r * .88, size, size);
+        }
+    } else {
+        const tint = {
+            summon: effect.recall ? "#bc8afa" : "#9bd6ff", dodge: "#fff0ad", punch: "#ffe4b8",
+            limitless: "#a4ccff", purple: "#cc8dff", disintegrator: "#fc6d5c", wrap: "#bfadff",
+            convergence: "#b0cbf8", steel: "#c5d9f2", shield: "#8caeec",
+        }[style] || ink;
+        const quiet = options.reducedMotion;
+        const dodge = style === "dodge";
+        const length = r * (dodge ? 3.1 : 1.8);
+        const width = r * (dodge ? .023 : .038);
+        if (!dodge) {
+            pulseRing(ctx, 0, 0, r * (.48 + p * 2.0), tint, r * (.042 + (1 - p) * .07));
+            pulseRing(ctx, 0, 0, r * (.27 + p * 1.54), ink, width);
+        }
+        for (let index = 0; index < (quiet ? 5 : 13); index += 1) {
+            const angle = index * 2.39996;
+            const drift = r * (.22 + p * (1.2 + (index % 5) * .29));
+            const dx = Math.cos(angle);
+            const dy = Math.sin(angle);
+            const mx = dx * drift;
+            const my = dy * drift;
+            if (style === "limitless" && index % 2 === 0) {
+                const size = r * (.085 + index % 3 * .052);
+                wdcPolygon(ctx, [[mx - size, my], [mx - size * .22, my - size], [mx + size, my - size * .52],
+                    [mx + size * .63, my + size], [mx - size * .47, my + size * .84]], tint, ink, r * .021);
+            } else if (dodge) {
+                pulseLine(ctx, mx - length * (.35 + p * .72), my, mx, my, index % 2 ? tint : ink, width);
+            } else {
+                const edge = drift + r * (.22 + index % 4 * .11);
+                pulseLine(ctx, mx, my, dx * edge, dy * edge, index % 3 ? tint : ink, width);
+            }
+        }
+    }
+    ctx.restore();
+}
+
+export function drawClassicPulseOutsideArena(ctx, sim, options, resultAge = 0) {
+    for (const fighter of sim.fighters || []) {
+        const form = fighter.classicWdcForm;
+        if (!fighter.alive || !fighter.classicWdcReserve || !form) continue;
+        const { arenaBounds: bounds } = sim;
+        const radius = fighter.radius;
+        const spaceAbove = options.spaceAbove >= radius * 4.6;
+        const side = fighter.classicTeamIndex === 0 ? -1 : 1;
+        const age = sim.time - (form.phase === "recall" ? form.returnAt : form.reserveAt);
+        const progress = Math.max(0, Math.min(1, age / .36));
+        const amount = 1 - (1 - progress) ** 3;
+        const { x, y } = form.phase === "recall" ? form.entry : { x: form.reserveX, y: form.reserveY };
+        const perch = {
+            x: spaceAbove ? x : bounds.x + bounds.width * (side > 0 ? 1 : 0) + side * radius * .47,
+            y: bounds.y - radius * (spaceAbove ? 2.92 : .49),
+        };
+        const parked = form.phase === "recall" ? 1 - amount : amount;
+        const point = { x: x + (perch.x - x) * parked, y: y + (perch.y - y) * parked };
+        ctx.save();
+        if (spaceAbove && Math.abs(point.y - options.titleY) < radius) {
+            ctx.globalAlpha = .30 + .70 * Math.abs(point.y - options.titleY) / radius;
+        }
+        const def = CLASS_DEFS.wdc;
+        wdcOrb(ctx, point, radius * (spaceAbove ? 1 : 1 - parked * .42), def.color, def.accent, fighter.health);
+        ctx.restore();
+    }
+    for (const effect of sim.effects || []) {
+        if (effect.kind !== "classic-pulse-burst" || !classicPulseIsWide(effect.style) || effect.life <= resultAge) continue;
+        drawClassicPulseBurst(ctx, { ...effect, life: effect.life - resultAge }, options);
+    }
 }
 
 function wdcArenaFrame(ctx, board, gap) {
@@ -7030,7 +9001,7 @@ export function drawClassicWdcDuel(ctx, sim, width, height, { flashReduction = f
                 ctx.restore();
             }
         }
-        wdcOrb(ctx, summonPoint, radius, summon.color, summon.rim, 100, summon === WDC_SUMMONS.unarmed);
+        drawWdcSummonOrb(ctx, summonPoint, radius, pose.summon.id, 100, pose.beam?.angle ?? 0, Boolean(pose.beam));
         if (pose.shop) {
             const angle = pose.shop.selling ? -.87 : time * 3.6;
             wdcPickaxe(ctx, summonPoint.x, summonPoint.y, radius, angle);

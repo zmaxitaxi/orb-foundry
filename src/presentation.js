@@ -1,4 +1,4 @@
-import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261108-wdc-duel3";
+import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261109-classic-signature2";
 
 export const THEME_IDS = Object.freeze([
   "cream-foundry",

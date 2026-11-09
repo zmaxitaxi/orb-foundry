@@ -35,9 +35,58 @@ uses authored timing for the three summons, the shop, and the wall escape.
 Clear **Play the reference sequence** to use the same roster in a seeded duel.
 The reference option is saved with share links.
 
+In seeded Classic fights, WDC lifts out of the arena while a 100 HP summon
+fights. Each cycle draws Unarmed, the Exoelectric Disintegrator, and Emerald
+once. Emerald mines gems on wall rebounds and sells them at the market.
+One Punch Man starts at 1 HP and automatically dodges incoming damage with
+no cooldown or charge limit. From 36 seconds on, the fight ends in a draw
+if only One Punch Man remains on both teams. Distance and charge determine
+when a normal punch, barrage, flying-glove shockwave, or Serious Punch is
+available. The seed gives recent moves less weight when it picks an attack.
+
+Gojo, John Rod, One Above All, and Knight are available in the Classic roster.
+Their abilities include Limitless and Hollow Purple, Final Wrap, Convergence
+Ring, and Shield Bash. Charge, contact, and defense have separate sound cues
+on the same audio track used for recordings.
+
+Ben 10 cycles through a seeded bag of five aliens. XLR8 dodges and circles
+opponents into a tornado. Heatblast sweeps a wide flame blast. Diamondhead
+guards and charges for 32 damage. Four Arms grabs and throws opponents into
+the wall, leaving a dent in its outline. Cannonbolt grows to a third of the
+arena width and hits for 30. On its first breakout, it cuts a gap in the
+wall, rolls outside, and returns on the opposite side. The dent and gap stay
+visible for the rest of the fight.
+
+Darth Vader holds an opponent for four Force choke damage ticks, throws a
+returning lightsaber, and winds up for a 34-damage close strike. Luke
+Skywalker uses a gap-closing Force Vault, a damaging Saber Lunge, and a
+two-hit combo. Saber paths fade in the arena and leave short-lived scorch
+marks where they touch the walls. WDC's three summons have their own bodies
+and weapons in live fights and the authored showcase.
+Snowball packs snow on wall bounces and launches a ricocheting Avalanche
+every third bounce. The shards deal damage on contact.
+
+The 48 original Classic fighters each have a separate once-per-fight power.
+Sword spends Slipstream to dodge a strike or dash into attack range. Blue
+Sun releases an expanding Solar Prominence, Black Hole converges twin
+gravity wells, and the gun fighters have separate firing patterns. Windups
+show where to move, and only contact with the live attack deals damage. The
+[Classic roster](docs/CLASSIC_ROSTER.md#once-per-duel-powers) lists every power.
+
+One-on-one Classic fights open from a seeded diagonal. The fighters circle
+inward, then the first clash sends them apart sideways at about twice their
+normal speed before the boost fades.
+
+Classic defaults to a black arena, a white frame, pixel matchup titles, and
+ability meters. Team colors and the light arena are optional. The
+[Classic direction](docs/FUTURE.md#classic-direction) describes the visual
+standard and the next channel experiment. See the
+[Classic combat style guide](docs/CLASSIC_STYLE.md) for the move design and
+recording criteria.
+
 ## Visual Language
 
-Every visible orb uses the flat Social Battle treatment:
+Most fighters use the flat Social Battle treatment:
 
 - Solid class color
 - Dark circular outline

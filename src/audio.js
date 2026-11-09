@@ -6,7 +6,9 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261108-wdc-duel3";
+} from "./classic-orbs.js?v=20261109-classic-signature2";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261109-classic-signature2";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -59,6 +61,13 @@ export const ANNOUNCER_NAMES = Object.freeze({
   commander: "Commander",
   wdc: "WDC",
   "one-punch-man": "One Punch Man",
+  gojo: "Gojo",
+  "john-rod": "John Rod",
+  "one-above-all": "One Above All",
+  knight: "Knight",
+  "ben-10": "Ben 10",
+  "darth-vader": "Darth Vader",
+  "luke-skywalker": "Luke Skywalker",
 });
 
 export const ANNOUNCER_TYPES = Object.freeze(Object.keys(ANNOUNCER_NAMES));
@@ -305,7 +314,7 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20261108-wdc-announcer1";
+export const ANNOUNCER_ASSET_VERSION = "20261108-omnitrix-announcer1";
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
@@ -410,6 +419,13 @@ export const INTRO_ANNOUNCER_ASSETS = Object.freeze({
   ...CLASSIC_OVERHAUL_ANNOUNCER_ASSETS,
   "intro-wdc": "classic-local/wdc.mp3",
   "intro-one-punch-man": "classic-local/one-punch-man.mp3",
+  "intro-gojo": "classic-local/gojo.mp3",
+  "intro-john-rod": "classic-local/john-rod.mp3",
+  "intro-one-above-all": "classic-local/one-above-all.mp3",
+  "intro-knight": "classic-local/knight.mp3",
+  "intro-ben-10": "classic-local/ben-10.mp3",
+  "intro-darth-vader": "classic-local/darth-vader.mp3",
+  "intro-luke-skywalker": "classic-local/luke-skywalker.mp3",
 });
 
 const WORLD_CUP_ANNOUNCER_ASSET_OVERRIDES = Object.freeze({
@@ -518,6 +534,16 @@ export const ANNOUNCER_FALLBACKS = Object.freeze({
 });
 
 export const SAMPLE_ASSETS = Object.freeze({
+  "classic-luke-swing": "classic-luke-swing.mp3",
+  "classic-luke-reverse": "classic-luke-reverse.mp3",
+  "classic-luke-vault": "classic-luke-vault.mp3",
+  "classic-luke-lunge": "classic-luke-lunge.mp3",
+  "classic-luke-evade": "classic-luke-evade.mp3",
+  "classic-vader-swing": "classic-vader-swing.mp3",
+  "classic-vader-throw": "classic-vader-throw.mp3",
+  "classic-vader-return": "classic-vader-return.mp3",
+  "classic-omnitrix-dial": "classic-omnitrix-dial.mp3",
+  "classic-omnitrix-transform": "classic-omnitrix-transform.mp3",
   "match-finale": "match-finale.wav",
   "chrono-time-stop": "chrono-time-stop.wav",
   "weapon-hit": "fantasy-sword-hit.mp3",
@@ -574,7 +600,7 @@ export const SAMPLE_ASSETS = Object.freeze({
 
 export const MATCH_FINALE_DURATION_SECONDS = 3.47;
 export const MATCH_FINALE_RECORDING_TAIL_MS = 1_200;
-export const SAMPLE_ASSET_VERSION = "20260825-tsar-all-in-one1";
+export const SAMPLE_ASSET_VERSION = "20261108-classic-sabers1";
 
 const METAL_FOUNDATION = Object.freeze({
   layers: [
@@ -709,22 +735,128 @@ const ORB_SIGNATURES = Object.freeze({
 });
 
 const WDC_CUE_SOUNDS = Object.freeze({
-  bounce: { signature: "wdc-bounce", rateLimit: .04, layers: [[305, 146, .054, .15, "sine"], [1180, 450, .024, .028, "triangle"]] },
-  portal: { signature: "wdc-portal", layers: [[122, 330, .41, .075, "triangle"], [390, 672, .32, .045, "sine"]], noises: [[.39, .034, 720, 1.2, "bandpass"]] },
-  summon: { signature: "wdc-summon", layers: [[850, 320, .20, .094, "sine"], [510, 180, .18, .040, "triangle"]] },
-  recall: { signature: "wdc-recall", layers: [[438, 155, .20, .10, "sine"]] },
-  windup: { signature: "wdc-punch-windup", noises: [[.115, .055, 1410, .9, "bandpass"]] },
-  punch: { signature: "wdc-punch", layers: [[168, 49, .135, .29, "sine"], [290, 83, .075, .12, "triangle"]], noises: [[.105, .13, 1830, 1.1, "bandpass"]] },
-  serious: { signature: "wdc-serious-punch", layers: [[122, 39, .28, .34, "sine"], [460, 78, .18, .12, "triangle"]], noises: [[.23, .18, 1360, .65, "bandpass"]] },
-  charge: { signature: "wdc-exoelectric-charge", layers: [[119, 392, .69, .085, "triangle"], [390, 1320, .62, .040, "sine"]], noises: [[.58, .036, 1800, 1.7, "bandpass"]] },
-  beam: { signature: "wdc-exoelectric-beam", layers: [[186, 48, .73, .25, "sawtooth"], [95, 38, .67, .18, "sine"]], noises: [[.75, .18, 760, .9, "lowpass"], [.31, .072, 2330, 1, "bandpass"]] },
-  mine: { signature: "wdc-mine", layers: [[990, 556, .12, .13, "triangle"], [1520, 892, .11, .045, "sine"]] },
-  sell: { signature: "wdc-sell", layers: [[980, 980, .13, .13, "sine"], [1490, 1490, .23, .085, "sine"], [2010, 1910, .18, .045, "triangle"]] },
+  bounce: { signature: "wdc-bounce", rateLimit: .042, layers: [[274, 126, .072, .16, "sine"], [830, 550, .035, .043, "triangle"]], noises: [[.022, .025, 2260, 1.4, "bandpass"]] },
+  portal: { signature: "wdc-portal", layers: [[66, 151, .59, .15, "sine", 0, .095], [128, 292, .52, .072, "triangle", .025, .16], [657, 413, .34, .048, "sine", .18, .063]], noises: [[.51, .074, 950, 1.35, "bandpass", .02, .13], [.13, .045, 3300, 1.8, "bandpass", .29]] },
+  summon: { signature: "wdc-summon", layers: [[371, 143, .16, .13, "sine"], [832, 616, .22, .079, "sine", .026], [1260, 1120, .27, .037, "triangle", .058]], noises: [[.18, .058, 1980, .88, "bandpass"]] },
+  recall: { signature: "wdc-recall", layers: [[440, 112, .28, .106, "triangle"], [806, 210, .18, .03, "sine", .045]], noises: [[.24, .049, 1380, .95, "bandpass", 0, .045]] },
+  windup: { signature: "wdc-punch-windup", noises: [[.142, .083, 1480, .9, "bandpass", 0, .023], [.062, .040, 4150, .85, "highpass", .036]] },
+  punch: { signature: "wdc-punch", layers: [[178, 52, .14, .30, "sine"], [412, 92, .061, .126, "triangle"]], noises: [[.092, .16, 1770, 1.1, "bandpass"], [.033, .10, 4600, .85, "highpass"]] },
+  serious: { signature: "wdc-serious-punch", priorityEffects: true, layers: [[109, 32, .39, .36, "sine"], [415, 72, .19, .14, "triangle"], [76, 27, .47, .15, "sine", .08, .039]], noises: [[.10, .21, 2360, .82, "bandpass"], [.33, .13, 620, .78, "lowpass", .023]] },
+  charge: { signature: "wdc-exoelectric-charge", layers: [[76, 276, .75, .12, "triangle", 0, .18], [351, 1860, .64, .058, "sine", .055, .22], [582, 2300, .42, .034, "triangle", .20, .17]], noises: [[.57, .070, 1930, 1.7, "bandpass", .11, .11]] },
+  beam: { signature: "wdc-exoelectric-beam", priorityEffects: true, layers: [[103, 36, .76, .26, "sine"], [257, 57, .61, .13, "sawtooth", .018, .035], [523, 139, .43, .083, "triangle", .036, .015]], noises: [[.78, .24, 710, .84, "lowpass", 0, .021], [.50, .10, 2380, 1.2, "bandpass", .013, .052], [.11, .11, 4140, .9, "highpass"]] },
+  "beam-hit": { signature: "wdc-beam-scorch", layers: [[146, 49, .14, .12, "triangle"]], noises: [[.17, .11, 1800, .8, "bandpass"]] },
+  mine: { signature: "wdc-mine", rateLimit: .05, layers: [[842, 515, .090, .11, "triangle"], [1560, 1100, .12, .071, "sine", .020], [2260, 1680, .14, .046, "sine", .074]], noises: [[.058, .13, 3110, 1.9, "bandpass"]] },
+  pickaxe: { signature: "wdc-pickaxe-clink", layers: [[1300, 680, .11, .11, "triangle"], [2670, 2130, .097, .079, "sine"]], noises: [[.044, .1, 3700, 1.4, "bandpass"]] },
+  sell: { signature: "wdc-sell", layers: [[784, 782, .13, .116, "sine"], [1175, 1170, .16, .109, "sine", .062], [1568, 1555, .30, .10, "triangle", .116], [2360, 2310, .20, .043, "sine", .132]] },
   pay: { signature: "wdc-pay", layers: [[1390, 1160, .12, .11, "triangle"]] },
   bag: { signature: "wdc-bag", noises: [[.24, .074, 1660, .65, "highpass"]] },
   "wall-break": { signature: "wdc-wall-break", layers: [[156, 61, .21, .17, "sine"]], noises: [[.32, .22, 2070, .8, "bandpass"], [.25, .085, 4700, 1.6, "highpass"]] },
   escape: { signature: "wdc-escape", layers: [[440, 880, .22, .085, "triangle"]], noises: [[.15, .030, 1190, 1.2, "bandpass"]] },
 });
+
+const PULSE_CUE_SOUNDS = Object.freeze({
+  windup: WDC_CUE_SOUNDS.windup,
+  punch: WDC_CUE_SOUNDS.punch,
+  serious: WDC_CUE_SOUNDS.serious,
+  "serious-windup": { signature: "pulse-serious-windup", layers: [[77, 188, .21, .145, "triangle", 0, .085], [417, 875, .17, .069, "sine", .028, .08]], noises: [[.19, .10, 1780, 1.23, "bandpass", 0, .064]] },
+  "barrage-windup": { signature: "pulse-barrage-windup", layers: [[232, 618, .14, .074, "triangle", 0, .048]], noises: [[.13, .069, 1970, 1.0, "bandpass"]] },
+  "barrage-swing": { signature: "pulse-barrage-swing", rateLimit: .058, noises: [[.082, .11, 1870, 1.32, "bandpass", 0, .012]] },
+  "barrage-hit": { signature: "pulse-barrage-hit", rateLimit: .067, layers: [[155, 57, .095, .21, "sine"]], noises: [[.062, .115, 2380, 1.02, "bandpass"]] },
+  "shockwave-windup": { signature: "pulse-shockwave-windup", layers: [[92, 264, .25, .11, "sine", 0, .10], [446, 1132, .19, .047, "triangle", .042, .10]], noises: [[.22, .07, 2210, 1.3, "bandpass", .025, .07]] },
+  shockwave: { signature: "pulse-shockwave-launch", priorityEffects: true, layers: [[166, 50, .26, .23, "sine"], [740, 124, .18, .095, "triangle"]], noises: [[.21, .16, 1610, .85, "bandpass", 0, .009]] },
+  "shockwave-hit": { signature: "pulse-shockwave-impact", layers: [[117, 44, .22, .26, "sine"], [437, 185, .10, .097, "triangle"]], noises: [[.125, .16, 2460, .88, "bandpass"]] },
+  "shockwave-wall": { signature: "pulse-shockwave-wall", layers: [[184, 65, .15, .118, "sine"]], noises: [[.13, .10, 1830, .81, "bandpass"]] },
+  dodge: { signature: "pulse-sidestep", layers: [[927, 292, .14, .052, "triangle", .012, .028]], noises: [[.16, .12, 2630, 1.23, "bandpass", 0, .041], [.068, .053, 4760, 1.1, "highpass", .039]] },
+  limitless: { signature: "pulse-limitless", layers: [[1168, 687, .23, .11, "sine"], [1990, 1630, .29, .081, "sine", .019], [2780, 2260, .18, .048, "triangle", .048]], noises: [[.16, .095, 5100, 1.4, "highpass"]] },
+  "purple-merge": { signature: "pulse-purple-merge", layers: [[293, 728, .90, .072, "sine", 0, .27], [949, 733, .79, .079, "sine", .09, .24], [140, 365, .63, .061, "triangle", .22, .16]], noises: [[.62, .058, 2280, 2.2, "bandpass", .20, .16]] },
+  "hollow-purple": { signature: "pulse-hollow-purple", priorityEffects: true, layers: [[146, 42, .65, .24, "sine"], [668, 164, .47, .118, "triangle", 0, .016], [1160, 396, .35, .047, "sine", .024, .028]], noises: [[.63, .21, 1040, .92, "lowpass", 0, .029], [.34, .11, 3020, .98, "bandpass"]] },
+  "purple-hit": { signature: "pulse-purple-impact", layers: [[225, 57, .20, .18, "sine"]], noises: [[.21, .14, 2000, .83, "bandpass"]] },
+  "rod-cycle": { signature: "pulse-rod-cycle", layers: [[1280, 824, .11, .095, "triangle"], [2060, 1340, .16, .062, "sine", .099], [1540, 870, .18, .082, "triangle", .223]], noises: [[.25, .068, 3520, 1.4, "bandpass", .062, .048]] },
+  wrap: { signature: "pulse-wrap-fold", layers: [[368, 171, .26, .13, "triangle"], [1330, 690, .22, .08, "triangle", .082]], noises: [[.27, .104, 2160, 1.1, "bandpass", 0, .05]] },
+  "wrap-hit": { signature: "pulse-wrap-hit", layers: [[184, 52, .22, .23, "sine"], [1490, 839, .11, .10, "triangle"]], noises: [[.14, .17, 2930, 1.6, "bandpass"]] },
+  convergence: { signature: "pulse-convergence", layers: [[494, 496, .85, .087, "sine", 0, .17], [741, 747, .77, .082, "sine", .14, .22], [1090, 1120, .57, .071, "sine", .35, .23]], noises: [[.64, .039, 3860, 1.6, "bandpass", .27, .17]] },
+  "convergence-lock": { signature: "pulse-convergence-lock", layers: [[1570, 1542, .135, .078, "sine"], [1770, 1760, .14, .064, "triangle", .105], [2360, 2335, .19, .045, "sine", .22]] },
+  "convergence-hit": { signature: "pulse-convergence-edit", priorityEffects: true, layers: [[152, 47, .35, .215, "sine"], [1420, 363, .19, .105, "triangle", .04]], noises: [[.34, .14, 4330, 1.35, "highpass", .026, .05]] },
+  "shield-ready": { signature: "pulse-shield-ready", layers: [[710, 908, .26, .08, "sine", 0, .047], [1590, 1400, .23, .058, "sine", .048]] },
+  "shield-bash": { signature: "pulse-shield-bash", layers: [[116, 47, .22, .22, "sine"], [648, 265, .18, .095, "triangle"]], noises: [[.17, .116, 1610, 1.05, "bandpass"]] },
+  "shield-block": { signature: "pulse-shield-block", layers: [[740, 605, .33, .12, "triangle"], [1550, 1470, .29, .091, "sine", .010]], noises: [[.097, .16, 3000, 1.22, "bandpass"]] },
+  "steel-hit": { signature: "pulse-steel-hit", layers: [[1117, 690, .19, .125, "triangle"], [2380, 1840, .22, .072, "sine"]], noises: [[.076, .12, 3580, 1.1, "bandpass"]] },
+  "lateral-clash": { signature: "classic-lateral-clash", rateLimit: .25, layers: [[162, 45, .19, .14, "sine"], [590, 198, .11, .078, "triangle"]], noises: [[.13, .12, 2340, 1.03, "bandpass"]] },
+  "snow-pack": { signature: "avalanche-pack", noises: [[.11, .095, 1450, .82, "bandpass"]], layers: [[464, 630, .10, .05, "triangle"]] },
+  "snow-release": { signature: "avalanche-release", layers: [[186, 64, .28, .16, "sine"], [1510, 840, .22, .059, "triangle"], [2040, 1110, .24, .040, "triangle", .035]], noises: [[.30, .16, 3180, .92, "bandpass"]] },
+  "omnitrix-tell": { signature: "omnitrix-dial", layers: [[620, 620, .095, .095, "triangle"], [810, 810, .09, .084, "triangle", .125], [1080, 1080, .10, .078, "sine", .25]] },
+  "omnitrix-transform": { signature: "omnitrix-transform", priorityEffects: true, layers: [[145, 490, .35, .14, "sawtooth", 0, .045], [622, 1760, .38, .097, "triangle", .04, .063], [1320, 820, .35, .07, "sine", .16]], noises: [[.25, .085, 2630, 1.3, "bandpass"]] },
+  "omnitrix-reset": { signature: "omnitrix-reset", layers: [[758, 745, .10, .10, "triangle"], [421, 400, .15, .09, "triangle", .114]] },
+  "alien-windup": { signature: "omnitrix-attack-ready", layers: [[257, 516, .16, .073, "sine", 0, .051]] },
+  xlr8: { signature: "xlr8-zip", layers: [[1740, 370, .17, .076, "triangle"]], noises: [[.21, .12, 3350, 1.2, "bandpass", 0, .024]] },
+  "xlr8-dodge": { signature: "xlr8-evade", layers: [[605, 2340, .08, .075, "triangle"], [2250, 480, .17, .060, "sine", .047]], noises: [[.16, .11, 4560, .90, "highpass"]] },
+  "xlr8-tornado": { signature: "xlr8-tornado", layers: [[277, 940, .48, .07, "triangle", 0, .11], [511, 813, .40, .052, "sine", .13, .13]], noises: [[.76, .18, 1710, 1.1, "bandpass", 0, .17], [.48, .10, 3430, 1.2, "bandpass", .12, .14]] },
+  "xlr8-tornado-hit": { signature: "xlr8-tornado-contact", rateLimit: .14, layers: [[385, 98, .14, .115, "triangle"]], noises: [[.13, .10, 2650, 1.0, "bandpass"]] },
+  heatblast: { signature: "heatblast-flare", priorityEffects: true, layers: [[116, 49, .47, .14, "triangle"]], noises: [[.56, .20, 800, .89, "lowpass", 0, .055], [.49, .13, 2150, .90, "bandpass", .035, .065]] },
+  "heatblast-hit": { signature: "heatblast-contact", rateLimit: .14, layers: [[174, 48, .16, .12, "sine"]], noises: [[.15, .13, 1830, .90, "bandpass"]] },
+  diamondhead: { signature: "diamondhead-crystal-charge", layers: [[1340, 571, .25, .09, "triangle"], [2200, 1300, .23, .069, "sine", .029]], noises: [[.26, .086, 2200, 1.17, "bandpass", 0, .035]] },
+  "diamond-guard": { signature: "diamondhead-guard", layers: [[1040, 935, .25, .13, "triangle"], [2290, 2060, .30, .083, "sine", .022]], noises: [[.088, .12, 4970, 1.3, "highpass"]] },
+  "diamond-charge-hit": { signature: "diamondhead-crystal-impact", priorityEffects: true, layers: [[158, 40, .32, .24, "sine"], [1720, 461, .25, .11, "triangle"]], noises: [[.25, .19, 2930, 1.24, "bandpass"]] },
+  "four-arms": { signature: "four-arms-reach", layers: [[182, 98, .19, .12, "triangle"]], noises: [[.17, .10, 1760, 1.06, "bandpass", 0, .03]] },
+  "four-arms-grab": { signature: "four-arms-grip", layers: [[147, 55, .21, .15, "sine"]], noises: [[.14, .11, 1170, .91, "bandpass"]] },
+  "four-arms-throw": { signature: "four-arms-throw", layers: [[261, 82, .20, .16, "triangle"]], noises: [[.27, .15, 2150, 1.07, "bandpass", 0, .028]] },
+  "four-arms-wall-hit": { signature: "four-arms-wall-crater", priorityEffects: true, layers: [[123, 27, .38, .25, "sine"], [593, 87, .22, .12, "triangle"]], noises: [[.28, .21, 974, .94, "lowpass"], [.13, .13, 3530, 1.3, "bandpass", .025]] },
+  cannonbolt: { signature: "cannonbolt-roll", layers: [[74, 156, .28, .105, "triangle", 0, .035], [123, 260, .25, .074, "sawtooth", .040]], noises: [[.37, .14, 850, .78, "lowpass"]] },
+  "cannonbolt-exit": { signature: "cannonbolt-wall-break", priorityEffects: true, layers: [[145, 32, .32, .21, "sine"], [437, 88, .18, .092, "triangle"]], noises: [[.22, .18, 1280, .96, "bandpass"], [.19, .12, 3490, 1.15, "bandpass", .045]] },
+  "cannonbolt-enter": { signature: "cannonbolt-reentry", layers: [[109, 412, .22, .14, "triangle"], [249, 608, .20, .062, "sine", .04]], noises: [[.22, .13, 2090, 1.07, "bandpass"]] },
+  "roll-hit": { signature: "cannonbolt-hit", layers: [[160, 36, .26, .22, "triangle"]], noises: [[.18, .17, 1350, 1.13, "bandpass"]] },
+  "saber-tell": { signature: "saber-hilt-charge", layers: [[121, 160, .18, .087, "sawtooth", 0, .031], [344, 265, .23, .054, "triangle", .018]] },
+  "force-tell": { signature: "force-choke-tell", layers: [[89, 58, .31, .124, "sine", 0, .086], [150, 118, .27, .080, "triangle", .045]], noises: [[.27, .066, 650, 1.1, "lowpass"]] },
+  "force-grip": { signature: "force-choke-grip", layers: [[110, 47, .38, .145, "triangle"], [244, 131, .35, .06, "sine", .028]], noises: [[.30, .085, 560, 1.1, "lowpass"]] },
+  "force-choke-tick": { signature: "force-choke-tick", rateLimit: .12, layers: [[118, 52, .127, .13, "triangle"], [241, 122, .097, .046, "sine"]], noises: [[.093, .067, 1130, 1.28, "bandpass"]] },
+  "force-release": { signature: "force-choke-release", layers: [[204, 43, .26, .18, "sine"]], noises: [[.20, .14, 1400, 1.1, "bandpass"]] },
+  "force-vault": { signature: "luke-force-vault", layers: [[276, 852, .24, .08, "triangle", 0, .05]], noises: [[.20, .085, 1960, 1.0, "bandpass"]] },
+  "saber-lunge": { signature: "luke-saber-lunge", layers: [[285, 136, .22, .11, "sawtooth", 0, .02]], noises: [[.16, .10, 2760, 1.13, "bandpass"]] },
+  "luke-evade": { signature: "luke-evade", rateLimit: .18, layers: [[840, 680, .11, .075, "triangle"]], noises: [[.10, .062, 3300, 1.16, "bandpass"]] },
+  "saber-swing": { signature: "saber-sweep", layers: [[288, 111, .23, .12, "sawtooth", 0, .041], [480, 200, .20, .065, "triangle", .014]], noises: [[.16, .09, 2180, 1.32, "bandpass"]] },
+  "saber-follow-through": { signature: "saber-reverse-sweep", layers: [[160, 350, .19, .12, "sawtooth", 0, .035], [386, 584, .15, .066, "triangle", .022]], noises: [[.16, .10, 2960, 1.27, "bandpass"]] },
+  "saber-hit": { signature: "saber-spark-contact", layers: [[186, 55, .17, .15, "triangle"], [1760, 620, .18, .085, "triangle"]], noises: [[.095, .135, 3550, 1.22, "bandpass"]] },
+  "vader-windup": { signature: "vader-heavy-windup", layers: [[107, 172, .36, .106, "sawtooth", 0, .14], [77, 49, .37, .09, "sine"]], noises: [[.22, .045, 880, 1.3, "bandpass", .08, .05]] },
+  "vader-heavy-hit": { signature: "vader-heavy-saber-impact", priorityEffects: true, layers: [[136, 34, .29, .235, "sine"], [1510, 620, .19, .107, "sawtooth", .012]], noises: [[.135, .168, 3310, 1.13, "bandpass"], [.22, .116, 825, 1.09, "lowpass"]] },
+  "saber-throw": { signature: "saber-throw-spin", layers: [[266, 128, .24, .13, "sawtooth", 0, .033], [237, 121, .24, .083, "sawtooth", .115, .045], [203, 102, .27, .068, "triangle", .237, .051]] },
+  "saber-return": { signature: "saber-return-spin", layers: [[127, 304, .27, .10, "sawtooth", 0, .062], [180, 392, .19, .059, "triangle", .12]] },
+  "saber-catch": { signature: "saber-catch", layers: [[332, 93, .11, .12, "sawtooth"]], noises: [[.07, .068, 2500, 1.06, "bandpass"]] },
+  "saber-wall-scorch": { signature: "saber-wall-scorch", rateLimit: .15, noises: [[.15, .10, 3570, 1.28, "bandpass"], [.075, .066, 4700, .96, "highpass", .025]] },
+});
+
+const CLASSIC_CRAFT_SOUNDS = Object.freeze({
+  "snow-bank": { signature: "avalanche-bank", rateLimit: .115, layers: [[1470, 970, .11, .077, "triangle"]], noises: [[.082, .079, 4900, 1.2, "highpass"]] },
+  "snow-shard-hit": { signature: "avalanche-shard-hit", rateLimit: .078, layers: [[840, 320, .14, .11, "triangle"]], noises: [[.10, .123, 3050, 1.2, "bandpass"]] },
+  bee: { signature: "hive-wing-buzz", rateLimit: .14, layers: [[193, 272, .21, .074, "triangle", 0, .025], [392, 542, .16, .045, "sawtooth", .014, .035]], noises: [[.17, .046, 1770, 1.35, "bandpass"]] },
+  "bee-hit": { signature: "hive-sting", rateLimit: .08, layers: [[590, 205, .09, .097, "triangle"]], noises: [[.059, .075, 2240, 1.5, "bandpass"]] },
+  "fairy-ammo": { signature: "fairy-wand-chime", rateLimit: .10, layers: [[1290, 1615, .16, .077, "sine"], [2180, 2000, .24, .064, "sine", .044], [2610, 1940, .24, .035, "triangle", .088]] },
+  "fairy-ammo-hit": { signature: "fairy-wand-spark", rateLimit: .08, layers: [[2140, 1290, .13, .083, "sine"], [552, 204, .085, .079, "triangle"]], noises: [[.09, .07, 3380, 1.1, "bandpass"]] },
+  train: { signature: "train-whistle", priorityEffects: true, layers: [[291, 330, .51, .10, "triangle", 0, .072], [369, 396, .42, .087, "sine", .026, .064], [92, 51, .44, .15, "sine", .064]], noises: [[.42, .095, 1110, .9, "bandpass", .024, .072], [.12, .12, 1550, 1.22, "bandpass", .30]] },
+  "train-hit": { signature: "train-metal-thud", rateLimit: .13, layers: [[118, 39, .26, .23, "sine"], [786, 462, .16, .079, "triangle"]], noises: [[.20, .12, 2130, .88, "bandpass"]] },
+  "train-track": { signature: "train-track-clack", rateLimit: .19, layers: [[262, 158, .077, .081, "triangle"]], noises: [[.056, .063, 1730, 1.6, "bandpass"]] },
+  "classic-artist-drawing": { signature: "artist-brush", rateLimit: .13, noises: [[.27, .061, 1510, 1.7, "bandpass", 0, .032], [.18, .047, 2200, 1.3, "bandpass", .24, .049], [.19, .062, 1780, 1.8, "bandpass", .59, .054]] },
+  "classic-artist-drawing-complete": { signature: "artist-paint-pop", layers: [[243, 86, .17, .15, "sine"], [812, 598, .21, .077, "triangle", .026], [1590, 1340, .22, .040, "sine", .058]], noises: [[.097, .076, 1370, .91, "bandpass"]] },
+  "monster-windup": { signature: "monster-growl", rateLimit: .09, layers: [[102, 62, .21, .096, "sawtooth", 0, .04]], noises: [[.17, .062, 560, .89, "lowpass", .008, .027]] },
+  "monster-hit": { signature: "monster-heavy-fist", rateLimit: .063, layers: [[111, 36, .23, .25, "sine"], [260, 92, .11, .10, "triangle"]], noises: [[.13, .14, 1060, .85, "bandpass"]] },
+});
+
+function classicCraftSoundFor(event) {
+  if (event.gameplayMode !== "classic") return null;
+  if (event.type === "classic-projectile-wall-bounce" && event.projectileKind === "snow-shard") {
+    return CLASSIC_CRAFT_SOUNDS["snow-bank"];
+  }
+  if (event.type === "classic-projectile-hit" && event.projectileKind === "snow-shard" && event.amount <= 0) {
+    return null;
+  }
+  if (event.type === "classic-projectile-fired") return CLASSIC_CRAFT_SOUNDS[event.projectileKind];
+  if (event.type === "classic-projectile-hit") return CLASSIC_CRAFT_SOUNDS[`${event.projectileKind}-hit`];
+  if (event.type === "classic-hazard-spawn" && event.hazardKind === "train-track") return CLASSIC_CRAFT_SOUNDS["train-track"];
+  if (event.fighterType === "monster") {
+    if (event.type === "classic-boxer-punch-start") return CLASSIC_CRAFT_SOUNDS["monster-windup"];
+    if (event.type === "classic-punch-hit") return CLASSIC_CRAFT_SOUNDS["monster-hit"];
+  }
+  return CLASSIC_CRAFT_SOUNDS[event.type];
+}
 
 const EVENT_SOUNDS = Object.freeze({
   "race-hydrogen-fuse-second": {
@@ -1119,6 +1251,11 @@ export const CLASSIC_AUDIO_POLICY = Object.freeze({
       "classic-freeze",
       "classic-apple-collected",
       "classic-wdc-cue",
+      "classic-pulse-cue",
+      "classic-power-cue",
+      "classic-artist-drawing",
+      "classic-artist-drawing-complete",
+      "classic-boxer-punch-start",
       "classic-sword-deflect",
       "classic-slice-hit",
       "classic-zeus-thunder",
@@ -1130,14 +1267,35 @@ export const CLASSIC_AUDIO_POLICY = Object.freeze({
 
 function classicAudioEventEnabled(event = {}) {
   const fighterType = event.fighterType || event.sourceType || event.classicOrbId;
-  if (event.gameplayMode === "classic" && fighterType === "frost-ball" && event.type !== "classic-freeze") return false;
+  if (event.gameplayMode === "classic" && fighterType === "ben-10" && event.type === "classic-projectile-fired") return false;
+  if (event.gameplayMode === "classic" && fighterType === "frost-ball" && event.type !== "classic-freeze"
+    && !["classic-pulse-cue", "classic-power-cue"].includes(event.type) && !classicCraftSoundFor(event)) return false;
+  if (event.gameplayMode === "classic" && fighterType === "one-punch-man" && event.type === "classic-punch-hit") return false;
   return event.gameplayMode !== "classic"
     || CLASSIC_AUDIO_POLICY.enabledEventTypes.includes(event.type);
 }
 
+const CLASSIC_MOTION_SAMPLES = Object.freeze({
+  "force-vault": ["classic-luke-vault", 0.82],
+  "saber-lunge": ["classic-luke-lunge", 0.77],
+  "luke-evade": ["classic-luke-evade", 0.85],
+  "saber-throw": ["classic-vader-throw", 0.86],
+  "saber-return": ["classic-vader-return", 0.80],
+  "omnitrix-tell": ["classic-omnitrix-dial", 0.77],
+  "omnitrix-transform": ["classic-omnitrix-transform", 0.88],
+});
+
 function classicSampleRouteFor(event = {}) {
   if (event.gameplayMode !== "classic") return null;
   const fighterType = event.fighterType || event.sourceType || event.classicOrbId;
+  if (event.type === "classic-pulse-cue") {
+    let motion = CLASSIC_MOTION_SAMPLES[event.cue];
+    if (event.cue === "saber-swing") {
+      motion = fighterType === "darth-vader" ? ["classic-vader-swing", 0.85]
+        : event.strike === 2 ? ["classic-luke-reverse", 0.86] : ["classic-luke-swing", 0.85];
+    }
+    if (motion) return { sample: motion[0], gain: motion[1], rateLimit: 0.065, rateRange: [0.985, 1.015] };
+  }
   if (fighterType === "frost-ball") {
     if (event.type !== "classic-freeze") return null;
     return { sample: "classic-snowball-freeze", gain: 0.9, rateLimit: 0.12, maxDuration: 1.4, rateRange: [0.96, 1.04] };
@@ -1235,7 +1393,7 @@ function classicSampleRouteFor(event = {}) {
     // still routed from classic-ability-start; firing every minion arrow
     // should not layer a magic burst on top of the visual bow release.
     if (fighterType === "necromancer") return null;
-    if (["sniper", "rifle"].includes(fighterType)) {
+    if (fighterType === "sniper" || (fighterType === "rifle" && !event.projectileKind)) {
       return { sample: "race-draft-rifle-fire", gain: 0.96, rateLimit: 0.06, maxDuration: 0.72, rateRange: [0.98, 1.03] };
     }
     if (fighterType === "shotgun") {
@@ -1373,19 +1531,77 @@ function contactPanForEvent(event) {
     if (event.raceTeamIndex === 1) return 0.35;
   }
   const x = Number(event.x);
-  return Number.isFinite(x) ? Math.max(-0.72, Math.min(0.72, (x / 960) * 1.44 - 0.72)) : 0;
+  const width = ["classic-wdc-cue", "classic-pulse-cue", "classic-power-cue"].includes(event.type) ? 720 : 960;
+  return Number.isFinite(x) ? Math.max(-0.72, Math.min(0.72, (x / width) * 1.44 - 0.72)) : 0;
+}
+
+const CLASSIC_POWER_RELEASES = Object.freeze({
+  "blue-sun": { layers: [[152, 46, .48, .23, "sine"], [630, 1380, .53, .096, "triangle", .055, .15], [1820, 920, .38, .085, "sine", .10]], noises: [[.58, .13, 2900, 1.15, "bandpass", .01, .105]] },
+  "black-hole": { layers: [[83, 39, .65, .21, "sine", 0, .10], [150, 48, .48, .13, "triangle", .18, .12], [67, 25, .38, .19, "sine", .43]], noises: [[.66, .16, 590, .95, "lowpass", .02, .26], [.28, .14, 1230, .95, "bandpass", .46]] },
+  sword: { layers: [[419, 1080, .19, .10, "triangle", 0, .028], [1630, 530, .23, .091, "sine", .036]], noises: [[.26, .15, 3250, 1.07, "bandpass", 0, .029]] },
+  pistol: { layers: [[1750, 1660, .13, .112, "triangle"], [2470, 1550, .16, .083, "sine", .10], [222, 65, .20, .139, "triangle", .20]], noises: [[.07, .123, 3990, 1.04, "bandpass"], [.10, .13, 3220, 1.02, "bandpass", .19]] },
+  shotgun: { layers: [[109, 30, .28, .28, "sine"], [438, 120, .22, .105, "triangle"]], noises: [[.30, .225, 1190, .89, "bandpass"], [.17, .113, 630, 1.1, "lowpass", .06]] },
+  rifle: { layers: [[331, 124, .13, .13, "triangle"], [410, 135, .13, .12, "triangle", .15], [504, 167, .17, .10, "sawtooth", .30]], noises: [[.10, .12, 2760, 1.22, "bandpass"], [.11, .11, 3120, 1.2, "bandpass", .15], [.15, .13, 3400, 1.1, "bandpass", .30]] },
+  sniper: { layers: [[1430, 182, .32, .117, "sawtooth", 0, .075], [187, 39, .33, .21, "sine", .16]], noises: [[.37, .17, 2570, 1.22, "bandpass", .04, .08]] },
+  draftmaster: { layers: [[233, 58, .24, .18, "triangle"], [1580, 645, .26, .112, "sine", .19]], noises: [[.10, .13, 2890, 1.08, "bandpass"], [.23, .14, 3870, 1.34, "bandpass", .17, .04]] },
+  turret: { layers: [[124, 375, .17, .124, "square", 0, .068], [298, 71, .24, .14, "triangle", .16], [309, 84, .25, .12, "triangle", .34]], noises: [[.36, .14, 1800, 1.26, "bandpass", .14, .11]] },
+  commander: { layers: [[162, 394, .26, .13, "triangle", 0, .06], [241, 68, .29, .16, "sine", .25], [104, 41, .32, .14, "sine", .47]], noises: [[.38, .14, 1310, .93, "lowpass", .10, .07], [.32, .13, 2700, 1.10, "bandpass", .31]] },
+});
+
+function classicPowerSoundFor(event) {
+  if (event.type !== "classic-power-cue" || event.gameplayMode !== "classic") return null;
+  const profile = CLASSIC_POWER_MOVES[event.fighterType];
+  if (!profile) return null;
+  const tone = profile.tone || 330;
+  const voice = { signature: `${event.fighterType}-power-${event.phase}`, rateLimit: 0.10 };
+  if (event.phase === "charge" || event.phase === "guard") {
+    const length = Math.min(0.81, profile.windup);
+    return { ...voice,
+      layers: [[tone * .54, tone * 1.35, length, .12, "triangle", 0, length * .35],
+        [tone * 2.15, tone * 2.05, .11, .060, "sine", length * .53]],
+      noises: event.phase === "guard" ? [[.13, .12, 3800, 1.15, "bandpass"]] : [],
+    };
+  }
+  if (event.phase === "evade") {
+    return { ...voice, layers: [[1020, 2160, .14, .095, "triangle"]], noises: [[.18, .127, 4050, 1.06, "bandpass", 0, .028]] };
+  }
+  if (event.phase === "hit") {
+    return { ...voice, priorityEffects: true,
+      layers: [[137, 37, .27, .21, "sine"], [tone * 1.64, tone * .62, .18, .11, "triangle"]],
+      noises: [[.19, .16, Math.min(5500, 1700 + tone * 1.45), 1.08, "bandpass"]],
+    };
+  }
+  if (event.phase !== "release") return null;
+  const release = CLASSIC_POWER_RELEASES[event.fighterType] || {
+    layers: [[Math.max(65, tone * .52), Math.max(36, tone * .16), .28, .18, "triangle"],
+      [tone * 1.36, tone * .7, .29, .085, profile.kind === "orbit" || profile.kind === "field" ? "sine" : "sawtooth", .04, .05]],
+    noises: [[.32, .15, 790 + tone * 2, .99, "bandpass", .015, .045]],
+  };
+  return { ...voice, ...release, priorityEffects: true };
 }
 
 export function soundPlanForEvent(event = {}) {
-  if (event.gameplayMode === "classic" && event.type !== "classic-wdc-cue") return null;
-  if (!classicAudioEventEnabled(event)) return null;
-  const base = event.type === "classic-wdc-cue"
-    ? WDC_CUE_SOUNDS[event.cue]
+  const cueSounds = event.type === "classic-wdc-cue" ? WDC_CUE_SOUNDS
+    : event.type === "classic-pulse-cue" ? PULSE_CUE_SOUNDS : null;
+  const craftSound = classicCraftSoundFor(event);
+  const signatureSound = classicSignatureSoundFor(event);
+  const powerSound = classicPowerSoundFor(event);
+  if (event.gameplayMode === "classic" && !cueSounds && !craftSound && !signatureSound && !powerSound) return null;
+  if (!classicAudioEventEnabled(event) && !craftSound && !signatureSound && !powerSound) return null;
+  let cue = event.cue;
+  if (cue === "saber-tell" && event.move === "force-choke") cue = "force-tell";
+  if (event.move === "vader-sweep") {
+    if (cue === "saber-tell") cue = "vader-windup";
+    if (cue === "saber-hit") cue = "vader-heavy-hit";
+  }
+  if (cue === "saber-swing" && event.strike === 2) cue = "saber-follow-through";
+  const base = powerSound || craftSound || signatureSound || (cueSounds
+    ? cueSounds[cue]
     : event.type === "weapon-hit"
       ? { signature: "metal-weapon-hit", metal: true }
       : event.type === "classic-body-hit" && event.fighterType === "slammy"
         ? EVENT_SOUNDS["classic-slam"]
-        : EVENT_SOUNDS[event.type];
+        : EVENT_SOUNDS[event.type]);
   if (!base) return null;
   const id = Number(event.id) || 1;
   const hash = hashValue(id);
@@ -1409,23 +1625,24 @@ export function soundPlanForEvent(event = {}) {
     ...(includeOrbSignature ? [signature.noises] : []),
   ];
   const gain = Number(base.gain) || 1;
-  const layers = layerSets.flat().map(([start, end, duration, volume, wave], index) => ({
+  const layers = layerSets.flat().map(([start, end, duration, volume, wave, delay, attack], index) => ({
     startFrequency: Math.max(20, start * pitchVariation * (1 + index * 0.002)),
     endFrequency: Math.max(20, end * pitchVariation),
     duration,
     volume: volume * volumeVariation * gain,
     wave,
-    delay: index * 0.006,
-    attack: Math.min(0.008, duration * 0.12),
+    delay: delay ?? index * 0.006,
+    attack: attack ?? Math.min(0.008, duration * 0.12),
   }));
-  const noises = noiseSets.flat().map(([duration, volume, frequency, q, filterType], index) => ({
+  const noises = noiseSets.flat().map(([duration, volume, frequency, q, filterType, delay, attack], index) => ({
     duration,
     volume: volume * volumeVariation * gain,
     frequency: frequency * pitchVariation,
     q,
     filterType,
     offset: ((hash >>> (10 + index * 3)) % 260) / 1000,
-    delay: index * 0.004,
+    delay: delay ?? index * 0.004,
+    ...(attack ? { attack } : {}),
   }));
   return {
     category: base.category || "effects",
@@ -1435,12 +1652,14 @@ export function soundPlanForEvent(event = {}) {
     layers,
     noises,
     noise: noises[0] || null,
+    ...(base.priorityEffects ? { priorityEffects: true } : {}),
     rateLimit: base.rateLimit ?? (["weapon-hit", "collision-hit", "impact", "wall-hit"].includes(event.type) ? 0.032 : 0),
   };
 }
 
 export function samplePlanForEvent(event = {}) {
   if (!classicAudioEventEnabled(event)) return null;
+  if (classicCraftSoundFor(event)) return null;
   if (artistAudioDisabledForEvent(event)) return null;
   if (
     event.gameplayMode === "classic"
@@ -1469,6 +1688,7 @@ export function samplePlanForEvent(event = {}) {
   const draftFireSample = raceDraftFireSampleKey(event);
   const customRaceSample = customRaceSampleRouteFor(event);
   const customClassicSample = classicSampleRouteFor(event);
+  if (!customClassicSample && (classicSignatureSoundFor(event) || classicSignatureSuppressesGenericSample(event))) return null;
   const classicReplacement = event.gameplayMode === "classic"
     ? CLASSIC_AUDIO_POLICY.replacementSamples[event.type]
     : null;
@@ -2250,14 +2470,17 @@ export class CombatAudio {
     if (!plan || !this.categoriesEnabled[plan.category]) return false;
     const now = this.context.currentTime;
     const raceVoiceId = event.fighterId || event.sourceId || event.orbId;
-    const rateKey = event.type?.startsWith("race-") && raceVoiceId
+    const rateKey = ["classic-wdc-cue", "classic-pulse-cue", "classic-power-cue"].includes(event.type)
+      ? `${event.type}:${plan.signature}:${raceVoiceId || "base"}`
+      : event.type?.startsWith("race-") && raceVoiceId
       ? `${event.type}:${plan.fighterType || "base"}:${raceVoiceId}`
       : `${event.type}:${plan.fighterType || "base"}`;
     if (plan.rateLimit && now - (this.lastPlayed.get(rateKey) ?? -Infinity) < plan.rateLimit) return false;
-    if (!this.reserveVoices(plan.layers.length + plan.noises.length)) return false;
+    if (!this.reserveVoices(plan.layers.length + plan.noises.length, { allowBurst: plan.priorityEffects === true })) return false;
     this.lastPlayed.set(rateKey, now);
-    for (const layer of plan.layers) this.playLayer(layer, plan.category, plan.pan);
-    for (const noise of plan.noises) this.playNoise(noise, plan.category, plan.pan);
+    const bus = plan.priorityEffects ? "priority-effects" : plan.category;
+    for (const layer of plan.layers) this.playLayer(layer, bus, plan.pan);
+    for (const noise of plan.noises) this.playNoise(noise, bus, plan.pan);
     return true;
   }
 
@@ -2562,7 +2785,9 @@ export class CombatAudio {
     filter.type = noise.filterType;
     filter.frequency.setValueAtTime(noise.frequency, now);
     filter.Q.setValueAtTime(noise.q, now);
-    gain.gain.setValueAtTime(Math.max(0.0001, noise.volume), now);
+    const peak = Math.max(0.0001, noise.volume);
+    gain.gain.setValueAtTime(noise.attack ? 0.0001 : peak, now);
+    if (noise.attack) gain.gain.exponentialRampToValueAtTime(peak, now + noise.attack);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + noise.duration);
     source.connect(filter);
     filter.connect(gain);

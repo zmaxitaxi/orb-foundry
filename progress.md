@@ -1,5 +1,85 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-09 — Classic powers and breakable wall visuals
+
+- Added one separate power per fight to the 48 original Classic fighters.
+  Sword can spend Slipstream on a defensive sidestep or an attacking dash.
+  Solar Prominence expands out from Blue Sun, Binary Crush converges two
+  gravity wells, and each gun fighter uses a different firing pattern.
+  Blue Sun has a cyan corona and Black Hole has a violet accretion ring.
+  Power tells, contact geometry, damage, audio, and recovery use the same
+  simulation clock. The roster notes list the move and counterplay for
+  every fighter.
+- Rebuilt the arena outline around persistent wall deformations. Four
+  Arms bends the line where the thrown orb collides. Cannonbolt removes
+  a section of the line at its first breakout. Both shapes survive the
+  impact debris and are copied into replay frames.
+- Removed the dodge cooldown for One Punch Man. Incoming damage triggers
+  an evade with no charge limit. A fight with only One Punch Man alive
+  on both teams can end in a draw from 36 seconds on.
+- Passed 218 Node tests. In a 608-fight seeded sweep across 38 of the
+  new profiles, each power landed in at least one matchup and its
+  successful event sequence repeated with the same seed.
+- Playwright observed a hit from each of the 48 powers on the 1080 × 1920
+  canvas and verified two real One Punch Man dodges and the draw result.
+  Pixel checks in both arena sizes confirmed the gap and dent after
+  debris faded. The regular Record Fight and Stop + Preview controls
+  produced a portrait H.264 MP4 with audible stereo AAC.
+
+## 2026-11-08 — Classic signatures, Omnitrix, and lightsabers
+
+- Saved the One Punch Man and WDC move and recording criteria in
+  `docs/CLASSIC_STYLE.md`. The older roster pass gives 47 original
+  fighters named effects keyed to their real ability events, with distinct
+  silhouettes and audio cues. The style guide and roster audit track both passes.
+- Snowball charges Avalanche on wall bounces and releases five bankable
+  ice shards on the third. They deal contact damage while opponents stay mobile.
+- Ben 10's seeded shuffle cycles through XLR8, Heatblast, Diamondhead,
+  Four Arms, and Cannonbolt. XLR8 orbits a moving target into a tornado.
+  Heatblast fires a wide flame stream with a flame roar. Diamondhead
+  winds up for a 32-damage charge. Four Arms grabs and throws hard enough
+  to bend the wall line. Cannonbolt grows to a third of the arena width,
+  hits for 30, and breaks out once at the slower roll speed. The portrait
+  canvas shows the ball outside the arena and its return on the opposite side.
+- Luke uses Force Vault, Saber Lunge, and a two-hit combo. Vader uses
+  a four-tick Force choke, a returning throw, and a slow 34-damage swing.
+  Both fighters grip visible hilts outside their bodies. Vader's free
+  hand reaches toward the opponent and closes during the choke.
+  Blade paths fade in the arena and leave scorched contact marks on the
+  walls. New original saber and Omnitrix samples follow the action clock.
+- Reskinned WDC's three summons in both Classic fights and the reference
+  sequence with wraps, a beam emitter, and a faceted miner crest.
+- A seeded diagonal and a brief inward orbit lead into the first real
+  body collision in one-on-one Classic. The collision launches both orbs
+  sideways with a short speed boost. Later steep collisions get a smaller
+  kick to break vertical loops. The authored WDC scene keeps its timing.
+- Passed 213 tests. Playwright exercised all 47 older fighter signatures
+  and checked 24 live frames from the new moves and WDC skins on the
+  dedicated portrait canvas. Thirteen new audio files decoded over HTTP.
+  The Ben 10 and Luke vs Vader previews exported at 1080 × 1920 with
+  H.264 video and audible AAC tracks.
+
+## 2026-11-08 — Live Classic summons and strikes
+
+- WDC calls three physical summons from a seeded shuffle. Summons receive
+  damage and fight in WDC's place. Emerald's mine and shop loop runs from
+  wall contacts, and damage carried back by a summon makes each round matter.
+- One Punch Man can evade a contact, jab, throw three real barrage strikes,
+  launch a detached glove, or land a 100 HP Serious Punch. Range and charge
+  gate the weighted move draw. Repeating the seed repeats the fight.
+- Added Gojo, John Rod, One Above All, and Knight from the three most-viewed
+  Pulse Battles Shorts. Their guards and attacks use live hitboxes. Rebuilt
+  the effects and synthesized audio from the reference timing and visuals.
+- Made the black Classic presentation the roster default and updated the
+  local export path. Reviewed all 54 fighters and their image references.
+  Refreshed Hive Ball, Snowball, Boxer, Monster, Artist, Fairy, and Train,
+  then addressed dark labels and orb edges across the roster.
+- Recorded the channel comparison and Classic direction in `docs/FUTURE.md`.
+  The per-fighter art decisions are in `docs/CLASSIC_ROSTER.md`.
+- Verified 205 tests, all 54 Classic portraits, and 18 live ability
+  checkpoints in Playwright. The seed 67 export is 1080 × 1920 with
+  1,059 H.264 frames and stereo AAC audio.
+
 ## 2026-11-08 — WDC vs One Punch Man
 
 - Added both Classic fighters with their own starting HP and normal seeded

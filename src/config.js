@@ -1,4 +1,4 @@
-import { THEME_IDS } from "./presentation.js?v=20261108-wdc-duel3";
+import { THEME_IDS } from "./presentation.js?v=20261109-classic-signature2";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
 import {
@@ -26,7 +26,7 @@ import {
     normalizeClassicTeamOptions,
     normalizeClassicTeams,
     normalizeClassicSpeedMode as normalizeRegistryClassicSpeedMode,
-} from "./classic-orbs.js?v=20261108-wdc-duel3";
+} from "./classic-orbs.js?v=20261109-classic-signature2";
 
 export const ARENA_MODIFIER_IDS = Object.freeze(["standard", "tiny", "suddenDeath", "overdrive", "glassCannon"]);
 export const ARENA_SHAPE_IDS = Object.freeze(["square", "circle"]);
@@ -315,7 +315,7 @@ export function createDefaultSettings() {
     classicTeamOptions: normalizeClassicTeamOptions(null, classicTeams),
     classicReferenceDuel: false,
     classicBlackTheme: true,
-    classicTeamColors: true,
+    classicTeamColors: false,
     classicHydrogenHealth: 100,
     seed: 2406,
     theme: "cream-foundry",
@@ -741,7 +741,7 @@ function compactSettings(settings) {
     co: settings.gameplayMode === "classic" ? settings.classicOrbOptions : undefined,
     ct: settings.gameplayMode === "classic" ? settings.classicTeams : undefined,
     ci: settings.gameplayMode === "classic" ? settings.classicTeamOptions : undefined,
-    cb: settings.gameplayMode === "classic" && settings.classicBlackTheme ? 1 : undefined,
+    cb: settings.gameplayMode === "classic" ? Number(settings.classicBlackTheme) : undefined,
     wd: settings.classicReferenceDuel ? 1 : undefined,
     tc: settings.gameplayMode === "classic" && !settings.classicTeamColors ? 0 : undefined,
     ch: settings.gameplayMode === "classic" && settings.classicHydrogenHealth !== 100
@@ -786,6 +786,7 @@ function expandRaceTournament(value) {
 }
 
 function expandSettings(value) {
+  const gameplayMode = value.g === "w" ? WORLD_CUP_MODE : ["k", "r"].includes(value.g) ? ORB_RACE_MODE : "classic";
   const disabledFeatureValue = typeof value.x === "string" ? value.x : "";
   const disabledFeatureCodes = disabledFeatureValue.startsWith("~")
     ? new Set(disabledFeatureValue.slice(1).split(".").filter(Boolean))
@@ -812,7 +813,7 @@ function expandSettings(value) {
     version: value.v,
     mode: value.m === "t" ? "tournament" : "match",
     count: value.n,
-    gameplayMode: value.g === "w" ? WORLD_CUP_MODE : ["k", "r"].includes(value.g) ? ORB_RACE_MODE : "classic",
+    gameplayMode,
     countries: value.u,
     hillContenders: value.k,
     raceOrbs: value.k,
@@ -835,7 +836,8 @@ function expandSettings(value) {
     classicTeamOptions: value.ci,
     classicBlackTheme: value.cb == null ? undefined : value.cb === 1,
     classicReferenceDuel: value.wd === 1,
-    classicTeamColors: value.tc == null ? undefined : value.tc !== 0,
+    // Older Classic links omitted the field when team colors were enabled.
+    classicTeamColors: gameplayMode === "classic" || value.tc != null ? value.tc !== 0 : undefined,
     classicHydrogenHealth: value.ch,
     seed: value.s,
     theme: value.a,

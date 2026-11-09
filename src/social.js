@@ -1,4 +1,7 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261108-wdc-duel3";
+import { CLASS_DEFS } from "./simulation.js?v=20261109-classic-signature2";
+import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-signature2";
+import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261109-classic-signature2";
+import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-signature2";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),
@@ -127,7 +130,7 @@ export function socialActionPlaybackRateForDuration(simulatedSeconds, targetActi
   return Math.min(1, duration / target);
 }
 
-export function buildAbilityHud(fighter, simTime = 0) {
+export function buildAbilityHud(fighter, simTime = 0, classicEntities = []) {
   const meta = SOCIAL_CLASS_META[fighter.type];
   if (!meta) return { name: "UNKNOWN", detail: "", label: "READY", progress: 1, passive: false };
   const def = CLASS_DEFS[fighter.type];
@@ -136,13 +139,21 @@ export function buildAbilityHud(fighter, simTime = 0) {
     const remaining = Math.max(0, Number(fighter.classicAbilityNextAt || 0) - simTime);
     const active = simTime < Number(fighter.classicAbilityActiveUntil || 0);
     const passive = interval <= 0;
+    const progress = passive ? 1 : 1 - Math.min(1, remaining / interval);
+    const customHud = classicSpecialHud(fighter, def, simTime, classicEntities);
+    const powerProgress = fighter.classicPowerReadyAt !== undefined && !fighter.classicPowerMove
+      ? Math.min(1, simTime / Math.max(0.01, fighter.classicPowerReadyAt))
+      : undefined;
     return abilityHudState(fighter, {
       name: def?.name || fighter.type.toUpperCase(),
       detail: def?.power || meta.ability,
       label: active ? "ACTIVE" : passive ? "PASSIVE" : remaining > 0 ? `${remaining.toFixed(1)}S` : "READY",
-      progress: passive ? 1 : 1 - Math.min(1, remaining / interval),
+      progress,
       passive,
       active,
+      powerProgress,
+      ...customHud,
+      customLabel: Boolean(customHud),
     });
   }
   const behaviorType = CLASS_DEFS[fighter.type]?.mechanicType || fighter.type;
@@ -225,6 +236,112 @@ export function buildAbilityHud(fighter, simTime = 0) {
     progress: meta.maxCooldown > 0 ? 1 - Math.min(1, remaining / meta.maxCooldown) : 1,
     passive: false,
   });
+}
+
+const CLASSIC_PUNCH_LABELS = Object.freeze({
+  jab: "NORMAL PUNCH",
+  serious: "SERIOUS PUNCH",
+  barrage: "PUNCH BARRAGE",
+  shockwave: "SHOCKWAVE",
+});
+
+function classicSpecialHud(fighter, def, time, entities) {
+  const hp = `HP ${Math.ceil(fighter.health)}`;
+  if (time < (fighter.classicHeldUntil || 0)) {
+    return { label: fighter.classicHeldKind === "force-choke" ? "STUNNED" : "GRABBED", detail: hp, progress: 0 };
+  }
+  const power = fighter.classicPowerMove;
+  if (power && power.phase !== "spent" && time < power.recoverUntil) {
+    const profile = CLASSIC_POWER_MOVES[fighter.type];
+    const phase = power.phase === "charge" ? power.mode === "guard" ? "COUNTER" : "WINDUP"
+      : power.phase === "recover" ? "RECOVER" : power.mode === "evade" ? "EVADE" : "RELEASE";
+    return {
+      label: profile.name.toUpperCase(), detail: `${hp} / ${phase}`, color: profile.color,
+      progress: (time - power.startedAt) / (power.endAt - power.startedAt), powerActive: true,
+    };
+  }
+  const form = fighter.classicWdcForm;
+  if (fighter.type === "wdc") {
+    const summon = form && WDC_SUMMONS[form.id];
+    return {
+      label: form?.phase === "portal" ? "SUMMONING" : form?.phase === "recall" ? "RECALL" : summon?.name || "PORTAL",
+      detail: form?.id === "emerald" && form.phase === "summon" ? `${hp} / ${form.gems} GEMS / ${form.coins} COINS` : hp,
+      color: summon?.color,
+    };
+  }
+  if (fighter.type === "one-punch-man") {
+    const readyIn = Math.max(0, (fighter.classicSeriousReadyAt || 0) - time);
+    const dodge = time < (fighter.classicDodgeUntil || 0);
+    return {
+      label: dodge ? "DODGE" : CLASSIC_PUNCH_LABELS[fighter.classicPunchVariant] || "SERIOUS SERIES",
+      detail: `${hp} / UNLIMITED DODGES`,
+      progress: 1 - Math.min(1, readyIn / def.classicAbility.seriousInterval),
+    };
+  }
+  if (fighter.type === "train") {
+    const launched = entities.some(({ kind, ownerId }) => kind === "train" && ownerId === fighter.id);
+    const bounces = (fighter.classicBounces || 0) % 3;
+    return { label: launched ? "TRAIN ARRIVING" : "LAYING TRACKS", detail: `${hp} / ${bounces} OF 3 BOUNCES`,
+      progress: launched ? 1 : bounces / 3 };
+  }
+  if (fighter.type === "hive-ball") {
+    const bees = entities.filter(({ kind, ownerId }) => kind === "bee" && ownerId === fighter.id).length;
+    return { label: bees ? "SWARM" : "HIVE", detail: `${hp} / ${bees} BEES IN FLIGHT`,
+      progress: bees ? 1 : Math.max(0, 1 - ((fighter.classicAbilityNextAt || 0) - time) / def.classicAbility.interval) };
+  }
+  if (fighter.type === "boxer" || fighter.type === "monster") {
+    const phase = fighter.classicPunchPhase;
+    const label = phase === "retract" ? "WINDUP"
+      : phase === "impact" || phase === "extend"
+        ? fighter.classicPunchDouble ? "DOUBLE PUNCH" : fighter.type === "monster" ? "HEAVY FIST" : "JAB"
+        : phase === "recover" ? "RECOVER" : def.statLabel;
+    return { label, detail: hp };
+  }
+  if (fighter.type === "artist") {
+    const drawing = entities.find(({ kind, ownerId }) => kind === "artist-drawing" && ownerId === fighter.id);
+    if (drawing) {
+      return { label: `PAINTING ${drawing.drawingKind.replace("artist-", "").toUpperCase()}`,
+        detail: hp, progress: drawing.drawingProgress };
+    }
+  }
+  if (fighter.type === "fairy") return { label: time < (fighter.classicAbilityActiveUntil || 0) ? "WAND SHOT" : "WAND MAGIC", detail: hp };
+  if (fighter.type === "frost-ball") {
+    const bounces = (fighter.classicBounces || 0) % def.classicAbility.bounces;
+    const released = time < (fighter.classicAbilityActiveUntil || 0);
+    return { label: released ? "AVALANCHE" : "PACKING SNOW", detail: `${hp} / ${bounces} OF 3 BOUNCES`,
+      progress: released ? 1 : bounces / def.classicAbility.bounces, passive: false };
+  }
+  if (fighter.type === "ben-10") {
+    const state = fighter.classicOmnitrix;
+    const alien = CLASSIC_ALIENS[state?.form];
+    const detail = state?.phase === "alien" ? `${hp} / ${alien.move}` : hp;
+    const label = state?.phase === "alien" ? alien.name
+      : state?.phase === "transform" ? "TRANSFORMING"
+        : state?.phase === "reset" ? "OMNITRIX RESET" : "OMNITRIX";
+    const progress = state?.until ? Math.max(0, 1 - (time - state.at) / (state.until - state.at)) : 0;
+    return { label, detail, progress, color: state?.phase === "alien" ? alien.color : undefined };
+  }
+  if (fighter.type === "darth-vader" || fighter.type === "luke-skywalker") {
+    const saber = entities.find(({ kind, ownerId, expiresAt }) => kind === "classic-saber-throw" && ownerId === fighter.id && expiresAt > time);
+    const move = fighter.classicSaberMove;
+    const labels = {
+      "force-choke": "FORCE CHOKE", "force-vault": "FORCE VAULT", "saber-lunge": "SABER LUNGE",
+      "saber-combo": "SABER COMBO", "saber-throw": "SABER THROW", "vader-sweep": "HEAVY STRIKE",
+    };
+    const phase = move?.key === "saber-combo" && move.phase === "swing" ? `STRIKE ${move.swingIndex + 1} OF 2` : move?.phase.toUpperCase();
+    return { label: saber?.phase === "returning" ? "SABER RETURN" : saber ? "SABER THROW" : labels[move?.key] || def.statLabel,
+      detail: phase ? `${hp} / ${phase}` : hp,
+      ...(move ? { progress: (time - move.at) / (move.until - move.at) } : {}) };
+  }
+  const move = fighter.classicPulseMove;
+  const labels = {
+    gojo: move?.phase === "fire" ? "HOLLOW PURPLE" : move?.phase === "charge" ? "RED + BLUE" : "LIMITLESS",
+    "john-rod": move?.phase === "charge" ? "ROD CYCLE" : "FINAL WRAP",
+    "one-above-all": "CONVERGENCE RING",
+    knight: "SHIELD BASH",
+  };
+  if (Object.hasOwn(labels, fighter.type)) return { label: labels[fighter.type], detail: hp };
+  return null;
 }
 
 function abilityHudState(fighter, hud) {

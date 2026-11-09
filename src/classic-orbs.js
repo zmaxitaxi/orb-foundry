@@ -372,21 +372,9 @@ export const CLASSIC_ORBS = Object.freeze({
         ability: { kind: "train", damage: 10 },
     }),
     "frost-ball": orb("frost-ball", "SNOWBALL", "#eafcff", "#70d9ff", {
-        power: "FADING FROST TRAIL · -3 ON ENTRY · FREEZES ORBS",
-        statLabel: "FROST",
-        ability: {
-            kind: "frost",
-            interval: 0.25,
-            duration: 4,
-            damage: 3,
-            dps: 0,
-            tickInterval: 0,
-            fadeDelay: 3,
-            fadeDuration: 1,
-            slowFactor: 0.5,
-            cooldownScale: 2,
-            freeze: true,
-        },
+        power: "AVALANCHE EVERY THREE WALL BOUNCES · RICOCHETING ICE SHARDS",
+        statLabel: "AVALANCHE",
+        ability: { kind: "avalanche", bounces: 3, damage: 4 },
     }),
     jackpot: orb("jackpot", "JACKPOT", "#e0b51a", "#fff0a0", {
         power: "SEEDED SPIN · 100+ GUARANTEED BY SPIN 7",
@@ -438,19 +426,73 @@ export const CLASSIC_ORBS = Object.freeze({
         defaultHealth: 90,
         collisionDamage: 2,
         collisionEnabled: true,
-        ability: { kind: "wdc", interval: 7.4, damage: 16 },
+        ability: { kind: "wdc", interval: 7.4, damage: 32 },
     }),
     "one-punch-man": orb("one-punch-man", "ONE PUNCH MAN", "#efd05d", "#fff0a0", {
-        power: "1 HP · SERIOUS SERIES PUNCH DEALS 100 DAMAGE",
+        power: "1 HP · UNLIMITED DODGES · SERIOUS SERIES",
         statLabel: "SERIOUS SERIES",
         defaultHealth: 1,
         ability: {
             kind: "boxer",
-            interval: 2.4,
+            interval: 1.35,
             damage: 100,
-            phaseDurations: Object.freeze({ retract: 0.12, extend: 0.12, impact: 0.08, recover: 0.22 }),
+            normalDamage: 18,
+            barrageDamage: 15,
+            shockwaveDamage: 44,
+            seriousInterval: 5.4,
+            phaseDurations: Object.freeze({ retract: 0.11, extend: 0.11, impact: 0.12, recover: 0.21 }),
         },
     }),
+    gojo: orb("gojo", "GOJO", "#eef2ff", "#c6d7ff", {
+        power: "LIMITLESS GUARD · RED AND BLUE MERGE INTO HOLLOW PURPLE",
+        statLabel: "LIMITLESS",
+        defaultHealth: 180,
+        ability: { kind: "gojo", interval: 5.8, damage: 48 },
+    }),
+    "john-rod": orb("john-rod", "JOHN ROD", "#eeeeee", "#ddddff", {
+        power: "ROD CYCLE · COLLAPSING FINAL WRAP",
+        statLabel: "FINAL WRAP",
+        defaultHealth: 170,
+        ability: { kind: "john-rod", interval: 4.8, damage: 42 },
+    }),
+    "one-above-all": orb("one-above-all", "ONE ABOVE ALL", "#fffdf7", "#ece7d8", {
+        power: "PEARL ORBITS · CONVERGENCE RING",
+        statLabel: "CONVERGENCE RING",
+        defaultHealth: 250,
+        ability: { kind: "one-above-all", interval: 7.6, damage: 62 },
+    }),
+    knight: orb("knight", "KNIGHT", "#587dec", "#b4c8ff", {
+        power: "ROTATING STEEL BLADE · SHIELD BASH",
+        statLabel: "SHIELD BASH",
+        defaultHealth: 200,
+        ability: { kind: "knight", interval: 3.9, damage: 26, swordDamage: 9 },
+    }),
+    "ben-10": orb("ben-10", "BEN 10", "#53d23c", "#d3ff81", {
+        power: "OMNITRIX · FIVE ALIENS WITH DISTINCT ATTACKS",
+        statLabel: "OMNITRIX",
+        defaultHealth: 155,
+        ability: { kind: "ben-10", interval: 5.1 },
+    }),
+    "darth-vader": orb("darth-vader", "DARTH VADER", "#c52d46", "#ff7889", {
+        power: "STUNNING FORCE CHOKE · RETURNING SABER THROW · 34 DAMAGE HEAVY STRIKE",
+        statLabel: "FORCE CHOKE",
+        defaultHealth: 170,
+        ability: { kind: "darth-vader", interval: 1.25 },
+    }),
+    "luke-skywalker": orb("luke-skywalker", "LUKE SKYWALKER", "#45ba5d", "#baff8d", {
+        power: "FORCE VAULT · SABER LUNGE · TWO-HIT SABER COMBO",
+        statLabel: "SABER COMBO",
+        defaultHealth: 155,
+        ability: { kind: "luke-skywalker", interval: 0.72 },
+    }),
+});
+
+export const CLASSIC_ALIENS = Object.freeze({
+    xlr8: Object.freeze({ name: "XLR8", move: "TORNADO RUN", color: "#25caff", accent: "#cefbff" }),
+    heatblast: Object.freeze({ name: "HEATBLAST", move: "FLAME BLAST", color: "#f96427", accent: "#ffe266" }),
+    diamondhead: Object.freeze({ name: "DIAMONDHEAD", move: "CRYSTAL CHARGE", color: "#56e7b6", accent: "#d3ffec" }),
+    "four-arms": Object.freeze({ name: "FOUR ARMS", move: "GRAB & THROW", color: "#f04452", accent: "#ffb0a0" }),
+    cannonbolt: Object.freeze({ name: "CANNONBOLT", move: "WALL WRAP", color: "#f4c74c", accent: "#fff3b0" }),
 });
 
 export const CLASSIC_ORB_SIZE_PROFILES = Object.freeze({

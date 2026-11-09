@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261108-wdc-duel3";
+} from "./simulation.js?v=20261109-classic-signature2";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261108-wdc-duel3";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261108-wdc-duel3";
+} from "./audio.js?v=20261109-classic-signature2";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261109-classic-signature2";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261108-wdc-duel3";
+} from "./social.js?v=20261109-classic-signature2";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261108-wdc-duel3";
+} from "./config.js?v=20261109-classic-signature2";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -61,7 +61,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261108-wdc-duel3";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261109-classic-signature2";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -109,7 +109,7 @@ import {
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261108-wdc-duel3";
+} from "./classic-orbs.js?v=20261109-classic-signature2";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);
@@ -2499,7 +2499,7 @@ function showSocialPreview(result) {
         ? "EACH MATCH"
         : null;
   elements.socialVideoMetadata.innerHTML = [
-    ["WINNER", sim.winningRaceTeamName || sim.winner?.name || "PENDING"],
+    ["WINNER", sim.winningRaceTeamName || sim.winner?.name || (sim.classicDraw ? "DRAW" : "PENDING")],
     ["SEED", sim.seed],
     ["ARENA", arenaLabel],
     ["HYPE", socialPresentation.hypeScore],
@@ -3742,7 +3742,7 @@ window.render_game_to_text = () => JSON.stringify({
     hypeScore: socialPresentation.hypeScore,
     time: Number(sim.time.toFixed(2)),
     finished: sim.finished,
-    winner: sim.winningRaceTeamName || sim.winner?.name || null,
+    winner: sim.winningRaceTeamName || sim.winner?.name || (sim.classicDraw ? "DRAW" : null),
     referenceDuel: sim.classicWdcDuel ? {
       summon: sim.classicWdcDuel.pose.summon?.id || null,
       portal: Boolean(sim.classicWdcDuel.pose.portal),
@@ -3752,6 +3752,17 @@ window.render_game_to_text = () => JSON.stringify({
       wallGapY: sim.classicWdcDuel.pose.wallGapY,
       escaped: !sim.classicWdcDuel.pose.punchManVisible,
     } : null,
+    pulseEffects: sim.effects.filter(({ kind }) => kind === "classic-pulse-burst").map(({ style }) => style),
+    classicSignatures: sim.effects.filter(({ kind }) => kind === "classic-signature")
+      .map(({ orbId, cue, phase, life }) => ({ orbId, cue, phase, life })),
+    classicOpening: sim.classicOpening ? { phase: sim.classicOpening.phase, clashAt: sim.classicOpening.clashAt } : null,
+    classicWallDeformations: sim.classicWallDeformations || [],
+    classicPowerCues: sim.events.filter(({ type }) => type === "classic-power-cue")
+      .slice(-16).map(({ time, fighterType, phase, amount, x, y }) => ({ time, fighterType, phase, amount, x, y })),
+    classicActionEffects: sim.effects.filter(({ kind }) => ["classic-action-burst", "classic-saber-scar", "classic-saber-burn", "classic-wall-debris"].includes(kind))
+      .map(({ kind, cue, life, cuts, marks }) => ({ kind, cue, life: Number(life.toFixed(3)), cuts: cuts?.length, marks: marks?.length })),
+    pulseCues: sim.events.filter(({ type }) => type === "classic-wdc-cue" || type === "classic-pulse-cue")
+      .slice(-20).map(({ time, cue, form, variant, amount, move, strike, tick }) => ({ time, cue, form, variant, amount, move, strike, tick })),
     recorder: socialRecorder.machine.state,
     recordingResult: recordingResultSnapshot(),
     raceTournament: settings.gameplayMode === ORB_RACE_MODE ? {
@@ -4296,6 +4307,40 @@ window.render_game_to_text = () => JSON.stringify({
           ? Number(Math.max(0, fighter.classicFrostFreezeUntil - sim.time).toFixed(3))
           : 0,
         punchPhase: fighter.classicPunchPhase || "inactive",
+        punchVariant: fighter.classicPunchVariant || null,
+        dodging: sim.time < (fighter.classicDodgeUntil || 0),
+        pulseMove: fighter.classicPulseMove?.phase || null,
+        omnitrix: fighter.classicOmnitrix ? {
+          form: fighter.classicOmnitrix.form, phase: fighter.classicOmnitrix.phase,
+          rushing: Boolean(fighter.classicOmnitrix.rush), guard: fighter.classicOmnitrix.guard,
+          rushPhase: fighter.classicOmnitrix.rush?.phase,
+          rollRadius: fighter.classicOmnitrix.form === "cannonbolt" ? fighter.classicOmnitrix.rush?.radius : undefined,
+          wrapping: fighter.classicOmnitrix.rush?.wrap ? fighter.classicOmnitrix.rush.wrap.entered ? "enter" : "exit" : null,
+          outside: fighter.classicCannonOutside === true,
+          flame: Boolean(fighter.classicOmnitrix.flame?.pose),
+          grabbing: Boolean(fighter.classicOmnitrix.grab),
+        } : null,
+        saber: fighter.classicSaberMove ? {
+          move: fighter.classicSaberMove.key, phase: fighter.classicSaberMove.phase,
+          strike: fighter.classicSaberMove.swingIndex + 1,
+        } : null,
+        forceChoked: fighter.classicHeldKind === "force-choke" && sim.time < fighter.classicHeldUntil,
+        held: fighter.classicHeldKind || null,
+        wallThrown: sim.time < (fighter.classicWallThrow?.until || 0),
+        sidewaysBoost: sim.time < (fighter.classicCollisionKick?.until || 0),
+        power: fighter.classicPowerReadyAt === undefined ? null : {
+          phase: fighter.classicPowerMove?.phase || (sim.time >= fighter.classicPowerReadyAt ? "ready" : "charging"),
+          mode: fighter.classicPowerMove?.mode,
+          geometry: fighter.classicPowerMove?.pose?.filter(({ live }) => live).map(({ shape }) => shape),
+        },
+        wdc: fighter.classicWdcForm ? {
+          form: fighter.classicWdcForm.id,
+          phase: fighter.classicWdcForm.phase,
+          reserve: fighter.classicWdcReserve === true,
+          entityId: fighter.classicWdcForm.entityId || null,
+          gems: fighter.classicWdcForm.gems,
+          coins: fighter.classicWdcForm.coins,
+        } : null,
         punchHand: fighter.classicPunchHand || null,
         punchDouble: fighter.classicPunchDouble === true,
         punchLandedCount: fighter.classicPunchLandedCount || 0,
@@ -4321,7 +4366,7 @@ window.render_game_to_text = () => JSON.stringify({
       x: Number(fighter.x.toFixed(1)),
       y: Number(fighter.y.toFixed(1)),
       cooldown: Number(fighter.cooldown.toFixed(1)),
-      frozen: sim.time < fighter.stunUntil,
+      frozen: sim.time < Math.max(fighter.stunUntil, fighter.classicHeldUntil || 0),
       immuneFor: Number(Math.max(0, fighter.invulnerableUntil - sim.time).toFixed(1)),
       shinGuards: fighter.shinGuardStacks || 0,
       damageBoostPermanent: (fighter.worldCupDamageStacks || 0) > 0,
@@ -4342,6 +4387,10 @@ window.render_game_to_text = () => JSON.stringify({
     classicEntities: (sim.classicEntities || []).map((entity) => ({
       id: entity.id,
       kind: entity.kind,
+      ...(entity.formId ? {
+        form: entity.formId,
+        beam: entity.beam ? entity.beam.fired ? "fire" : "charge" : null,
+      } : {}),
       ownerId: entity.ownerId,
       radius: Number((entity.radius || 0).toFixed(1)),
       x: Number((entity.x || 0).toFixed(1)),

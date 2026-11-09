@@ -154,7 +154,7 @@ function arrangeHit(attacker, target) {
     assert.deepEqual(defaults.classicOrbOptions[id], classicOrbOptionDefaults(id));
   }
   assert.equal(defaults.classicBlackTheme, true);
-  assert.equal(defaults.classicTeamColors, true);
+  assert.equal(defaults.classicTeamColors, false);
   assert.equal(defaults.classicHydrogenHealth, 100);
 
   const first = CLASSIC_ORB_IDS.includes("vampire") ? "vampire" : CLASSIC_ORB_IDS[0];
@@ -187,6 +187,11 @@ function arrangeHit(attacker, target) {
     "disabled Classic team colors should use an explicit compact URL value",
   );
   assert.equal(restored.classicHydrogenHealth, 4567, "custom Hydrogen Bomb health should survive share URLs");
+  const lightWithTeamColors = normalizeSettings({ ...settings, classicBlackTheme: false, classicTeamColors: true }, classes);
+  const legacyStyleLink = settingsToUrl(lightWithTeamColors, "https://example.test/play", classes);
+  const lightRestored = settingsFromUrl(legacyStyleLink, classes);
+  assert.equal(lightRestored.classicBlackTheme, false, "the optional light arena should survive share URLs");
+  assert.equal(lightRestored.classicTeamColors, true, "Classic links that omit team colors should retain the legacy enabled value");
   assert.equal(restored.arenaSize, "large", "the large square arena toggle should survive share URLs");
   assert.deepEqual(ARENA_SIZE_IDS, ["standard", "large"]);
   assert.equal(restored.classicOrbOptions[first].orbScale, 1.5, "Classic extra-large size should survive share URLs");
@@ -1845,4 +1850,25 @@ console.log("feature tests passed");
         classicTeamOptions: [{ wdc: { count: 2 } }, {}],
     }).classicReferenceDuel, false, "the reference scene requires a single fighter per side");
     assert.equal(normalizeSettings({ ...input, classicReferenceDuel: undefined }).classicReferenceDuel, false);
+}
+
+{
+    const classicTeams = [["gojo", "john-rod"], ["one-above-all", "knight"]];
+    const settings = normalizeSettings({ gameplayMode: "classic", classicTeams, seed: 2406 });
+    assert.deepEqual(settings.classicTeams, classicTeams);
+    assert.equal(settings.classicTeamOptions[0].gojo.health, 180);
+    assert.equal(settings.classicTeamOptions[0]["john-rod"].health, 170);
+    assert.equal(settings.classicTeamOptions[1]["one-above-all"].health, 250);
+    assert.equal(settings.classicTeamOptions[1].knight.health, 200);
+    assert.deepEqual(settingsFromUrl(settingsToUrl(settings, "https://example.test/").href), settings);
+}
+
+{
+    const classicTeams = [["ben-10"], ["luke-skywalker", "darth-vader"]];
+    const settings = normalizeSettings({ gameplayMode: "classic", classicTeams, seed: 67 });
+    assert.deepEqual(settings.classicTeams, classicTeams);
+    assert.equal(settings.classicTeamOptions[0]["ben-10"].health, 155);
+    assert.equal(settings.classicTeamOptions[1]["luke-skywalker"].health, 155);
+    assert.equal(settings.classicTeamOptions[1]["darth-vader"].health, 170);
+    assert.deepEqual(settingsFromUrl(settingsToUrl(settings, "https://example.test/").href), settings);
 }
