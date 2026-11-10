@@ -5,20 +5,24 @@ Orb Foundry's approved YouTube publishing contract is stored in
 
 ## Current contract
 
-- The external scheduler prepares two Orb Foundry Shorts each day. YouTube
-  releases them at noon and 3 PM Pacific, including daylight-saving changes.
-- Both slots run Classic 1v1 fights. The planner favors WDC, One Punch Man,
-  Gojo, John Rod, One Above All, Knight, Ben 10, Darth Vader, and Luke
-  Skywalker. Every Classic fighter except Grappler is eligible.
+- The external scheduler prepares one Classic Orb Foundry Short and one
+  long-form video for noon and 3 PM Pacific. The release times follow
+  daylight-saving changes.
+- Regular slots run Classic 1v1 fights. The planner favors WDC, One Punch
+  Man, Gojo, John Rod, One Above All, Knight, Ben 10, Darth Vader, and Luke
+  Skywalker. Every Classic fighter except Grappler is eligible for duels.
+- Friday at 3 PM, the long-form slot records one boss battle. The boss
+  starts with exactly three times its current roster HP and faces three
+  distinct challengers. The fight has a four-minute action minimum.
 - Orb Racer can be selected for an on-demand Short through the same publisher.
-  Grappler is also excluded from its posting roster. The daily schedule
-  contains only the two Orb Foundry Shorts.
-- Record 1080 × 1920 portrait video with the black Classic theme, a large
-  arena, and team outlines off. Each daily batch uses one square and one
-  circle. A manual run can choose either shape. Each video records one fight.
+  Grappler is excluded from its posting roster too.
+- Shorts use 1080 × 1920 portrait. Long form uses the 1920 × 1080
+  **ORB RACE LONG FORM** preset. Both use the black Classic theme, a large
+  arena, and team outlines off. Each format uses one square and one circle
+  per day. A manual run can choose either shape. Each video records one fight.
 - Titles use `{left} VS {right}` with readable names. Orb Foundry asks who
-  will win the battle. Orb Racer names the starting layer HP. Both include
-  `#physics #shorts #simulation #satisfying`.
+  will win the battle. Orb Racer names the starting layer HP. All videos use
+  `#physics #simulation #satisfying`. Shorts also use `#shorts`.
 - Upload as private with the planned YouTube `publishAt` time. A slot's
   run tag prevents a second upload for the same date and time.
 
@@ -26,35 +30,40 @@ Orb Foundry's approved YouTube publishing contract is stored in
 
 1. Rotate the eligible roster with a two-day cooldown. For Classic, each
    day's pool draws three featured fighters and twelve others. Try pairs
-   involving a featured fighter first and use distinct fighters in the
-   two Shorts.
+   involving a featured fighter first and use distinct fighters within
+   each format. A fighter can appear in both formats on the same day, but
+   an exact duel cannot repeat. The Friday boss picks before the other long-form duel.
 2. Simulate each candidate at the planned seed and settings. Live batches
    use the same Chrome executable that records the fight. Adjust starting
    HP when needed, then rerun the fight. A Classic preflight requires a
-   completed result, at least 25 seconds of live action with a 5% buffer,
-   no more than 65 seconds of fight time, and at least four signature
-   actions. The winner must have at most 40% HP remaining.
+   completed result, at least four signature actions, and at most 40% HP
+   remaining on the winning side. The action minimum, with a 5% planning
+   buffer, is 25 seconds for a Short, 120 seconds for regular long form, and
+   240 seconds for the Friday boss. The planner prefers normal speed and
+   can slow the full recording when needed. Boss tuning can change the
+   challengers' starting HP while the boss stays at exactly 3× base HP.
 3. One Punch Man starts at 1 HP. His fights pass by showing at least four
    dodges of real attacks, a dodge in the final eight seconds, and at least
-   two different landed attacks. These are dodge showcases.
+   two different landed attacks. One Punch Man is reserved for duels so his
+   fixed HP and infinite dodges don't break the boss battle's health rules.
 4. For an Orb Racer Short, use up to three ascending layers of at least
    500 HP each. Prefer a close finish. The bounded search can use its
    closest finished candidate if it passes the rest of the contract.
    Playback speed can extend one race to the action minimum.
 5. Load the correct spoken announcer clips before recording. Check
    the final recording for at least one spoken sequence, the planned
-   portrait layout, and the required duration. For Classic, verify that
-   the recorded winner, remaining HP, fight time, and starting settings
-   match the preflight.
+   format, and the required duration. For Classic, verify that the recorded
+   winning side, remaining HP, fight time, playback speed, and starting
+   settings match the preflight.
 6. Check the run tag and the approved metadata before uploading. A failed
-   slot is reported separately so the other Short can still proceed.
+   slot is reported separately so the other videos can still proceed.
 
-Preview both scheduled Shorts locally. The dry run uses Node. Live Chrome
+Preview Friday's full batch locally. The dry run uses Node. Live Chrome
 preflight can choose a different matchup if the engines resolve a collision
 differently.
 
 ```bash
-npm run youtube:publish -- --dry-run --batch --date=2026-11-09
+npm run youtube:publish -- --dry-run --batch --date=2026-11-13
 ```
 
 Plan a manual Orb Racer Short:
@@ -88,7 +97,7 @@ is not in that allowlist must not be selected for a YouTube batch.
 ## Activation requirements
 
 The external scheduler needs to run the updated `main` branch and invoke
-`npm run youtube:publish -- --batch` for the two daily Shorts. GitHub Actions
+`npm run youtube:publish -- --batch` to prepare all four daily slots. GitHub Actions
 is available for manual runs, with a source selector for Orb Foundry or
 Orb Racer and a shape selector for Classic. The separate runner supplies
 its own schedule and credentials.
@@ -119,9 +128,9 @@ private repository's `YOUTUBE_REFRESH_TOKEN` Actions secret. The external
 scheduler also needs equivalent credentials in its own secret store. OAuth
 credentials and refresh tokens must never be committed to the repository.
 
-The publisher renders the approved Shorts, transcodes them to MP4, and uses
+The publisher renders the approved videos, transcodes them to MP4, and uses
 the YouTube Data API's resumable upload flow. Generated files live under
-ignored `artifacts/` output. Each batch prepares two private uploads with
+ignored `artifacts/` output. Each batch prepares four private uploads with
 Pacific `publishAt` times. YouTube releases them at those times.
 
 The GitHub **Run workflow** menu defaults to `dry_run=true`. For a manual

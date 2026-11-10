@@ -14,9 +14,11 @@ on:
           - auto
           - batch
           - noon-short
+          - noon-longform
           - afternoon-short
+          - afternoon-longform
       content_source:
-        description: "Choose the source for this manual Short run"
+        description: "Choose Classic Orb Foundry or Orb Racer (Shorts only)"
         required: true
         default: orb-foundry
         type: choice
@@ -24,7 +26,7 @@ on:
           - orb-foundry
           - orb-race
       arena_shape:
-        description: "Arena shape for Orb Foundry Shorts"
+        description: "Arena shape for Orb Foundry fights"
         required: true
         default: auto
         type: choice
@@ -65,7 +67,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 26
           cache: npm
 
       - name: Install dependencies
@@ -78,14 +80,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for candidate in chromium google-chrome chromium-browser; do
-            if command -v "$candidate" >/dev/null 2>&1; then
-              printf 'CHROME_PATH=%s\n' "$(command -v "$candidate")" >> "$GITHUB_ENV"
-              exit 0
-            fi
-          done
-          echo 'No Chromium executable was found after installation.' >&2
-          exit 1
+          chromium_path="$(node -p 'require("playwright").chromium.executablePath()')"
+          test -x "$chromium_path"
+          printf 'CHROME_PATH=%s\n' "$chromium_path" >> "$GITHUB_ENV"
 
       - name: Validate publishing contract
         run: npm run youtube:validate

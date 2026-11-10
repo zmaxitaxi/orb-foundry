@@ -7,7 +7,7 @@ import { ORB_RACERS, normalizeRaceTeamOptions, raceTeamDisplayName } from "../sr
 import { createSimulation, stepSimulation } from "../src/simulation.js";
 import { socialActionPlaybackRateForDuration } from "../src/social.js";
 import { exportSocialVideo, withBattleExportPage } from "./export-random-battle.mjs";
-import { preflightFoundryCandidates } from "./youtube-foundry-matchup.mjs";
+import { foundryRecordingRules, isFoundryBossSlot, preflightFoundryCandidates } from "./youtube-foundry-matchup.mjs";
 import { transcodeBattleVideo } from "./transcode-battle-video.mjs";
 import {
     YOUTUBE_CONFIG_PATH,
@@ -38,6 +38,7 @@ const UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
 const SIMULATION_STEP_SECONDS = 1 / 120;
 const MAX_MATCHUP_ATTEMPTS = 128;
 const MAX_FOUNDRY_MATCHUP_ATTEMPTS = 48;
+const MAX_FOUNDRY_BOSS_ATTEMPTS = 96;
 const DAILY_YOUTUBE_PLAN_CACHE = new Map();
 const PLANNING_ENTITY_CHECK_STEPS = 15;
 // Duplicator copies multiply from every copy. One 2026-10-08 long-form
@@ -219,7 +220,8 @@ export function buildDailyYouTubePlans({ dateKey, config, contentSource = null, 
     const dailyRoster = dailyYouTubeRosterForDate({ dateKey, config });
     const foundryRoster = dailyOrbFoundryRosterForDate({ dateKey, config });
     const usedRaceIds = new Set();
-    const usedFoundryIds = new Set();
+    const usedFoundryIds = { short: new Set(), longform: new Set() };
+    const usedFoundryPairs = new Set();
     const matchupsBySlot = new Map();
     const tournamentConfig = config.quality.fridayTournament;
     const tournamentSlot = tournamentConfig.enabled && isYouTubePacificFriday(dateKey)
@@ -278,27 +280,26 @@ export function buildDailyYouTubePlans({ dateKey, config, contentSource = null, 
             });
         }
     }
-    const planningOrder = [...config.schedule].sort((left, right) => (
-        matchupPlanningPriority(left) - matchupPlanningPriority(right)
-        || left.id.localeCompare(right.id)
-    ));
+    const slots = contentSource === "orb-race"
+        ? config.schedule.filter(({ contentType }) => contentType === "short")
+        : config.schedule;
+    const planningOrder = youtubePlanningOrder(slots, dateKey, config, contentSource);
     for (const slot of planningOrder) {
         if (matchupsBySlot.has(slot.id)) continue;
         try {
             if ((contentSource || slot.contentSource) === "orb-foundry") {
-                if (slot.contentType !== "short") {
-                    throw new Error("Orb Foundry is Shorts-only and cannot fill a long-form YouTube slot.");
-                }
+                const blockedIds = usedFoundryIds[slot.contentType];
                 const matchup = selectYouTubeFoundryMatchup({
                     dateKey,
                     slotId: slot.id,
                     config,
                     arenaShape,
-                    blockedIds: usedFoundryIds,
+                    blockedIds,
+                    blockedPairs: usedFoundryPairs,
                     rosterIds: foundryRoster,
-                    maxAttempts: Math.min(maxAttempts, MAX_FOUNDRY_MATCHUP_ATTEMPTS),
+                    maxAttempts,
                 });
-                matchup.orbFoundryOrbs.forEach((id) => usedFoundryIds.add(id));
+                rememberFoundryMatchup(matchup, blockedIds, usedFoundryPairs);
                 matchupsBySlot.set(slot.id, { slot, matchup });
                 continue;
             }
@@ -321,7 +322,7 @@ export function buildDailyYouTubePlans({ dateKey, config, contentSource = null, 
             });
         }
     }
-    const plans = config.schedule.map(({ id }) => matchupsBySlot.get(id));
+    const plans = slots.map(({ id }) => matchupsBySlot.get(id));
     if (DAILY_YOUTUBE_PLAN_CACHE.size >= 8) {
         DAILY_YOUTUBE_PLAN_CACHE.delete(DAILY_YOUTUBE_PLAN_CACHE.keys().next().value);
     }
@@ -329,9 +330,16 @@ export function buildDailyYouTubePlans({ dateKey, config, contentSource = null, 
     return structuredClone(plans);
 }
 
-function matchupPlanningPriority(slot) {
-    const timePriority = slot.localTime === "12:00" ? 0 : 1;
-    return slot.contentType === "longform" ? timePriority : timePriority + 2;
+function youtubePlanningOrder(slots, dateKey, config, contentSource) {
+    function priority(slot) {
+        const timePriority = slot.localTime === "12:00" ? 0 : 1;
+        if ((contentSource || slot.contentSource) === "orb-foundry") {
+            if (slot.contentType === "short") return timePriority;
+            return isFoundryBossSlot(dateKey, slot.id, config.quality) ? 2 : 3 + timePriority;
+        }
+        return timePriority + (slot.contentType === "longform" ? 0 : 2);
+    }
+    return [...slots].sort((left, right) => priority(left) - priority(right) || left.id.localeCompare(right.id));
 }
 
 function foundryPreflightInput({
@@ -339,35 +347,58 @@ function foundryPreflightInput({
     slotId,
     config,
     blockedIds = new Set(),
+    blockedPairs = new Set(),
     rosterIds = null,
     arenaShape = null,
-    maxAttempts = MAX_FOUNDRY_MATCHUP_ATTEMPTS,
+    maxAttempts = MAX_MATCHUP_ATTEMPTS,
 }) {
+    const slot = config.schedule.find(({ id }) => id === slotId);
+    if (!slot) throw new Error(`Unknown Orb Foundry slot: ${slotId}.`);
+    const { contentType } = slot;
+    const bossBattle = isFoundryBossSlot(dateKey, slotId, config.quality);
     const approvedIds = new Set(config.videoReady.orbFoundry.orbs);
     const roster = (rosterIds || [...approvedIds]).filter((id) => approvedIds.has(id) && CLASSIC_ORBS[id]);
     if (roster.length < 2) throw new Error("The YouTube Orb Foundry allowlist needs at least two playable orbs.");
-    const attemptLimit = Math.max(1, Math.floor(Number(maxAttempts)) || MAX_FOUNDRY_MATCHUP_ATTEMPTS);
+    const slotLimit = bossBattle ? MAX_FOUNDRY_BOSS_ATTEMPTS : MAX_FOUNDRY_MATCHUP_ATTEMPTS;
+    const attemptLimit = Math.min(slotLimit, Math.max(1, Math.floor(Number(maxAttempts)) || slotLimit));
     const seedBase = seedForYouTubeRun(dateKey, `${slotId}:foundry`);
     const foundry = config.quality.orbFoundryShort;
-    const slotIndex = Math.max(0, config.schedule.findIndex(({ id }) => id === slotId));
+    const slotIndex = config.schedule.filter((entry) => entry.contentType === contentType).indexOf(slot);
     const shapeIndex = (seedForYouTubeRun(dateKey, "foundry-arena-shape") + slotIndex) % foundry.arenaShapes.length;
     const shape = arenaShape ?? foundry.arenaShapes[shapeIndex];
     if (!foundry.arenaShapes.includes(shape)) throw new Error("Choose an approved Orb Foundry arena shape.");
     const orderedIds = availableRosterIds(roster, seedBase, blockedIds);
-    const featured = new Set(config.quality.orbFoundryShort.featuredOrbs);
-    const pairs = orderedIds.flatMap((leftId, index) => orderedIds.slice(index + 1).map((rightId) => ({
-        leftId,
-        rightId,
-        featured: featured.has(leftId) || featured.has(rightId),
-        order: seedForYouTubeRun(seedBase, `${leftId}:${rightId}`),
-    })));
+    const featured = new Set(foundry.featuredOrbs);
+    const preflight = { arenaShape: shape, quality: config.quality, contentType, bossBattle };
+    if (bossBattle) {
+        // One Punch Man's fixed 1 HP and infinite dodges are a separate showcase.
+        const eligible = orderedIds.filter((id) => id !== "one-punch-man");
+        const { challengerCount } = config.quality.fridayBossBattle;
+        if (eligible.length <= challengerCount) throw new Error("Friday needs one eligible boss and three distinct challengers.");
+        const featuredBosses = eligible.filter((id) => featured.has(id));
+        const candidates = Array.from({ length: attemptLimit }, (_unused, attempt) => {
+            const seed = seedForYouTubeRun(dateKey, `${slotId}:boss-attempt-${attempt}`);
+            const bossPool = featuredBosses.length && attempt < attemptLimit / 2 ? featuredBosses : eligible;
+            const bossId = bossPool[attempt % bossPool.length];
+            const challengers = availableRosterIds(eligible, seed, new Set([bossId])).slice(0, challengerCount);
+            return { classicTeams: [[bossId], challengers], seed };
+        });
+        return { ...preflight, candidates };
+    }
+    const pairs = orderedIds.flatMap((leftId, index) => orderedIds.slice(index + 1)
+        .filter((rightId) => !blockedPairs.has(foundryDuelKey(leftId, rightId)))
+        .map((rightId) => ({
+            leftId,
+            rightId,
+            featured: featured.has(leftId) || featured.has(rightId),
+            order: seedForYouTubeRun(seedBase, `${leftId}:${rightId}`),
+        })));
     pairs.sort((left, right) => Number(right.featured) - Number(left.featured) || left.order - right.order);
     const candidates = pairs.slice(0, attemptLimit).map(({ leftId, rightId }, attempt) => ({
-        leftId,
-        rightId,
+        classicTeams: [[leftId], [rightId]],
         seed: seedForYouTubeRun(dateKey, `${slotId}:foundry-attempt-${attempt}`),
     }));
-    return { candidates, arenaShape: shape, quality: config.quality };
+    return { ...preflight, candidates };
 }
 
 export function selectYouTubeFoundryMatchup(input) {
@@ -379,13 +410,24 @@ function requireFoundryMatchup(matchup, { dateKey, slotId }) {
     return matchup;
 }
 
+function foundryDuelKey(leftId, rightId) {
+    return [leftId, rightId].sort().join(":");
+}
+
+function rememberFoundryMatchup(matchup, blockedIds, blockedPairs) {
+    matchup.orbFoundryOrbs.forEach((id) => blockedIds.add(id));
+    if (matchup.videoKind === "match") blockedPairs.add(foundryDuelKey(matchup.leftId, matchup.rightId));
+}
+
 export async function buildBrowserFoundryPlans({ dateKey, config, arenaShape = null }) {
     return withBattleExportPage(async (page) => {
         const rosterIds = dailyOrbFoundryRosterForDate({ dateKey, config });
-        const blockedIds = new Set();
-        const plans = [];
-        for (const slot of config.schedule) {
-            const input = { dateKey, slotId: slot.id, config, blockedIds, rosterIds, arenaShape };
+        const usedIds = { short: new Set(), longform: new Set() };
+        const blockedPairs = new Set();
+        const plans = new Map();
+        for (const slot of youtubePlanningOrder(config.schedule, dateKey, config, "orb-foundry")) {
+            const blockedIds = usedIds[slot.contentType];
+            const input = { dateKey, slotId: slot.id, config, blockedIds, blockedPairs, rosterIds, arenaShape };
             try {
                 const args = JSON.stringify(foundryPreflightInput(input));
                 const result = await page.evaluate(
@@ -393,13 +435,13 @@ export async function buildBrowserFoundryPlans({ dateKey, config, arenaShape = n
                     { awaitPromise: true, returnByValue: true },
                 );
                 const matchup = requireFoundryMatchup(result, input);
-                matchup.orbFoundryOrbs.forEach((id) => blockedIds.add(id));
-                plans.push({ slot, matchup });
+                rememberFoundryMatchup(matchup, blockedIds, blockedPairs);
+                plans.set(slot.id, { slot, matchup });
             } catch (error) {
-                plans.push({ slot, matchup: null, planningError: error.message });
+                plans.set(slot.id, { slot, matchup: null, planningError: error.message });
             }
         }
-        return plans;
+        return config.schedule.map(({ id }) => plans.get(id));
     });
 }
 
@@ -518,37 +560,38 @@ export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null,
     }
 
     if (selectedMatchup.contentSource === "orb-foundry") {
-        if (slot.contentType !== "short") {
-            throw new Error("Orb Foundry is Shorts-only and cannot be planned or uploaded as long-form.");
-        }
+        const bossBattle = selectedMatchup.videoKind === "boss-battle";
+        const rules = foundryRecordingRules(config.quality, slot.contentType, bossBattle);
+        const classicTeams = selectedMatchup.classicTeams.map((team) => [...team]);
         const metadata = youtubeFoundryMetadata({
             left: selectedMatchup.left,
             right: selectedMatchup.right,
+            contentType: slot.contentType,
             config,
         });
         const plan = {
             dateKey,
             slotId: slot.id,
             contentSource: "orb-foundry",
-            videoKind: "match",
+            videoKind: selectedMatchup.videoKind,
             contentType: slot.contentType,
-            format: config.quality.orbFoundryShort.format,
+            format: rules.format,
             scheduledPublishAt: scheduledPublishAt(dateKey, slot.localTime, config.timeZone),
-            minimumDurationSeconds: Number(config.quality.minimumDurationSeconds[slot.contentType]),
-            actionPlaybackRate: 1,
+            minimumDurationSeconds: rules.minimumDurationSeconds,
+            actionPlaybackRate: selectedMatchup.battleQuality.actionPlaybackRate,
             raceLayerStrengths: [],
             announcerRequirements: { ...config.quality.announcer },
             runTag: youtubeRunTag(dateKey, slot.id),
             seed: selectedMatchup.seed,
-            formatId: "orb-foundry-duel",
-            classicTeams: selectedMatchup.classicTeams.map((team) => [...team]),
+            formatId: bossBattle ? "orb-foundry-boss-battle" : "orb-foundry-duel",
+            classicTeams,
             orbFoundryOrbs: [...selectedMatchup.orbFoundryOrbs],
             classicOrbOptions: structuredClone(selectedMatchup.classicOrbOptions),
             foundryStyle: { ...selectedMatchup.foundryStyle },
             raceTeams: [],
             raceOrbs: [],
-            leftIds: [selectedMatchup.leftId],
-            rightIds: [selectedMatchup.rightId],
+            leftIds: classicTeams[0],
+            rightIds: classicTeams[1],
             leftId: selectedMatchup.leftId,
             rightId: selectedMatchup.rightId,
             left: selectedMatchup.left,
@@ -556,7 +599,7 @@ export function buildYouTubePublishPlan({ dateKey, slot, config, matchup = null,
             battleQuality: selectedMatchup.battleQuality,
             title: metadata.title,
             description: metadata.description,
-            tags: ["physics", "shorts", "simulation", "satisfying", "orb", "orb-foundry", youtubeRunTag(dateKey, slot.id)],
+            tags: ["physics", ...(slot.contentType === "short" ? ["shorts"] : []), "simulation", "satisfying", "orb", "orb-foundry", youtubeRunTag(dateKey, slot.id)],
         };
         validateYouTubeGenerationSpec({ plan, config });
         return plan;
@@ -809,6 +852,46 @@ function deterministicRosterOrder(roster) {
     ));
 }
 
+export async function exportYouTubePublishPlan({ plan, config, outputRoot = DEFAULT_OUTPUT_ROOT }) {
+    validateYouTubeGenerationSpec({ plan, config });
+    const foundry = plan.contentSource === "orb-foundry";
+    const exportResult = await exportSocialVideo({
+        outputDir: outputRoot,
+        outputDirectory: resolve(outputRoot, plan.dateKey, plan.slotId),
+        outputDateKey: plan.dateKey,
+        gameplayMode: foundry ? "classic" : "orb-race",
+        contentSource: plan.contentSource,
+        videoKind: plan.videoKind,
+        raceOrbs: plan.raceOrbs,
+        raceTeams: plan.raceTeams,
+        raceTeamOptions: !foundry && plan.videoKind === "match" ? youtubeRaceTeamOptions(plan.raceTeams) : undefined,
+        raceLayerStrengths: plan.raceLayerStrengths,
+        tournament: plan.videoKind === "tournament" ? plan.tournament : undefined,
+        classes: plan.orbFoundryOrbs,
+        selectedClasses: plan.orbFoundryOrbs,
+        classicTeams: plan.classicTeams,
+        classicOrbOptions: plan.classicOrbOptions,
+        classicBlackTheme: foundry,
+        classicTeamColors: !foundry,
+        arenaModifier: foundry ? "standard" : undefined,
+        arenaSize: plan.foundryStyle?.arenaSize,
+        arenaShape: plan.foundryStyle?.arenaShape,
+        hazardPreset: "none",
+        contentType: plan.contentType,
+        format: plan.format,
+        seed: plan.seed,
+        minimumDurationSeconds: plan.minimumDurationSeconds,
+        actionPlaybackRate: plan.actionPlaybackRate,
+        timeoutMs: plan.videoKind === "tournament" ? 2_700_000 : plan.videoKind === "boss-battle" ? 600_000 : undefined,
+        title: plan.title,
+        description: plan.description,
+        runTag: plan.runTag,
+        requireAnnouncer: plan.announcerRequirements.required,
+    });
+    validateYouTubeExportArtifact({ exportResult, plan, config });
+    return exportResult;
+}
+
 export async function publishDueYouTubeSlots({
     now = new Date(),
     slotId = null,
@@ -832,9 +915,13 @@ export async function publishDueYouTubeSlots({
     }
     const resolvedDateKey = dateKey || localDateKey(now, config.timeZone);
     const resolvedSlotId = slotId === "auto" ? null : slotId;
-    const slots = batch
+    const scheduledSlots = batch
         ? config.schedule
         : dueYouTubeSlotsAt(now, config, { slotId: resolvedSlotId });
+    if (contentSource === "orb-race" && resolvedSlotId && scheduledSlots.some(({ contentType }) => contentType === "longform")) {
+        throw new Error("Orb Racer publishing is available for Shorts only.");
+    }
+    const slots = contentSource === "orb-race" ? scheduledSlots.filter(({ contentType }) => contentType === "short") : scheduledSlots;
     if (!slots.length) {
         return {
             status: "skipped",
@@ -878,43 +965,7 @@ export async function publishDueYouTubeSlots({
                 continue;
             }
 
-            validateYouTubeGenerationSpec({ plan, config });
-            const exportResult = await exportSocialVideo({
-                outputDir: outputRoot,
-                outputDirectory: resolve(outputRoot, resolvedDateKey, plan.slotId),
-                outputDateKey: resolvedDateKey,
-                gameplayMode: plan.contentSource === "orb-foundry" ? "classic" : "orb-race",
-                contentSource: plan.contentSource,
-                videoKind: plan.videoKind,
-                raceOrbs: plan.raceOrbs,
-                raceTeams: plan.raceTeams,
-                raceTeamOptions: plan.videoKind === "match" && plan.contentSource === "orb-race"
-                    ? youtubeRaceTeamOptions(plan.raceTeams)
-                    : undefined,
-                raceLayerStrengths: plan.raceLayerStrengths,
-                tournament: plan.videoKind === "tournament" ? plan.tournament : undefined,
-                classes: plan.contentSource === "orb-foundry" ? plan.orbFoundryOrbs : undefined,
-                selectedClasses: plan.contentSource === "orb-foundry" ? plan.orbFoundryOrbs : undefined,
-                classicTeams: plan.contentSource === "orb-foundry" ? plan.classicTeams : undefined,
-                classicOrbOptions: plan.contentSource === "orb-foundry" ? plan.classicOrbOptions : undefined,
-                classicBlackTheme: plan.contentSource === "orb-foundry",
-                classicTeamColors: plan.contentSource !== "orb-foundry",
-                arenaModifier: plan.contentSource === "orb-foundry" ? "standard" : undefined,
-                arenaSize: plan.contentSource === "orb-foundry" ? plan.foundryStyle.arenaSize : undefined,
-                arenaShape: plan.contentSource === "orb-foundry" ? plan.foundryStyle.arenaShape : undefined,
-                hazardPreset: "none",
-                contentType: plan.contentType,
-                format: plan.format,
-                seed: plan.seed,
-                minimumDurationSeconds: plan.minimumDurationSeconds,
-                actionPlaybackRate: plan.actionPlaybackRate,
-                timeoutMs: plan.videoKind === "tournament" ? 2_700_000 : undefined,
-                title: plan.title,
-                description: plan.description,
-                runTag: plan.runTag,
-                requireAnnouncer: plan.announcerRequirements.required,
-            });
-            validateYouTubeExportArtifact({ exportResult, plan, config });
+            const exportResult = await exportYouTubePublishPlan({ plan, config, outputRoot });
             const transcoded = await transcodeBattleVideo(exportResult.metadataPath, {
                 latestPath: join(outputRoot, "latest.json"),
             });

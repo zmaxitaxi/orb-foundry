@@ -1,28 +1,66 @@
-import { CLASSIC_ORBS } from "../src/classic-orbs.js";
+import { CLASSIC_ORBS, classicTeamDisplayName } from "../src/classic-orbs.js";
 import { createSimulation, stepSimulation } from "../src/simulation.js";
+import { socialActionPlaybackRateForDuration } from "../src/social.js";
 
 const SIMULATION_STEP_SECONDS = 1 / 120;
 const PLANNING_ENTITY_CHECK_STEPS = 15;
 const MAX_PLANNING_SPAWNED_ENTITIES = 2_000;
-const MAX_FOUNDRY_STARTING_HEALTH = 500;
+const MAX_FOUNDRY_SHORT_HEALTH = 500;
+const MAX_FOUNDRY_LONGFORM_HEALTH = 2_000;
+const MAX_LONGFORM_DUPLICATES = 24;
+const BOSS_CHALLENGER_HEALTH_SCALES = [3, 1.5, 4.5, 0.75];
+const PREFERRED_BOSS_PLAYBACK_RATE = 0.45;
+const EXTRA_CANDIDATES_AFTER_QUALIFYING = 8;
 const FOUNDRY_SPECIAL_PHASES = new Set(["release", "guard", "evade"]);
 const FOUNDRY_FORM_CUES = new Set(["summon", "punch", "beam-hit", "pickaxe"]);
 const FOUNDRY_DEFENSE_CUES = new Set(["dodge", "limitless", "shield-block", "diamond-guard", "omnitrix-transform"]);
 const ONE_PUNCH_MAN_ATTACK_CUES = new Set(["punch", "barrage-hit", "shockwave-hit", "serious"]);
 
-export function foundryBattlePassesQuality(battle, orbIds, quality) {
+export function isFoundryBossSlot(dateKey, slotId, quality) {
+    const boss = quality.fridayBossBattle;
+    return boss?.slotId === slotId
+        && new Date(`${dateKey}T12:00:00.000Z`).getUTCDay() === boss.dayOfWeek;
+}
+
+export function foundryRecordingRules(quality, contentType, bossBattle = false) {
+    const layout = contentType === "longform" ? quality.orbFoundryLongform : quality.orbFoundryShort;
+    const boss = bossBattle ? quality.fridayBossBattle : null;
+    return {
+        format: layout.format,
+        maximumSimulationSeconds: layout.maximumSimulationSeconds,
+        minimumDurationSeconds: boss?.minimumDurationSeconds ?? quality.minimumDurationSeconds[contentType],
+        minimumPlaybackRate: boss?.minimumPlaybackRate ?? layout.minimumPlaybackRate ?? 1,
+    };
+}
+
+export function foundryTeamHealthFraction(fighters, team, options) {
+    if (!team || !Array.isArray(fighters)) return null;
+    let remaining = 0;
+    let starting = 0;
+    for (const id of team) {
+        const fighter = fighters.find(({ type, classicIsDuplicate }) => type === id && !classicIsDuplicate);
+        if (!fighter || !Number.isFinite(fighter.health) || !(options?.[id]?.health > 0)) return null;
+        remaining += fighter.alive ? fighter.health : 0;
+        starting += options[id].health;
+    }
+    return starting > 0 ? remaining / starting : null;
+}
+
+export function foundryBattlePassesQuality(battle, classicTeams, quality, rules) {
     const foundry = quality.orbFoundryShort;
-    const minActionSeconds = Number(quality.minimumDurationSeconds.short) * 1.05;
+    const minActionSeconds = rules.minimumDurationSeconds * 1.05;
     if (battle?.finished !== true || battle.runaway || battle.fallback
         || ![0, 1].includes(battle.winnerTeamIndex)
         || !Number.isFinite(battle.simulatedSeconds)
-        || battle.simulatedSeconds + 0.05 < minActionSeconds
-        || battle.simulatedSeconds > foundry.maximumSimulationSeconds + 0.01
+        || battle.simulatedSeconds <= 0 || battle.simulatedSeconds > rules.maximumSimulationSeconds + 0.01
+        || !Number.isFinite(battle.actionPlaybackRate)
+        || battle.actionPlaybackRate < rules.minimumPlaybackRate || battle.actionPlaybackRate > 1
         || !Number.isFinite(battle.plannedActionDurationSeconds)
         || battle.plannedActionDurationSeconds + 0.05 < minActionSeconds
+        || Math.abs(battle.plannedActionDurationSeconds - battle.simulatedSeconds / battle.actionPlaybackRate) > 0.05
         || !Number.isInteger(battle.signatureMoments)
         || battle.signatureMoments < foundry.minimumSignatureMoments) return false;
-    const punchManIndex = orbIds.indexOf("one-punch-man");
+    const punchManIndex = classicTeams.findIndex((team) => team.includes("one-punch-man"));
     if (punchManIndex >= 0) {
         const { minimumDodges, maximumSecondsSinceLastDodge, minimumAttackVariety } = foundry.onePunchManShowcase;
         return battle.winnerTeamIndex === punchManIndex
@@ -36,44 +74,69 @@ export function foundryBattlePassesQuality(battle, orbIds, quality) {
         && battle.winnerHealthFraction <= foundry.maximumWinnerHealthFraction;
 }
 
-export function preflightFoundryCandidates({ candidates, arenaShape, quality }) {
-    for (const { leftId, rightId, seed } of candidates) {
-        const { battleQuality, classicOrbOptions } = evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quality });
-        if (!battleQuality.accepted) continue;
-        return {
+export function preflightFoundryCandidates({ candidates, arenaShape, quality, contentType, bossBattle }) {
+    const rules = foundryRecordingRules(quality, contentType, bossBattle);
+    const preferredRate = bossBattle ? PREFERRED_BOSS_PLAYBACK_RATE : 1;
+    let best = null;
+    let stopAt = candidates.length;
+    for (let index = 0; index < stopAt; index += 1) {
+        const { classicTeams, seed } = candidates[index];
+        const { battleQuality, classicOrbOptions } = evaluateFoundryYouTubeBattle({
+            classicTeams, seed, arenaShape, quality, rules, contentType, bossBattle,
+        });
+        if (!battleQuality.accepted || (best && battleQuality.simulatedSeconds <= best.battleQuality.simulatedSeconds)) continue;
+        const matchup = {
             contentSource: "orb-foundry",
-            videoKind: "match",
+            videoKind: bossBattle ? "boss-battle" : "match",
             seed,
-            classicTeams: [[leftId], [rightId]],
-            orbFoundryOrbs: [leftId, rightId],
-            leftId,
-            rightId,
-            left: CLASSIC_ORBS[leftId].name,
-            right: CLASSIC_ORBS[rightId].name,
+            classicTeams,
+            orbFoundryOrbs: classicTeams.flat(),
+            leftId: classicTeams[0][0],
+            rightId: classicTeams[1][0],
+            left: classicTeamDisplayName(classicTeams[0], classicOrbOptions),
+            right: classicTeamDisplayName(classicTeams[1], classicOrbOptions),
             classicOrbOptions,
-            foundryStyle: { ...quality.orbFoundryShort, arenaShape },
+            foundryStyle: {
+                ...quality.orbFoundryShort,
+                format: rules.format,
+                maximumSimulationSeconds: rules.maximumSimulationSeconds,
+                arenaShape,
+            },
             battleQuality,
         };
+        if (battleQuality.actionPlaybackRate >= preferredRate) return matchup;
+        if (!best) stopAt = Math.min(stopAt, index + 1 + EXTRA_CANDIDATES_AFTER_QUALIFYING);
+        best = matchup;
     }
-    return null;
+    return best;
 }
 
-function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quality }) {
+function evaluateFoundryYouTubeBattle({ classicTeams, seed, arenaShape, quality, rules, contentType, bossBattle }) {
     const foundry = quality.orbFoundryShort;
-    const orbIds = [leftId, rightId];
-    const targetDuration = Number(quality.minimumDurationSeconds.short) * 1.05;
-    const maxSteps = Math.ceil(foundry.maximumSimulationSeconds / SIMULATION_STEP_SECONDS);
-    let health = orbIds.map((id) => CLASSIC_ORBS[id].defaultHealth);
+    const orbIds = classicTeams.flat();
+    const baseHealth = orbIds.map((id) => CLASSIC_ORBS[id].defaultHealth);
+    const targetDuration = rules.minimumDurationSeconds * 1.05;
+    const maxSteps = Math.ceil(rules.maximumSimulationSeconds / SIMULATION_STEP_SECONDS);
+    const healthLimit = contentType === "short" ? MAX_FOUNDRY_SHORT_HEALTH : MAX_FOUNDRY_LONGFORM_HEALTH;
+    const adjustments = bossBattle ? BOSS_CHALLENGER_HEALTH_SCALES.length : 5;
+    let health = baseHealth;
     let lastResult = null;
-    for (let adjustment = 0; adjustment < 5; adjustment += 1) {
+    let slowerMatch = null;
+    for (let adjustment = 0; adjustment < adjustments; adjustment += 1) {
+        if (bossBattle) {
+            health = baseHealth.map((value, index) => index === 0
+                ? value * quality.fridayBossBattle.healthMultiplier
+                : Math.round(value * BOSS_CHALLENGER_HEALTH_SCALES[adjustment]));
+        }
         const classicOrbOptions = Object.fromEntries(orbIds.map((id, index) => [id, {
             health: health[index],
             orbScale: 1.25,
+            ...(bossBattle && index === 0 ? { boss: true } : {}),
         }]));
         const sim = createSimulation({
             gameplayMode: "classic",
             classes: orbIds,
-            classicTeams: orbIds.map((id) => [id]),
+            classicTeams,
             classicOrbOptions,
             classicBlackTheme: true,
             classicTeamColors: false,
@@ -81,7 +144,7 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quali
             arenaShape,
             hazardPreset: "none",
             seed,
-            social: { enabled: true, format: foundry.format },
+            social: { enabled: true, format: rules.format },
             features: { replay: false },
         });
         const action = { signatureMoments: 0, dodges: 0, lastDodgeAt: null, attackCues: new Set() };
@@ -90,7 +153,8 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quali
             const nextEventId = sim.nextEventId;
             stepSimulation(sim, SIMULATION_STEP_SECONDS);
             if (step % PLANNING_ENTITY_CHECK_STEPS === 0
-                && sim.fighters.length + sim.classicEntities.length + sim.projectiles.length > MAX_PLANNING_SPAWNED_ENTITIES) {
+                && (sim.fighters.length + sim.classicEntities.length + sim.projectiles.length > MAX_PLANNING_SPAWNED_ENTITIES
+                    || (contentType === "longform" && sim.fighters.length > orbIds.length + MAX_LONGFORM_DUPLICATES))) {
                 runaway = true;
                 break;
             }
@@ -102,27 +166,33 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quali
             }
         }
         const winner = sim.winner;
-        const winnerHealthFraction = winner && Number(winner.maxHealth) > 0
-            ? Number(winner.health) / Number(winner.maxHealth)
-            : null;
+        const winnerTeamIndex = Number.isInteger(winner?.classicTeamIndex) ? winner.classicTeamIndex : null;
+        const winnerHealthFraction = foundryTeamHealthFraction(sim.fighters, classicTeams[winnerTeamIndex], classicOrbOptions);
         const simulatedSeconds = Number(sim.time.toFixed(3));
+        const actionPlaybackRate = contentType === "longform"
+            ? socialActionPlaybackRateForDuration(simulatedSeconds, targetDuration) : 1;
         const battleQuality = {
             fallback: false,
             runaway,
             finished: sim.finished && !runaway,
-            winnerTeamIndex: Number.isInteger(winner?.classicTeamIndex) ? winner.classicTeamIndex : null,
+            winnerTeamIndex,
             winnerHealthFraction,
             simulatedSeconds,
-            plannedActionDurationSeconds: simulatedSeconds,
-            actionPlaybackRate: 1,
+            plannedActionDurationSeconds: simulatedSeconds / actionPlaybackRate,
+            actionPlaybackRate,
             signatureMoments: action.signatureMoments,
             dodges: action.dodges,
             secondsSinceLastDodge: action.lastDodgeAt === null ? null : sim.time - action.lastDodgeAt,
             attackVariety: action.attackCues.size,
         };
-        battleQuality.accepted = foundryBattlePassesQuality(battleQuality, orbIds, quality);
+        battleQuality.accepted = foundryBattlePassesQuality(battleQuality, classicTeams, quality, rules);
         lastResult = { battleQuality, classicOrbOptions };
-        if (battleQuality.accepted || runaway) return lastResult;
+        if (battleQuality.accepted) {
+            if (bossBattle || actionPlaybackRate === 1) return lastResult;
+            if (!slowerMatch || actionPlaybackRate > slowerMatch.battleQuality.actionPlaybackRate) slowerMatch = lastResult;
+        }
+        if (bossBattle) continue;
+        if (runaway) break;
 
         const lengthScale = !sim.finished ? 0.65
             : simulatedSeconds < targetDuration ? targetDuration * 1.20 / Math.max(2, simulatedSeconds) : 1;
@@ -131,12 +201,12 @@ function evaluateFoundryYouTubeBattle({ leftId, rightId, seed, arenaShape, quali
             const projected = index === battleQuality.winnerTeamIndex && winnerHealthFraction > foundry.maximumWinnerHealthFraction
                 ? Math.min(current, (winner.maxHealth - winner.health) / 0.78)
                 : current;
-            return Math.max(15, Math.min(MAX_FOUNDRY_STARTING_HEALTH, Math.round(projected * lengthScale)));
+            return Math.max(15, Math.min(healthLimit, Math.round(projected * lengthScale)));
         });
         if (adjusted.every((value, index) => value === health[index])) break;
         health = adjusted;
     }
-    return lastResult;
+    return slowerMatch || lastResult;
 }
 
 function countFoundryAction(action, event) {

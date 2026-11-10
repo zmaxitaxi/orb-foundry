@@ -2312,15 +2312,17 @@ function consumeSocialEvents(now) {
 function socialSimulationRate(now) {
   if (sim.classicWdcDuel) return socialPresentation.started ? 1 : 0;
   // Normal previews still start gameplay while audio/recording initializes.
-  // Duration-qualified Orb Race exports wait for the recorder so their one
+  // Duration-qualified long-form Classic and single-race exports wait for the recorder so their one
   // matchup starts at the first captured action frame.
-  const durationMatchedRace = settings.gameplayMode === ORB_RACE_MODE
-    && !sim.raceTournament
+  const durationMatchedRecording = (
+    (settings.gameplayMode === ORB_RACE_MODE && !sim.raceTournament)
+    || (settings.gameplayMode === "classic" && settings.social.format === "race-landscape")
+  )
     && settings.social.requireAnnouncer === true
     && Number(settings.social.minimumDurationSeconds) > 0
     && socialRecorder.supported();
-  if (durationMatchedRace && socialRecorder.machine.state !== RECORDER_STATES.RECORDING) return 0;
-  const actionPlaybackRate = durationMatchedRace
+  if (durationMatchedRecording && socialRecorder.machine.state !== RECORDER_STATES.RECORDING) return 0;
+  const actionPlaybackRate = durationMatchedRecording
     ? Math.max(0.001, Math.min(1, Number(settings.social.actionPlaybackRate) || 1))
     : 1;
   if (socialPresentation.phase === "countdown") return 0;
@@ -3687,8 +3689,8 @@ window.__ORB_FOUNDRY__ = {
     } : null,
     phase: socialPresentation.phase,
     countdown: socialPresentation.countdown,
-    fighters: sim.fighters.map(({ id, name, type, health, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
-      id, name, type, health, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
+    fighters: sim.fighters.map(({ id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
+      id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
     })),
   }),
   restart: () => launchBattle(settings),

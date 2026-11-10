@@ -2,8 +2,13 @@
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLASSIC_ORB_IDS } from "../src/classic-orbs.js";
-import { foundryBattlePassesQuality } from "./youtube-foundry-matchup.mjs";
+import { CLASSIC_ORBS, CLASSIC_ORB_IDS, classicTeamDisplayName } from "../src/classic-orbs.js";
+import {
+    foundryBattlePassesQuality,
+    foundryRecordingRules,
+    foundryTeamHealthFraction,
+    isFoundryBossSlot,
+} from "./youtube-foundry-matchup.mjs";
 import {
     ORB_RACE_MAX_LAYER_COUNT,
     ORB_RACE_MAX_LAYER_STRENGTH,
@@ -80,17 +85,19 @@ export function validateYouTubePublishingConfig(config) {
         throw new Error("YouTube description hashtags must match the approved publishing contract.");
     }
     const expectedSlots = [
-        { id: "noon-short", localTime: "12:00" },
-        { id: "afternoon-short", localTime: "15:00" },
+        { id: "noon-short", contentType: "short", localTime: "12:00" },
+        { id: "noon-longform", contentType: "longform", localTime: "12:00" },
+        { id: "afternoon-short", contentType: "short", localTime: "15:00" },
+        { id: "afternoon-longform", contentType: "longform", localTime: "15:00" },
     ];
     if (!Array.isArray(config.schedule) || config.schedule.length !== expectedSlots.length
         || config.schedule.some((slot, index) => (
             slot?.id !== expectedSlots[index].id
-            || slot?.contentType !== "short"
+            || slot?.contentType !== expectedSlots[index].contentType
             || slot?.contentSource !== "orb-foundry"
             || slot?.localTime !== expectedSlots[index].localTime
         ))) {
-        throw new Error("YouTube publishing schedule must contain two Orb Foundry Shorts at 12:00 PM and 3:00 PM Pacific.");
+        throw new Error("YouTube publishing must schedule one Orb Foundry Short and one long-form video at both noon and 3 PM Pacific.");
     }
     validateYouTubeQuality(config.quality);
     validateVideoReadySection(config.videoReady?.orbRace, "orbRace", ORB_RACER_IDS.filter((id) => id !== "grappler"));
@@ -123,8 +130,9 @@ function validateYouTubeQuality(quality) {
         throw new Error(`YouTube minimumLayerHealth must be at least ${YOUTUBE_MINIMUM_LAYER_HEALTH}.`);
     }
     const durationSeconds = quality.minimumDurationSeconds;
-    if (Math.floor(Number(durationSeconds?.short)) < 25 || Math.floor(Number(durationSeconds?.longform)) < 60) {
-        throw new Error("YouTube minimum durations must be at least 25 seconds for Shorts and 60 seconds for long-form.");
+    if (!(durationSeconds?.short >= 25) || !(durationSeconds?.longform >= 120)
+        || !Number.isFinite(durationSeconds.short) || !Number.isFinite(durationSeconds.longform)) {
+        throw new Error("YouTube minimum durations must be at least 25 seconds for Shorts and 120 seconds for long-form.");
     }
     const maximumShortLayers = Number(quality.maximumShortLayers);
     if (maximumShortLayers !== YOUTUBE_MAXIMUM_SHORT_LAYERS) {
@@ -189,12 +197,12 @@ function validateYouTubeQuality(quality) {
         if (!(Number(format.weight) > 0)) throw new Error(`YouTube battle format ${format.id} must have a positive weight.`);
     }
     const foundry = quality.orbFoundryShort;
-    if (!foundry || foundry.shortsOnly !== true
+    if (!foundry
         || !(Number(foundry.maximumSimulationSeconds) >= Number(durationSeconds.short) * 1.05)
         || Number(foundry.maximumSimulationSeconds) > YOUTUBE_SHORTS_MAX_SECONDS
         || foundry.format !== YOUTUBE_SHORTS_FORMAT || foundry.theme !== "black" || foundry.teamOutlines !== false
         || foundry.arenaSize !== "large") {
-        throw new Error("YouTube Orb Foundry is Shorts-only and must use the portrait Shorts layout and a black, outline-free large arena.");
+        throw new Error("YouTube Orb Foundry Shorts must use the portrait Shorts layout and a black, outline-free large arena.");
     }
     const arenaShapes = foundry.arenaShapes;
     if (!Array.isArray(arenaShapes) || !arenaShapes.length || new Set(arenaShapes).size !== arenaShapes.length
@@ -208,6 +216,19 @@ function validateYouTubeQuality(quality) {
         || !(showcase.maximumSecondsSinceLastDodge > 0 && showcase.maximumSecondsSinceLastDodge <= 8)
         || !Number.isInteger(showcase.minimumAttackVariety) || showcase.minimumAttackVariety < 2) {
         throw new Error("YouTube Orb Foundry must require close finishes, signature action, and late dodge pressure for One Punch Man.");
+    }
+    const longform = quality.orbFoundryLongform;
+    if (longform?.format !== "race-landscape" || !Number.isFinite(longform.maximumSimulationSeconds)
+        || longform.maximumSimulationSeconds < durationSeconds.longform * 1.05
+        || !(longform.minimumPlaybackRate >= 0.8 && longform.minimumPlaybackRate <= 1)) {
+        throw new Error("YouTube Orb Foundry long-form must use ORB RACE LONG FORM and allow time for the full fight.");
+    }
+    const boss = quality.fridayBossBattle;
+    if (boss?.dayOfWeek !== 5 || boss.slotId !== "afternoon-longform" || boss.challengerCount !== 3
+        || boss.healthMultiplier !== 3 || !Number.isFinite(boss.minimumDurationSeconds) || boss.minimumDurationSeconds < 240
+        || !(boss.minimumPlaybackRate >= 0.25 && boss.minimumPlaybackRate <= 1)
+        || longform.maximumSimulationSeconds < boss.minimumDurationSeconds * 1.05 * boss.minimumPlaybackRate) {
+        throw new Error("Friday afternoon long-form must feature a 3× HP boss against three challengers for at least 240 seconds.");
     }
     const tournament = quality.fridayTournament;
     if (!tournament || tournament.enabled !== false || Number(tournament.dayOfWeek) !== 5
@@ -265,14 +286,19 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
     if (!slot || slot.contentType !== plan.contentType) {
         throw new Error("YouTube generation blocked: the plan content type does not match its schedule slot.");
     }
-    if (plan.contentSource === "orb-foundry" && plan.contentType !== "short") {
-        throw new Error("YouTube generation blocked: Orb Foundry is Shorts-only and cannot be planned or uploaded as long-form.");
+    if (slot.contentSource === "orb-foundry" && slot.contentType === "longform" && plan.contentSource !== "orb-foundry") {
+        throw new Error("YouTube generation blocked: the scheduled long-form slots are for Classic Orb Foundry.");
     }
     const tournamentConfig = config.quality.fridayTournament;
     const isTournament = plan.videoKind === "tournament";
-    const expectedDuration = isTournament
-        ? Number(tournamentConfig.minimumDurationSeconds)
-        : Number(config.quality.minimumDurationSeconds[plan.contentType]);
+    const bossBattle = plan.videoKind === "boss-battle";
+    const bossSlot = isFoundryBossSlot(plan.dateKey, slot.id, config.quality);
+    if (bossBattle !== bossSlot || (bossBattle && (plan.contentSource !== "orb-foundry" || plan.contentType !== "longform"))) {
+        throw new Error("YouTube generation blocked: Friday afternoon long-form is reserved for the Classic boss battle.");
+    }
+    const expectedDuration = bossBattle ? config.quality.fridayBossBattle.minimumDurationSeconds
+        : isTournament ? Number(tournamentConfig.minimumDurationSeconds)
+            : Number(config.quality.minimumDurationSeconds[plan.contentType]);
     if (Number(plan.minimumDurationSeconds) !== expectedDuration) {
         throw new Error("YouTube generation blocked: the plan duration does not match the configured minimum.");
     }
@@ -314,24 +340,30 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
 
     if (plan.contentSource === "orb-foundry") {
         const foundry = config.quality.orbFoundryShort;
+        const rules = foundryRecordingRules(config.quality, plan.contentType, bossBattle);
         const orbIds = Array.isArray(plan.orbFoundryOrbs) ? plan.orbFoundryOrbs : [];
+        const teams = plan.classicTeams;
+        const teamSizes = [1, bossBattle ? config.quality.fridayBossBattle.challengerCount : 1];
         const allowedOrbs = new Set(config.videoReady.orbFoundry.orbs);
-        if (plan.videoKind !== "match" || plan.contentType !== "short"
-            || orbIds.length !== 2 || new Set(orbIds).size !== 2
-            || orbIds.some((id) => !allowedOrbs.has(id))
-            || JSON.stringify(plan.classicTeams) !== JSON.stringify(orbIds.map((id) => [id]))) {
-            throw new Error("YouTube generation blocked: Orb Foundry Shorts require exactly two unique approved orbs.");
+        if ((!bossBattle && plan.videoKind !== "match") || !Array.isArray(teams) || teams.length !== teamSizes.length
+            || teams.some((team, index) => !Array.isArray(team) || team.length !== teamSizes[index])
+            || new Set(orbIds).size !== orbIds.length || orbIds.some((id) => !allowedOrbs.has(id))
+            || JSON.stringify(teams.flat()) !== JSON.stringify(orbIds)
+            || (bossBattle && orbIds.includes("one-punch-man"))) {
+            throw new Error(bossBattle
+                ? "YouTube generation blocked: the boss battle requires one boss and three distinct approved challengers."
+                : "YouTube generation blocked: Orb Foundry duels require exactly two unique approved orbs.");
         }
-        if (!plan.foundryStyle || plan.foundryStyle.format !== foundry.format
+        const layoutLabel = plan.contentType === "short" ? "portrait Shorts layout" : "ORB RACE LONG FORM layout";
+        if (!plan.foundryStyle || plan.foundryStyle.format !== rules.format
             || plan.foundryStyle.theme !== foundry.theme
             || plan.foundryStyle.teamOutlines !== foundry.teamOutlines
             || plan.foundryStyle.arenaSize !== foundry.arenaSize
             || !foundry.arenaShapes.includes(plan.foundryStyle.arenaShape)
-            || plan.format !== YOUTUBE_SHORTS_FORMAT
-            || plan.format !== foundry.format) {
-            throw new Error("YouTube generation blocked: Orb Foundry Shorts must use the portrait Shorts layout with a black, outline-free large arena in an approved shape.");
+            || plan.format !== rules.format) {
+            throw new Error(`YouTube generation blocked: Orb Foundry must use the ${layoutLabel} with a black, outline-free large arena in an approved shape.`);
         }
-        if (Number(plan.battleQuality?.simulatedSeconds) > YOUTUBE_SHORTS_MAX_SECONDS) {
+        if (plan.contentType === "short" && Number(plan.battleQuality?.plannedActionDurationSeconds) > YOUTUBE_SHORTS_MAX_SECONDS) {
             throw new Error("YouTube generation blocked: Orb Foundry Shorts must stay within YouTube's 3-minute Shorts limit.");
         }
         const classicHealthValues = orbIds.map((id) => Number(plan.classicOrbOptions?.[id]?.health));
@@ -339,10 +371,17 @@ export function validateYouTubeGenerationSpec({ plan, config }) {
             || (orbIds.includes("one-punch-man") && Number(plan.classicOrbOptions["one-punch-man"].health) !== 1)) {
             throw new Error("YouTube generation blocked: Orb Foundry health settings are invalid.");
         }
-        if (plan.battleQuality?.accepted !== true || !foundryBattlePassesQuality(plan.battleQuality, orbIds, config.quality)) {
+        const bossId = bossBattle ? teams[0][0] : null;
+        if (orbIds.some((id) => (plan.classicOrbOptions[id].boss === true) !== (id === bossId))
+            || (bossId && classicHealthValues[0] !== CLASSIC_ORBS[bossId].defaultHealth * config.quality.fridayBossBattle.healthMultiplier)) {
+            throw new Error("YouTube generation blocked: only the boss must carry the boss flag and start with 3× its base HP.");
+        }
+        if (plan.battleQuality?.accepted !== true || plan.actionPlaybackRate !== plan.battleQuality.actionPlaybackRate
+            || !foundryBattlePassesQuality(plan.battleQuality, teams, config.quality, rules)) {
             throw new Error("YouTube generation blocked: the Orb Foundry matchup must pass the finish, signature action, and duration checks.");
         }
-        const expectedMetadata = youtubeFoundryMetadata({ left: plan.left, right: plan.right, config });
+        const [left, right] = teams.map((team) => classicTeamDisplayName(team, plan.classicOrbOptions));
+        const expectedMetadata = youtubeFoundryMetadata({ left, right, contentType: plan.contentType, config });
         if (plan.title !== expectedMetadata.title || plan.description !== expectedMetadata.description) {
             throw new Error("YouTube generation blocked: Orb Foundry title or description does not match the approved metadata contract.");
         }
@@ -501,28 +540,41 @@ export function validateYouTubeExportArtifact({ exportResult, plan, config }) {
     if (plan.contentSource === "orb-foundry") {
         const state = exportResult.state;
         const setting = state?.settings || {};
+        const isShort = plan.contentType === "short";
+        const bossBattle = plan.videoKind === "boss-battle";
+        const layoutLabel = isShort ? "portrait Short layout" : "ORB RACE LONG FORM layout";
+        const actionRate = setting.social?.actionPlaybackRate ?? 1;
         if (exportResult.gameplayMode !== "classic"
+            || exportResult.videoKind !== plan.videoKind || exportResult.format !== plan.format
             || JSON.stringify(exportResult.orbFoundryOrbs) !== JSON.stringify(plan.orbFoundryOrbs)
             || JSON.stringify(setting.classicTeams) !== JSON.stringify(plan.classicTeams)
             || setting.classicBlackTheme !== true || setting.classicTeamColors !== false
-            || setting.social?.format !== YOUTUBE_SHORTS_FORMAT
+            || setting.social?.format !== plan.format || actionRate !== plan.actionPlaybackRate
             || setting.arenaSize !== plan.foundryStyle.arenaSize || setting.arenaShape !== plan.foundryStyle.arenaShape
             || setting.hazardPreset !== "none"
             || state?.classicTournament != null
-            || Number(state?.time) + 0.05 < Number(plan.minimumDurationSeconds)
-            || recordedDuration > YOUTUBE_SHORTS_MAX_SECONDS) {
-            throw new Error("YouTube upload blocked: Orb Foundry export must match the approved portrait Short layout and arena shape and stay within YouTube's 3-minute Shorts limit.");
+            || Number(state?.time) / actionRate + 0.05 < minimumDuration) {
+            throw new Error(`YouTube upload blocked: Orb Foundry export must match the approved ${layoutLabel}, arena shape, and action duration.`);
         }
-        const winningId = plan.orbFoundryOrbs[plan.battleQuality.winnerTeamIndex];
+        if (isShort && recordedDuration > YOUTUBE_SHORTS_MAX_SECONDS) {
+            throw new Error("YouTube upload blocked: Orb Foundry Shorts must stay within YouTube's 3-minute Shorts limit.");
+        }
+        const winningTeam = plan.classicTeams[plan.battleQuality.winnerTeamIndex];
         const survivors = (state?.fighters || []).filter((fighter) => fighter.alive);
-        const winner = survivors.find(({ type }) => type === winningId);
-        const winnerFraction = winner?.health / plan.classicOrbOptions?.[winningId]?.health;
+        const winnerFraction = foundryTeamHealthFraction(state?.fighters, winningTeam, plan.classicOrbOptions);
+        const teamOptionsMatch = plan.classicTeams.every((team, index) => team.every((id) => {
+            const actual = setting.classicTeamOptions?.[index]?.[id] ?? setting.classicOrbOptions?.[id];
+            const expected = plan.classicOrbOptions[id];
+            return actual?.health === expected.health && actual?.orbScale === expected.orbScale
+                && (actual?.count ?? 1) === 1 && (actual?.boss === true) === (expected.boss === true);
+        }));
+        const bossId = bossBattle ? plan.classicTeams[0][0] : null;
+        const recordedBoss = bossId && state?.fighters?.find(({ type, classicIsDuplicate }) => type === bossId && !classicIsDuplicate);
         if (state?.finished !== true
             || !Number.isFinite(state.time) || Math.abs(state.time - plan.battleQuality.simulatedSeconds) > 0.05
             || !Number.isFinite(winnerFraction) || Math.abs(winnerFraction - plan.battleQuality.winnerHealthFraction) > 0.0001
-            || survivors.some(({ type }) => type !== winningId)
-            || plan.orbFoundryOrbs.some((id) => setting.classicOrbOptions?.[id]?.health !== plan.classicOrbOptions[id].health
-                || setting.classicOrbOptions?.[id]?.orbScale !== plan.classicOrbOptions[id].orbScale)) {
+            || !survivors.length || survivors.some(({ type }) => !winningTeam.includes(type)) || !teamOptionsMatch
+            || (bossBattle && (recordedBoss?.classicBoss !== true || recordedBoss.maxHealth !== plan.classicOrbOptions[bossId].health))) {
             throw new Error("YouTube upload blocked: the Orb Foundry result does not match the approved preflight.");
         }
         validateRequiredAnnouncer(exportResult.announcer, quality.announcer, 1);
@@ -701,10 +753,11 @@ export function youtubeMetadata({ left, right, layerHealth, config = null } = {}
     };
 }
 
-export function youtubeFoundryMetadata({ left, right, config = null } = {}) {
+export function youtubeFoundryMetadata({ left, right, contentType = "short", config = null } = {}) {
     const leftLabel = titlePart(left, "left");
     const rightLabel = titlePart(right, "right");
-    const hashtags = (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS).join(" ");
+    const hashtags = (config?.descriptionHashtags || YOUTUBE_DESCRIPTION_HASHTAGS)
+        .filter((tag) => contentType === "short" || tag !== "#shorts").join(" ");
     return {
         title: youtubeTitle(leftLabel, rightLabel, config),
         description: `Who will win the Orb Foundry battle, ${leftLabel} or ${rightLabel}?\n\n${hashtags}`,

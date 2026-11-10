@@ -15,8 +15,20 @@
             "contentSource": "orb-foundry"
         },
         {
+            "id": "noon-longform",
+            "contentType": "longform",
+            "localTime": "12:00",
+            "contentSource": "orb-foundry"
+        },
+        {
             "id": "afternoon-short",
             "contentType": "short",
+            "localTime": "15:00",
+            "contentSource": "orb-foundry"
+        },
+        {
+            "id": "afternoon-longform",
+            "contentType": "longform",
             "localTime": "15:00",
             "contentSource": "orb-foundry"
         }
@@ -34,10 +46,9 @@
         "minimumLayerHealth": 500,
         "minimumDurationSeconds": {
             "short": 25,
-            "longform": 60
+            "longform": 120
         },
         "orbFoundryShort": {
-            "shortsOnly": true,
             "featuredOrbs": [
                 "wdc",
                 "one-punch-man",
@@ -65,6 +76,19 @@
                 "square",
                 "circle"
             ]
+        },
+        "orbFoundryLongform": {
+            "format": "race-landscape",
+            "maximumSimulationSeconds": 300,
+            "minimumPlaybackRate": 0.8
+        },
+        "fridayBossBattle": {
+            "dayOfWeek": 5,
+            "slotId": "afternoon-longform",
+            "challengerCount": 3,
+            "healthMultiplier": 3,
+            "minimumDurationSeconds": 240,
+            "minimumPlaybackRate": 0.25
         },
         "fridayTournament": {
             "enabled": false,

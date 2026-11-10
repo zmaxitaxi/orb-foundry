@@ -160,10 +160,14 @@ export async function exportSocialVideo(options = {}) {
     selectedClasses = classicTeams.flat();
     orbNames = selectedClasses.map((type) => CLASSIC_ORBS[type]?.name || CLASS_DEFS[type]?.name || type);
     settings = {
-      count: 2,
+      count: selectedClasses.length,
+      gameplayMode,
       classes,
       classicTeams,
       classicOrbOptions: options.classicOrbOptions || {},
+      classicTeamOptions: options.classicTeamOptions || configuredTeams?.map((team) => Object.fromEntries(
+        team.map((id) => [id, options.classicOrbOptions?.[id]]),
+      )),
       classicReferenceDuel: options.classicReferenceDuel === true,
       classicBlackTheme: options.classicBlackTheme,
       classicTeamColors: options.classicTeamColors,
@@ -179,6 +183,7 @@ export async function exportSocialVideo(options = {}) {
         fps,
         highlightMode: options.highlightMode ?? process.env.BATTLE_HIGHLIGHTS !== "false",
         minimumDurationSeconds: Number(options.minimumDurationSeconds) || 0,
+        actionPlaybackRate: Number(options.actionPlaybackRate) || 1,
         requireAnnouncer: options.requireAnnouncer === true,
       },
       features: {
@@ -193,7 +198,7 @@ export async function exportSocialVideo(options = {}) {
   const caption = options.description || `${orbNames[0]} VS ${orbNames[1]}\n\n${HASHTAGS}`;
 
   return withBattleExportPage(async (page) => {
-    await page.send("Page.setDownloadBehavior", { behavior: "allow", downloadPath: outputDir });
+    await page.send("Browser.setDownloadBehavior", { behavior: "allow", downloadPath: outputDir });
     await page.evaluate(`window.__ORB_FOUNDRY__.record(${JSON.stringify(settings)})`, { awaitPromise: true, userGesture: true });
 
     const timeoutMs = Number(options.timeoutMs) || Number(process.env.BATTLE_EXPORT_TIMEOUT_MS) || 420_000;
@@ -257,18 +262,20 @@ export async function withBattleExportPage(run) {
   const tempProfile = await mkdtemp(join(tmpdir(), "orb-foundry-chrome-"));
   let server;
   let chrome;
+  let page;
   try {
     server = await startStaticServer(ROOT);
     chrome = launchChrome({
       userDataDir: tempProfile,
       url: `http://127.0.0.1:${server.port}/`,
     });
-    const page = await connectToPage(chrome);
+    page = await connectToPage(chrome);
     await page.send("Page.enable");
     await page.send("Runtime.enable");
     await page.waitForExpression("window.__ORB_FOUNDRY__ && document.readyState === 'complete'", 30_000);
     return await run(page);
   } finally {
+    page?.close();
     await pageSafeClose(chrome);
     await server?.close();
     await rm(tempProfile, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 });
@@ -392,28 +399,59 @@ async function readDevToolsPort(userDataDir) {
 
 class CdpPage {
   constructor(url) {
+    this.url = url;
     this.nextId = 1;
-    this.pending = new Map();
-    this.socket = new WebSocket(url);
-    this.ready = new Promise((resolve, reject) => {
-      this.socket.addEventListener("open", resolve, { once: true });
-      this.socket.addEventListener("error", reject, { once: true });
+    this.connect();
+  }
+
+  connect() {
+    const socket = new WebSocket(this.url);
+    const pending = new Map();
+    const ready = new Promise((resolve, reject) => {
+      socket.addEventListener("open", resolve, { once: true });
+      socket.addEventListener("error", () => reject(new Error("Chrome debugging connection failed.")), { once: true });
+      socket.addEventListener("close", () => {
+        const error = new Error("Chrome debugging connection closed.");
+        reject(error);
+        for (const request of pending.values()) request.reject(error);
+        pending.clear();
+      }, { once: true });
     });
-    this.socket.addEventListener("message", (event) => {
+    socket.addEventListener("message", (event) => {
       const message = JSON.parse(event.data);
-      if (!message.id || !this.pending.has(message.id)) return;
-      const { resolve, reject } = this.pending.get(message.id);
-      this.pending.delete(message.id);
+      const request = pending.get(message.id);
+      if (!request) return;
+      pending.delete(message.id);
+      const { resolve, reject } = request;
       if (message.error) reject(new Error(message.error.message));
       else resolve(message.result);
     });
+    this.connection = { socket, pending, ready };
   }
 
   async send(method, params = {}) {
-    await this.ready;
+    if (this.connection.socket.readyState >= WebSocket.CLOSING) this.connect();
+    const { socket, pending, ready } = this.connection;
+    await ready;
     const id = this.nextId++;
-    this.socket.send(JSON.stringify({ id, method, params }));
-    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pending.delete(id);
+        socket.close();
+        reject(new Error(`Chrome did not respond to ${method}.`));
+      }, params.awaitPromise ? 300_000 : 15_000);
+      pending.set(id, {
+        resolve: (value) => { clearTimeout(timeout); resolve(value); },
+        reject: (error) => { clearTimeout(timeout); reject(error); },
+      });
+      try {
+        socket.send(JSON.stringify({ id, method, params }));
+      } catch (error) {
+        pending.delete(id);
+        clearTimeout(timeout);
+        reject(error);
+      }
+    });
   }
 
   async evaluate(expression, options = {}) {
@@ -439,7 +477,8 @@ class CdpPage {
   }
 
   close() {
-    if (this.socket.readyState === WebSocket.OPEN) this.socket.close();
+    const { socket } = this.connection;
+    if (socket.readyState === WebSocket.OPEN) socket.close();
   }
 }
 

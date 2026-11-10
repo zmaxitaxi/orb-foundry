@@ -208,19 +208,22 @@ Run a safe local publishing plan without rendering or uploading:
 npm run youtube:publish -- --dry-run --slot=noon-short --date=2026-09-19
 ```
 
-The daily batch prepares two Orb Foundry Shorts for noon and 3 PM Pacific.
-It favors the nine newer fighters and can choose any Classic orb except
-Grappler. Use `--source=orb-race` for a manual Orb Racer Short. The GitHub
-workflow offers the same source choice. The daily batch uses one square
-and one circle. Use `--arena-shape=circle` or `--arena-shape=square` to
-pick the shape for a manual Orb Foundry run.
+The daily batch prepares one Classic Orb Foundry Short and one long-form
+video for each of the noon and 3 PM Pacific slots. Both formats favor the
+nine newer fighters, can choose any Classic orb except Grappler, and use
+one square and one circle. Use `--source=orb-race` for a manual Orb Racer
+Short or `--arena-shape=circle` or `--arena-shape=square` to pick a Classic
+arena for a manual run.
 
-Each Orb Foundry Short preflights one completed fight with distinct
-signature action and at least 25 seconds of live combat. A normal winner
-must finish at 40% HP or less. One Punch Man starts at 1 HP and qualifies
-through repeated dodges, late pressure, and varied landed attacks. The
-planner can tune starting HP to find an engaging matchup. The exported
-fight must match the preflight's winner, remaining HP, and finish time.
+Each Orb Foundry video preflights one completed fight with distinct
+signature action and a close finish. Shorts need 25 seconds of action.
+Long form uses the 1920 × 1080 **ORB RACE LONG FORM** preset and needs at
+least two minutes. Friday's 3 PM long form is one boss at three times its
+base HP against three challengers, with at least four minutes of action.
+A normal winner must finish at 40% HP or less. One Punch Man's 1 HP
+duels qualify through repeated dodges, late pressure, and varied landed
+attacks. The exported fight must match the preflight's winner, remaining
+HP, and finish time.
 
 Orb Racer Shorts preflight one matchup with up to three ascending layers
 of at least 500 HP. A finished race can play at a deterministic slower
@@ -231,8 +234,8 @@ own result so a failed candidate in one slot leaves the other available.
 YouTube metadata uses readable orb/group names in `{left} VS {right}` titles
 (for example, `Splodey VS Jackpot`). Orb Race matchup descriptions ask “Who
 will break the {layerHealth} HP layer first, {left} or {right}?” Orb Foundry
-Shorts use a fight-specific prompt; all include the
-required `#physics #shorts #simulation #satisfying` hashtags.
+uses a fight-specific prompt with `#physics #simulation #satisfying`.
+Shorts also use `#shorts`.
 
 Every battle recording also requires announcer coverage. Cue selection uses the
 battle's semantic context—mode, matchup shape, phase, and actual split state—so
