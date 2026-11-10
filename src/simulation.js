@@ -1374,6 +1374,8 @@ const ORB_MAX_SPEED_SCALE = 2.1;
 const WORLD_CUP_ITEM_ORBIT_SECONDS = 2;
 const WORLD_CUP_DELAYED_ITEMS = new Set(["soccer-ball", "yellow-card", "red-card"]);
 const LAST_STAND_HEALTH_RATIO = 0.25;
+const CLASSIC_POWER_COOLDOWN_SECONDS = 12;
+const CLASSIC_DASH_SECONDS = 0.18;
 
 export class SeededRandom {
   constructor(seed = 1) {
@@ -3124,9 +3126,10 @@ export function createSimulation({
     overtimeStarted: false,
   };
   if (modernClassic && classicReferenceDuel) sim.classicWdcDuel = createClassicWdcDuel(sim);
-  if (modernClassic && !sim.classicWdcDuel && (classicPowerMoves ?? classicTeamLayoutEnabled)) {
+  if (modernClassic && !sim.classicWdcDuel) {
     for (const [index, fighter] of fighters.entries()) {
-      const profile = CLASSIC_POWER_MOVES[fighter.type];
+      fighter.classicDashCharges = 1;
+      const profile = (classicPowerMoves ?? classicTeamLayoutEnabled) && CLASSIC_POWER_MOVES[fighter.type];
       if (profile) fighter.classicPowerReadyAt = profile.ready + (index % 5) * 0.12;
     }
   }
@@ -4148,6 +4151,8 @@ function spawnClassicDuplicate(sim, parent) {
     maxHealth: CLASSIC_DUPLICATE_HEALTH,
     alive: true,
     classicIsDuplicate: true,
+    classicDashCharges: 0,
+    classicDashUntil: 0,
     classicDuplicateGeneration: parent.classicDuplicateGeneration + 1,
     classicBounceSinceDuplicate: 0,
     classicDuplicateSequence: 0,
@@ -10885,6 +10890,7 @@ function classicPulseBurst(sim, style, point, radius, life, detail = {}) {
 
 const CLASSIC_ACTION_BURSTS = Object.freeze({
   "lateral-clash": [0.37, 2.18, "#f2f6ff"],
+  "dash-dodge": [0.34, 1.75, "#b9eaff"],
   "snow-pack": [0.24, 1.12, "#bcf5ff"],
   "snow-release": [0.48, 1.9, "#a5f1ff"],
   "snow-bank": [0.29, 0.68, "#a5f1ff"],
@@ -11296,6 +11302,28 @@ function classicSidestep(sim, fighter, source) {
   return right.room - left.room > 1e-6 ? right : left;
 }
 
+function tryClassicSharedDash(sim, fighter, source, amount) {
+  if (fighter.classicDashCharges !== 1 || !source || source.classicTeamIndex === fighter.classicTeamIndex
+    || amount < 5 || fighter.health - amount > fighter.maxHealth * 0.5
+    || sim.time < fighter.invulnerableUntil || sim.time < fighter.stunUntil
+    || fighter.classicFrostFrozen || classicFighterActionLocked(sim, fighter)
+    || classicVampireLatchBlocksAttacker(sim, fighter)) return false;
+  const escape = classicSidestep(sim, fighter, source);
+  if (escape.room < fighter.radius * 0.64) return false;
+
+  const origin = { x: fighter.x, y: fighter.y };
+  const step = Math.min(escape.room, fighter.radius * 0.58);
+  fighter.x += Math.cos(escape.angle) * step;
+  fighter.y += Math.sin(escape.angle) * step;
+  fighter.classicDashCharges = 0;
+  fighter.classicDashUntil = sim.time + CLASSIC_DASH_SECONDS;
+  launchClassicPulseTarget(sim, fighter, escape.angle, 2.65);
+  fighter.classicPulseLaunchUntil = fighter.classicDashUntil;
+  fighter.classicPulseBlockedAt = sim.time;
+  emitClassicPulseCue(sim, fighter, "dash-dodge", origin, { angle: escape.angle, sourceId: source.id, amountBlocked: amount });
+  return true;
+}
+
 function blockClassicPulseHit(sim, fighter, source, category, amount) {
   if (sim.gameplayMode !== "classic" || sim.legacyClassicRules) return false;
   const { time } = sim;
@@ -11315,6 +11343,10 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
     return true;
   }
   if (["classic-dot", "classic-hydrogen", "classic-slice", "burn", "poison"].includes(category)) return false;
+  if (time < (fighter.classicDashUntil || 0)) {
+    fighter.classicPulseBlockedAt = time;
+    return true;
+  }
   if (tryClassicReactivePower(sim, fighter, source, amount)) return true;
   let cue;
   const omnitrix = fighter.classicOmnitrix;
@@ -11326,9 +11358,9 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
       || fighter.classicFrostFrozen
       || classicFighterActionLocked(sim, fighter)
       || classicVampireLatchBlocksAttacker(sim, fighter)
-    ) return false;
+    ) return tryClassicSharedDash(sim, fighter, source, amount);
     const escape = classicSidestep(sim, fighter, source);
-    if (escape.room < fighter.radius * 0.64) return false;
+    if (escape.room < fighter.radius * 0.64) return tryClassicSharedDash(sim, fighter, source, amount);
     fighter.classicDodgeUntil = time + 0.16;
     fighter.classicDodgeReadyAt = time + 0.97;
     launchClassicPulseTarget(sim, fighter, escape.angle, 3.05);
@@ -11349,7 +11381,7 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
     cue = "diamond-guard";
   } else if (fighter.type === "gojo") {
     const charges = fighter.classicPulseGuardCharges ?? 2;
-    if (charges <= 0) return false;
+    if (charges <= 0) return tryClassicSharedDash(sim, fighter, source, amount);
     fighter.classicPulseGuardCharges = charges - 1;
     fighter.classicPulseGuardUntil = time + 0.49;
     const angle = Math.atan2(source.y - fighter.y, source.x - fighter.x);
@@ -11364,7 +11396,7 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
     classicPulseBurst(sim, "shield", fighter, fighter.radius, 0.52);
     cue = "shield-block";
   } else {
-    return false;
+    return tryClassicSharedDash(sim, fighter, source, amount);
   }
   fighter.classicPulseBlockedAt = time;
   emitClassicPulseCue(sim, fighter, cue, fighter, { sourceId: source.id });
@@ -11649,6 +11681,8 @@ function beginClassicPowerMove(sim, fighter, target, profile, mode) {
   };
   power.blueprint = classicPowerBlueprint(sim, fighter, power, profile);
   fighter.classicPowerMove = power;
+  fighter.classicPowerCooldownStartedAt = power.recoverUntil;
+  fighter.classicPowerReadyAt = power.recoverUntil + CLASSIC_POWER_COOLDOWN_SECONDS;
   if (mode === "guard") classicPowerCue(sim, fighter, "guard", fighter, { targetId: target.id });
   else if (mode !== "evade") classicPowerCue(sim, fighter, "charge", center, { targetId: target.id });
   return power;
@@ -11672,11 +11706,13 @@ function activateClassicPowerMove(sim, fighter, power, profile) {
 
 function tryClassicReactivePower(sim, fighter, source, amount) {
   const readyAt = fighter.classicPowerReadyAt;
-  if (readyAt === undefined || sim.time < readyAt || !source) return false;
+  if (readyAt === undefined || !source) return false;
   const profile = CLASSIC_POWER_MOVES[fighter.type];
-  const power = fighter.classicPowerMove;
+  const power = currentClassicPowerMove(sim, fighter);
   if (power?.mode === "evade" && sim.time < power.endAt) return true;
-  if (profile.evade && (!power || power.phase === "charge") && amount >= 5 && !classicFighterActionLocked(sim, fighter)) {
+  if (profile.evade && fighter.classicDashCharges > 0
+    && (power ? power.phase === "charge" : sim.time >= readyAt)
+    && amount >= 5 && !classicFighterActionLocked(sim, fighter)) {
     const escape = classicSidestep(sim, fighter, source);
     if (escape.room < fighter.radius * 0.70) return false;
     const dodge = beginClassicPowerMove(sim, fighter, source, profile, "evade");
@@ -11684,10 +11720,13 @@ function tryClassicReactivePower(sim, fighter, source, amount) {
     fighter.x += Math.cos(escape.angle) * step;
     fighter.y += Math.sin(escape.angle) * step;
     activateClassicPowerMove(sim, fighter, dodge, profile);
+    fighter.classicDashCharges = 0;
+    fighter.classicDashUntil = dodge.endAt;
     fighter.classicPulseBlockedAt = sim.time;
     return true;
   }
-  if (profile.kind !== "guard" || power || amount < (profile.minDamage || 3) || classicFighterActionLocked(sim, fighter)) return false;
+  if (profile.kind !== "guard" || power || sim.time < readyAt
+    || amount < (profile.minDamage || 3) || classicFighterActionLocked(sim, fighter)) return false;
   beginClassicPowerMove(sim, fighter, source, profile, "guard");
   fighter.classicPulseBlockedAt = sim.time;
   return true;
@@ -11800,14 +11839,19 @@ function resolveClassicPowerMove(sim, fighter, power, profile, dt) {
   power.lastY = fighter.y;
 }
 
+function currentClassicPowerMove(sim, fighter) {
+  const power = fighter.classicPowerMove;
+  if (power && sim.time >= power.recoverUntil) fighter.classicPowerMove = null;
+  return fighter.classicPowerMove;
+}
+
 function updateClassicPowerMove(sim, fighter, target, dt) {
   const readyAt = fighter.classicPowerReadyAt;
-  if (readyAt === undefined || sim.time < readyAt) return false;
+  if (readyAt === undefined) return false;
   const profile = CLASSIC_POWER_MOVES[fighter.type];
-  let power = fighter.classicPowerMove;
-  if (power?.phase === "spent") return false;
+  let power = currentClassicPowerMove(sim, fighter);
   if (!power) {
-    if (!target || profile.kind === "guard" || sim.time < (profile.chaseAt || 0)) return false;
+    if (sim.time < readyAt || !target || profile.kind === "guard" || sim.time < (profile.chaseAt || 0)) return false;
     if (fighter.type === "vampire" && fighter.classicLatchPhase === "latched") return false;
     if (profile.evade && ["active", "windup"].includes(fighter.classicSwordPhase)) return false;
     const distance = Math.hypot(target.x - fighter.x, target.y - fighter.y);
@@ -11815,10 +11859,6 @@ function updateClassicPowerMove(sim, fighter, target, dt) {
     if (range && distance > fighter.radius * range + target.radius) return false;
     if (profile.evade && distance <= fighter.radius * 4.2 + target.radius && sim.time < profile.chaseAt + 2.4) return false;
     power = beginClassicPowerMove(sim, fighter, target, profile, "attack");
-  }
-  if (sim.time >= power.recoverUntil) {
-    fighter.classicPowerMove = { phase: "spent" };
-    return false;
   }
   if (sim.time >= power.endAt) {
     power.phase = "recover";
@@ -27266,8 +27306,13 @@ export function captureReplayFrame(sim) {
         classicDodgeReadyAt: fighter.classicDodgeReadyAt,
       } : {}),
       ...(fighter.classicPulseLaunchUntil ? { classicPulseLaunchUntil: fighter.classicPulseLaunchUntil } : {}),
+      ...(fighter.classicDashCharges !== undefined ? {
+        classicDashCharges: fighter.classicDashCharges,
+        classicDashUntil: fighter.classicDashUntil,
+      } : {}),
       ...(fighter.classicPowerReadyAt !== undefined ? {
         classicPowerReadyAt: fighter.classicPowerReadyAt,
+        classicPowerCooldownStartedAt: fighter.classicPowerCooldownStartedAt,
         classicPowerMove: fighter.classicPowerMove && {
           ...fighter.classicPowerMove,
           center: fighter.classicPowerMove.center && { ...fighter.classicPowerMove.center },

@@ -1,4 +1,4 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261109-classic-publish1";
+import { CLASS_DEFS } from "./simulation.js?v=20261110-orb-fight1";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
 import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261109-classic-publish1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
@@ -141,8 +141,9 @@ export function buildAbilityHud(fighter, simTime = 0, classicEntities = []) {
     const passive = interval <= 0;
     const progress = passive ? 1 : 1 - Math.min(1, remaining / interval);
     const customHud = classicSpecialHud(fighter, def, simTime, classicEntities);
-    const powerProgress = fighter.classicPowerReadyAt !== undefined && !fighter.classicPowerMove
-      ? Math.min(1, simTime / Math.max(0.01, fighter.classicPowerReadyAt))
+    const cooldownStart = fighter.classicPowerCooldownStartedAt || 0;
+    const powerProgress = fighter.classicPowerReadyAt !== undefined && !customHud?.powerActive
+      ? Math.max(0, Math.min(1, (simTime - cooldownStart) / Math.max(0.01, fighter.classicPowerReadyAt - cooldownStart)))
       : undefined;
     return abilityHudState(fighter, {
       name: def?.name || fighter.type.toUpperCase(),
@@ -152,6 +153,7 @@ export function buildAbilityHud(fighter, simTime = 0, classicEntities = []) {
       passive,
       active,
       powerProgress,
+      powerCooldownSeconds: cooldownStart > 0 && powerProgress < 1 ? Math.max(0, fighter.classicPowerReadyAt - simTime) : 0,
       ...customHud,
       customLabel: Boolean(customHud),
     });
@@ -251,7 +253,7 @@ function classicSpecialHud(fighter, def, time, entities) {
     return { label: fighter.classicHeldKind === "force-choke" ? "STUNNED" : "GRABBED", detail: hp, progress: 0 };
   }
   const power = fighter.classicPowerMove;
-  if (power && power.phase !== "spent" && time < power.recoverUntil) {
+  if (power && time < power.recoverUntil) {
     const profile = CLASSIC_POWER_MOVES[fighter.type];
     const phase = power.phase === "charge" ? power.mode === "guard" ? "COUNTER" : "WINDUP"
       : power.phase === "recover" ? "RECOVER" : power.mode === "evade" ? "EVADE" : "RELEASE";

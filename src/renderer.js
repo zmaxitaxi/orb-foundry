@@ -10,7 +10,7 @@ import {
   classicWdcSummonPunchPose,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261109-classic-publish1";
+} from "./simulation.js?v=20261110-orb-fight1";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
 import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261109-classic-publish1";
 import { drawClassicSignatureAmbient, drawClassicSignatures } from "./classic-signature-renderer.js?v=20261109-classic-publish1";
@@ -7411,9 +7411,10 @@ function drawClassicActionTrail(ctx, fighter, time) {
     const state = fighter.classicOmnitrix;
     const form = state?.phase === "alien" && CLASSIC_ALIENS[state.form];
     const dodge = time < (fighter.classicDodgeUntil || 0);
+    const sharedDash = time < (fighter.classicDashUntil || 0);
     const saberMove = fighter.classicSaberMove?.key;
     const leaping = saberMove === "force-vault" || saberMove === "saber-lunge";
-    if (!(form && (state.rush || dodge)) && !leaping && !kicked) return false;
+    if (!(form && (state.rush || dodge)) && !leaping && !kicked && !sharedDash) return false;
     const color = thrown ? "#ff906b" : leaping ? "#a4ff92" : form?.color || CLASS_DEFS[fighter.type].accent;
     const points = fighter.trail.slice(0, state?.form === "xlr8" ? 22 : 16).reverse();
     points.push(fighter);
@@ -7566,7 +7567,7 @@ function drawClassicActionBurst(ctx, effect, alpha, options) {
     const p = 1 - alpha;
     const snow = cue.startsWith("snow-");
     const spark = cue.endsWith("-hit") || cue.endsWith("-bank") || cue === "force-choke-tick";
-    const dash = ["xlr8", "xlr8-dodge", "force-vault", "saber-lunge"].includes(cue);
+    const dash = ["dash-dodge", "xlr8", "xlr8-dodge", "force-vault", "saber-lunge"].includes(cue);
     const crystal = cue.startsWith("diamond");
     const transform = cue === "omnitrix-transform";
     ctx.save();
@@ -7991,7 +7992,7 @@ function drawClassicPowerImpact(ctx, effect, alpha, options) {
 function drawClassicPowerStage(ctx, fighter, sim, options) {
     const power = fighter.classicPowerMove;
     const time = sim.time + (options.classicResultAge || 0);
-    if (!power || power.phase === "spent" || time >= power.recoverUntil) return;
+    if (!power || time >= power.recoverUntil) return;
     const profile = CLASSIC_POWER_MOVES[fighter.type];
     const warning = power.phase === "charge" && time < power.endAt;
     const fading = time >= power.endAt;

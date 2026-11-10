@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261109-classic-publish1";
+} from "./simulation.js?v=20261110-orb-fight1";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261109-classic-publish1";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261109-classic-publish1";
+} from "./audio.js?v=20261110-orb-fight1";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261110-orb-fight1";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261109-classic-publish1";
+} from "./social.js?v=20261110-orb-fight1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,16 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261109-classic-publish1";
+} from "./config.js?v=20261110-orb-fight1";
+import {
+  CLASSIC_TOURNAMENT_MATCH_LIMIT,
+  CLASSIC_TOURNAMENT_MODE,
+  activeClassicTournamentMatch,
+  classicTournamentOrbName,
+  createClassicTournament,
+  finishClassicTournamentMatch,
+  normalizeClassicTournamentOptions,
+} from "./classic-tournament.js?v=20261110-orb-fight1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -123,6 +132,9 @@ const elements = Object.fromEntries(
   [
     "matchStatus", "matchClock", "pauseButton", "setupDialog", "seedInput", "randomSeedButton",
     "launchButton", "soundButton", "copyLinkButton", "balanceButton", "developerButton",
+    "classicAppearanceFieldset", "classicTournamentFieldset", "classicTournamentSize",
+    "classicTournamentEntrants", "classicTournamentRefill", "classicTournamentClear", "classicTournamentCount",
+    "classicTournamentWatch", "classicTournamentProgress", "classicTournamentRounds", "classicTournamentStatus",
     "hazardPreset", "arenaModifierSelect", "arenaSizeSelect", "arenaShapeSelect", "hazardFieldset", "gameplayModeSelect", "raceLengthPicker", "shortFormRaceButton", "longFormRaceButton", "tournamentRaceButton", "countryFieldset", "countryGrid", "raceOrbFieldset", "raceTeamBuilder", "raceTeamOneGrid", "raceTeamTwoGrid", "raceTournamentPanel", "raceTournamentOptions", "raceTournamentPageIndicator", "raceTournamentWizardPage1", "raceTournamentWizardPage2", "raceTournamentWizardPage3", "raceTournamentWizardNext1", "raceTournamentWizardBack2", "raceTournamentWizardNext2", "raceTournamentWizardBack3", "raceTournamentTitle", "raceTournamentSize", "raceTournamentSeedingMode", "raceTournamentRecordingScope", "raceTournamentPresetSummary", "raceTournamentEntrants", "raceTournamentEntrantCount", "raceTournamentSeedList", "raceTournamentSeedHelp", "raceTournamentRoundSelection", "raceTournamentRoundList", "raceTournamentRecordRoundButton", "raceTournamentRecordTournamentButton", "raceTournamentLayerCount", "raceTournamentFinalLayerHealth", "raceTournamentLayerFields", "raceTournamentSaveButton", "raceTournamentResumeButton", "raceTournamentClearButton", "raceTournamentOpenBracketButton", "raceTournamentRecordMatchButton", "raceTournamentSavedMatch", "raceTournamentSavedMatchLabel", "raceTournamentSavedTitle", "raceTournamentStorageStatus", "raceTournamentBracketPreview", "raceTournamentPortraitPreviewButton", "raceTournamentLandscapePreviewButton", "raceTournamentZoomOut", "raceTournamentZoomReset", "raceTournamentZoomIn", "raceTournamentValidation", "nonTournamentSetupFields", "classicTeamOneGrid", "classicTeamTwoGrid", "raceLayerFields", "raceLayerToolbar", "raceCoursePreset", "raceOptionToolbar", "raceLayerCount", "raceFinalLayerHealthLabel", "raceFinalLayerHealth", "raceOrbScale", "raceTargetMessageToggle", "raceTargetAudioToggle", "raceMatchupAudioToggle", "raceTiltedLayerToggle", "raceTiltedLayerIndex", "raceTiltedLayerIndexLabel", "classFieldset", "classicBlackTheme", "classicTeamColors", "classicWdcPreset", "classicReferenceDuel", "developerDialog", "featureToggles", "applyFeaturesButton",
     "balanceDialog", "balanceScope", "balanceControls", "balanceValidation", "balanceResetButton",
     "balanceRandomButton", "balanceExportButton", "balanceImportButton", "balanceImportInput",
@@ -146,6 +158,8 @@ const tournamentRecorder = new TournamentRecordingCoordinator(socialRecorder);
 const initialUrlSettings = settingsFromUrl(location.href, validClasses);
 
 let settings = normalizeSettings(initialUrlSettings || createDefaultSettings(), validClasses);
+let classicTournamentSession = null;
+let classicTournamentHoldUntil = 0;
 let raceTeamSelectionOrder = settings.raceTeams.map((team) => [...team]);
 let raceTournamentSeedOrder = settings.raceTournament?.seedOrder?.slice() || [];
 let selectedRaceFormat = settings.raceTournament
@@ -1782,9 +1796,66 @@ function buildRaceTournamentControls() {
   renderRaceTournamentSeedList();
 }
 
+function selectedClassicTournamentEntrants() {
+  return Array.from(elements.classicTournamentEntrants.querySelectorAll("input:checked"), (input) => input.value);
+}
+
+function setClassicTournamentEntrants(ids) {
+  const selected = new Set(ids);
+  elements.classicTournamentEntrants.querySelectorAll("input").forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+  syncClassicTournamentSetup();
+}
+
+function seedClassicTournamentEntrants(entrants = []) {
+  const tournament = normalizeClassicTournamentOptions({
+    size: Number(elements.classicTournamentSize.value),
+    entrants,
+  }, Number(elements.seedInput.value) || settings.seed);
+  setClassicTournamentEntrants(tournament.entrants);
+}
+
+function syncClassicTournamentSetup() {
+  const active = elements.gameplayModeSelect.value === CLASSIC_TOURNAMENT_MODE;
+  elements.setupDialog.dataset.classicTournament = String(active);
+  elements.classicBlackTheme.disabled = active;
+  if (active) elements.classicBlackTheme.checked = true;
+  elements.classicTournamentFieldset.hidden = !active;
+  elements.classicTournamentWatch.hidden = !active;
+  if (!active) return;
+  const size = Number(elements.classicTournamentSize.value);
+  const count = selectedClassicTournamentEntrants().length;
+  elements.classicTournamentCount.textContent = `${count} / ${size} SELECTED`;
+  elements.classicTournamentEntrants.querySelectorAll("input").forEach((input) => {
+    input.disabled = !input.checked && count >= size;
+  });
+  elements.classicTournamentWatch.disabled = count !== size;
+  elements.launchButton.disabled = count !== size;
+  elements.launchButton.textContent = "RECORD TOURNAMENT";
+}
+
+function buildClassicTournamentControls() {
+  elements.classicTournamentEntrants.replaceChildren(...validClasses.map((id) => {
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = id;
+    const label = document.createElement("label");
+    label.append(input, CLASSIC_ORBS[id].name);
+    return label;
+  }));
+  elements.classicTournamentEntrants.addEventListener("change", syncClassicTournamentSetup);
+  elements.classicTournamentSize.addEventListener("change", () => {
+    seedClassicTournamentEntrants(selectedClassicTournamentEntrants());
+  });
+  elements.classicTournamentRefill.addEventListener("click", () => seedClassicTournamentEntrants());
+  elements.classicTournamentClear.addEventListener("click", () => setClassicTournamentEntrants([]));
+}
+
 function syncSetupModeVisibility() {
   const worldCup = elements.gameplayModeSelect.value === WORLD_CUP_MODE;
   const orbRace = elements.gameplayModeSelect.value === ORB_RACE_MODE;
+  const classicTournament = elements.gameplayModeSelect.value === CLASSIC_TOURNAMENT_MODE;
   elements.countryFieldset.hidden = !worldCup;
   elements.raceOrbFieldset.hidden = !orbRace;
   elements.raceLengthPicker.hidden = !orbRace;
@@ -1798,12 +1869,14 @@ function syncSetupModeVisibility() {
   elements.shortFormRaceButton.setAttribute("aria-pressed", String(orbRace && selectedRaceFormat === "short"));
   elements.longFormRaceButton.setAttribute("aria-pressed", String(orbRace && selectedRaceFormat === "long"));
   elements.tournamentRaceButton.setAttribute("aria-pressed", String(tournament));
-  elements.classFieldset.hidden = worldCup || orbRace;
+  elements.classFieldset.hidden = worldCup || orbRace || classicTournament;
+  elements.classicAppearanceFieldset.hidden = worldCup || orbRace;
   elements.hazardFieldset.hidden = worldCup || orbRace || !settings.features.hazards;
   elements.launchButton.textContent = worldCup
     ? "START WORLD CUP MATCH"
     : orbRace ? tournament ? "START TOURNAMENT" : "START ORB RACE" : "RECORD FIGHT";
   syncRaceTournamentControls();
+  syncClassicTournamentSetup();
 }
 
 function syncRaceFinalLayerHealthSelect(values = null) {
@@ -2310,6 +2383,7 @@ function consumeSocialEvents(now) {
 }
 
 function socialSimulationRate(now) {
+  if (classicTournamentSession && !socialPresentation.started) return 0;
   if (sim.classicWdcDuel) return socialPresentation.started ? 1 : 0;
   // Normal previews still start gameplay while audio/recording initializes.
   // Duration-qualified long-form Classic and single-race exports wait for the recorder so their one
@@ -2425,7 +2499,19 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
         };
       }
     } else {
-      await socialRecorder.start({ fps: settings.social.fps });
+      await socialRecorder.start({
+        fps: settings.social.fps,
+        ...(classicTournamentSession ? {
+          tournament: {
+            kind: "classic",
+            scope: "whole-tournament",
+            size: classicTournamentSession.size,
+            seed: settings.seed,
+            entrants: [...classicTournamentSession.entrants],
+            filename: `orb-fight-tournament-${classicTournamentSession.size}-${settings.seed}.mp4`,
+          },
+        } : {}),
+      });
     }
     if (settings.gameplayMode === ORB_RACE_MODE && !sim.raceTournament) {
       socialRaceMatchupCount = 1;
@@ -2442,6 +2528,17 @@ async function startSocialRecording({ transitionOverride = null } = {}) {
 }
 
 function handleRecorderState(state, result = null) {
+  if (result && classicTournamentSession) {
+    result = {
+      ...result,
+      metadata: {
+        ...result.metadata,
+        championId: classicTournamentSession.championId,
+        completedMatches: classicTournamentSession.completedMatches,
+        rounds: structuredClone(classicTournamentSession.rounds),
+      },
+    };
+  }
   if (result && tournamentRecorder.session) {
     socialRecordingResult = tournamentRecorder.onRecorderResult(result);
   }
@@ -2475,6 +2572,7 @@ function handleRecorderState(state, result = null) {
 }
 
 function showSocialPreview(result) {
+  elements.socialPreviewDialog.dataset.classicTournament = String(Boolean(classicTournamentSession));
   const previewResult = socialRecordingResult || result;
   elements.socialVideoPreview.src = previewResult.url;
   elements.socialDownloadButton.textContent = String(previewResult.mimeType || previewResult.blob?.type || "")
@@ -2485,9 +2583,13 @@ function showSocialPreview(result) {
   const raceTeamNames = sim.gameplayMode === ORB_RACE_MODE
     ? (sim.raceTeams || []).map((team) => team.name)
     : [];
-  elements.socialCaption.value = raceTeamNames.length === 2
-    ? `WHO WINS: ${raceTeamNames[0]} OR ${raceTeamNames[1]}?`
-    : createCaption({ fighters: sim.fighters, winner: sim.winner });
+  const championId = classicTournamentSession?.championId;
+  const championName = championId ? classicTournamentOrbName(championId) : null;
+  elements.socialCaption.value = classicTournamentSession
+    ? `WHO WINS THE ${classicTournamentSession.size}-ORB FIGHT TOURNAMENT?`
+    : raceTeamNames.length === 2
+      ? `WHO WINS: ${raceTeamNames[0]} OR ${raceTeamNames[1]}?`
+      : createCaption({ fighters: sim.fighters, winner: sim.winner });
   const arenaLabel = [sim.arenaModifierLabel || "STANDARD", sim.arenaSizeLabel || "STANDARD SIZE", sim.arenaShape === "circle" ? "CIRCLE" : "SQUARE"].join(" · ");
   const recordingMetadata = previewResult.metadata || {};
   const recordedMatchCount = Array.isArray(recordingMetadata.matchIds)
@@ -2501,14 +2603,16 @@ function showSocialPreview(result) {
         ? "EACH MATCH"
         : null;
   elements.socialVideoMetadata.innerHTML = [
-    ["WINNER", sim.winningRaceTeamName || sim.winner?.name || (sim.classicDraw ? "DRAW" : "PENDING")],
-    ["SEED", sim.seed],
+    ["WINNER", classicTournamentSession ? championName || "PENDING"
+      : sim.winningRaceTeamName || sim.winner?.name || (sim.classicDraw ? "DRAW" : "PENDING")],
+    ["SEED", classicTournamentSession ? settings.seed : sim.seed],
     ["ARENA", arenaLabel],
     ["HYPE", socialPresentation.hypeScore],
     ["DURATION", `${previewResult.duration.toFixed(1)}S`],
     ["FORMAT", `${SOCIAL_FORMATS[settings.social.format]?.label || settings.social.format.toUpperCase()} · ${settings.social.fps} FPS`],
     ...(recordingScopeLabel ? [["RECORDING", recordingScopeLabel]] : []),
     ...(recordedMatchCount ? [["MATCHES", recordedMatchCount]] : []),
+    ...(classicTournamentSession ? [["FIGHTS COMPLETED", classicTournamentSession.completedMatches]] : []),
   ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join("");
   if (!elements.socialPreviewDialog.open) elements.socialPreviewDialog.showModal();
 }
@@ -2522,7 +2626,9 @@ function downloadSocialRecording() {
     : sim.fighters;
   const requestedFilename = socialRecordingResult.filename
     || socialRecordingResult.metadata?.filename
-    || recordingFilename({ fighters: filenameFighters, seed: sim.seed });
+    || (classicTournamentSession
+      ? `orb-fight-tournament-${classicTournamentSession.size}-${settings.seed}.mp4`
+      : recordingFilename({ fighters: filenameFighters, seed: sim.seed }));
   const extension = String(socialRecordingResult.mimeType || socialRecordingResult.blob?.type || "")
     .toLowerCase()
     .includes("webm")
@@ -2653,6 +2759,8 @@ function launchBattle(nextSettings = settings, {
   }
   if (transition) tournamentTransition = { ...transition };
   settings = normalizeSettings(nextSettings, validClasses);
+  classicTournamentSession = createClassicTournament(settings.classicTournament, settings.seed);
+  classicTournamentHoldUntil = 0;
   tournamentPreviewSourceState = null;
   const nextTournamentKey = tournamentConfigKey(settings.raceTournament);
   if (!preserveTournamentSession || !settings.raceTournament || tournamentSessionSettingsKey !== nextTournamentKey) {
@@ -2664,13 +2772,18 @@ function launchBattle(nextSettings = settings, {
   classicTeamSelectionOrder = settings.classicTeams.map((team) => [...team]);
   applyTheme(settings.theme);
   if (syncUrl) updateUrl();
-  if (enterGame) showGame();
+  if (enterGame) {
+    setupOrigin = "game";
+    if (elements.setupDialog.open) elements.setupDialog.close();
+    showGame();
+  }
   startSimulation({ tournamentTransition });
   applyFeatureVisibility();
 }
 
 function startSimulation({
   tournamentTransition: transition = tournamentTransition,
+  continuingClassicTournament = false,
 } = {}) {
   const continuingRecordedRace = socialRecorder.machine.state === RECORDER_STATES.RECORDING
     && settings.gameplayMode === ORB_RACE_MODE
@@ -2682,8 +2795,20 @@ function startSimulation({
     socialRaceActionStartedAt = null;
     socialRaceActionEndedAt = null;
   }
+  const classicMatch = activeClassicTournamentMatch(classicTournamentSession);
   const options = simulationSettings({
     spawnSeed: settings.gameplayMode === WORLD_CUP_MODE ? createFightSpawnSeed() : settings.seed,
+    ...(classicMatch ? {
+      count: 2,
+      seed: classicMatch.seed,
+      spawnSeed: classicMatch.seed,
+      classes: classicMatch.orbIds,
+      classicTeams: classicMatch.orbIds.map((id) => [id]),
+      classicOrbOptions: {},
+      classicTeamOptions: null,
+      classicHydrogenHealth: 100,
+      classicReferenceDuel: false,
+    } : {}),
   });
   try {
     sim = createSimulation(options);
@@ -2702,10 +2827,11 @@ function startSimulation({
   }
   document.body.dataset.gameplayMode = settings.gameplayMode;
   document.body.dataset.classicTheme = settings.classicBlackTheme ? "black" : "light";
+  elements.gameScreen.dataset.classicTournament = String(Boolean(classicTournamentSession));
   const continuingTournamentRecording = socialRecorder.machine.state === RECORDER_STATES.RECORDING
     && settings.gameplayMode === ORB_RACE_MODE
     && Boolean(settings.raceTournament);
-  audio.reset({ preserveAnnouncerPlayback: continuingTournamentRecording });
+  audio.reset({ preserveAnnouncerPlayback: continuingTournamentRecording || continuingClassicTournament });
   const continuousTransition = transition?.mode === "pan-to-next";
   if (!continuousTransition) tournamentZoomCueKey = null;
   paused = false;
@@ -2716,28 +2842,45 @@ function startSimulation({
     continuousTransition ? false : settings.features.introCards,
   );
   if (sim.classicWdcDuel) socialPresentation.started = true;
+  if (classicTournamentSession) socialPresentation.started = continuingClassicTournament;
   updateSocialMetrics();
   socialRenderer.setTheme(settings.theme);
   socialRenderer.setFormat(settings.social.format);
   elements.pauseButton.textContent = "II";
   elements.pauseButton.setAttribute("aria-label", "Pause simulation");
-  elements.socialRecordingStatus.textContent = "PREPARING";
+  const recording = socialRecorder.machine.state === RECORDER_STATES.RECORDING;
+  elements.socialRecordingStatus.textContent = continuingClassicTournament
+    ? recording ? "RECORDING" : "WATCHING TOURNAMENT"
+    : "PREPARING";
   elements.socialRecordingDetail.textContent = settings.gameplayMode === WORLD_CUP_MODE
     ? "World Cup mode · momentum collisions · pickup damage"
     : settings.gameplayMode === ORB_RACE_MODE
       ? settings.raceTournament
         ? `Orb Race Tournament · ${settings.raceTournament.size} entrants · ${settings.raceTournament.recordingScope === "each-match" ? "each match" : settings.raceTournament.recordingScope === "whole-round" ? "selected rounds" : "whole tournament"}`
         : "Orb Race · number layers · bounce damage"
-      : "Dedicated canvas · browser chrome excluded";
+      : classicTournamentSession
+        ? `Orb Fight Tournament · ${classicTournamentSession.size} entrants · one knockout bracket`
+        : "Dedicated canvas · browser chrome excluded";
   elements.socialRecordingProgress.value = 0;
-  elements.socialStopButton.disabled = false;
+  elements.socialStopButton.disabled = continuingClassicTournament && !recording;
+  syncClassicTournamentProgress();
   syncStatus();
-  drawSocialBattle(performance.now(), socialRecorder.machine.state === RECORDER_STATES.RECORDING);
+  drawSocialBattle(performance.now(), recording);
+}
+
+function launchBattlePreview(nextSettings) {
+  launchBattle(nextSettings);
+  if (!classicTournamentSession) return;
+  socialPresentation.started = true;
+  elements.socialRecordingStatus.textContent = "WATCHING TOURNAMENT";
+  elements.socialStopButton.disabled = true;
 }
 
 function syncStatus() {
   elements.matchClock.textContent = formatTime(sim.time);
-  if (sim.finished) elements.matchStatus.textContent = "COMPLETE";
+  if (classicTournamentSession?.championId) elements.matchStatus.textContent = "CHAMPION";
+  else if (classicTournamentHoldUntil) elements.matchStatus.textContent = "FIGHT COMPLETE";
+  else if (sim.finished) elements.matchStatus.textContent = "COMPLETE";
   else if (paused) elements.matchStatus.textContent = "PAUSED";
   else if (sim.overtimeStarted) elements.matchStatus.textContent = "OVERTIME";
   else elements.matchStatus.textContent = sim.time < 0.25 ? "READY" : "LIVE";
@@ -2824,7 +2967,78 @@ function queueNextTournamentMatch() {
   }, 0);
 }
 
-function finishBattle() {
+function syncClassicTournamentProgress() {
+  const tournament = classicTournamentSession;
+  elements.classicTournamentProgress.hidden = !tournament;
+  if (!tournament) return;
+  const { championId, rounds, size, completedMatches } = tournament;
+  const current = classicTournamentHoldUntil ? null : activeClassicTournamentMatch(tournament);
+  elements.classicTournamentStatus.textContent = championId
+    ? `CHAMPION · ${classicTournamentOrbName(championId)}`
+    : `${completedMatches} / ${size - 1} FIGHTS COMPLETE`;
+  elements.classicTournamentRounds.innerHTML = rounds.map(({ label, matches }) => `
+    <section>
+      <h3>${label}</h3>
+      <ol>${matches.map((match) => {
+        const [left, right] = match.orbIds.map((id) => escapeHtml(classicTournamentOrbName(id)));
+        return `<li${match === current ? ' aria-current="step"' : ""}>${left} vs ${right}${
+          match.winnerId ? `<strong>${escapeHtml(classicTournamentOrbName(match.winnerId))} · ${match.reason}</strong>` : ""
+        }</li>`;
+      }).join("")}</ol>
+    </section>
+  `).join("");
+}
+
+function classicTournamentPresentation() {
+  const tournament = classicTournamentSession;
+  if (!tournament) return null;
+  const current = activeClassicTournamentMatch(tournament);
+  const result = classicTournamentHoldUntil ? tournament.lastResult : null;
+  return {
+    label: result?.roundLabel || tournament.rounds[tournament.roundIndex].label,
+    fight: result ? tournament.completedMatches : tournament.completedMatches + 1,
+    total: tournament.size - 1,
+    winner: result ? classicTournamentOrbName(result.winnerId) : null,
+    reason: result?.reason,
+    champion: Boolean(tournament.championId),
+    next: result && current ? current.orbIds.map(classicTournamentOrbName).join(" vs ") : null,
+  };
+}
+
+function finishClassicTournamentFight(now) {
+  if (classicTournamentHoldUntil) {
+    if (now < classicTournamentHoldUntil) return;
+    if (classicTournamentSession.championId) {
+      if (socialRecorder.machine.state === RECORDER_STATES.RECORDING) socialRecorder.stop();
+      return;
+    }
+    // Keep recording to the same stream and replace only the duel.
+    classicTournamentHoldUntil = 0;
+    startSimulation({ continuingClassicTournament: true });
+    return;
+  }
+  if (!finishClassicTournamentMatch(classicTournamentSession, sim)) return;
+  classicTournamentHoldUntil = now + (classicTournamentSession.championId ? 3_000 : 1_600);
+  syncClassicTournamentProgress();
+}
+
+function isBattleVisible() {
+  return !elements.gameScreen.hidden
+    && !elements.setupDialog.open
+    && !elements.balanceDialog.open
+    && !elements.developerDialog.open
+    && !elements.socialPreviewDialog.open;
+}
+
+function classicTournamentFightCanStep() {
+  return !classicTournamentSession || (!classicTournamentHoldUntil && sim.time < CLASSIC_TOURNAMENT_MATCH_LIMIT);
+}
+
+function finishBattle(now = performance.now()) {
+  if (classicTournamentSession) {
+    if (isBattleVisible() && !paused) finishClassicTournamentFight(now);
+    return;
+  }
   if (!sim.finished) return;
   if (settings.gameplayMode === ORB_RACE_MODE && !sim.raceTournament && socialRaceActionStartedAt !== null) {
     socialRaceActionEndedAt ??= performance.now();
@@ -2895,6 +3109,7 @@ function drawSocialBattle(now, recording = socialRecorder.machine.state === RECO
       ? sim.raceLayerStrengths?.[sim.raceLayerStrengths.length - 1]
       : null,
     tournamentTransition: tournamentTransitionForRender(now),
+    classicTournament: classicTournamentPresentation(),
     now,
     recording,
     options: socialRenderOptions(),
@@ -2905,18 +3120,13 @@ function frame(now) {
   const elapsed = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
   updateSocialPresentation(elapsed, now);
-  const gameplayActive =
-    !elements.gameScreen.hidden &&
-    !elements.setupDialog.open &&
-    !elements.balanceDialog.open &&
-    !elements.developerDialog.open &&
-    !elements.socialPreviewDialog.open;
+  const gameplayActive = isBattleVisible();
   // A finished tournament match still owns a deterministic conclusion clock.
   // Continue fixed-step updates so the full reveal remains inside recording.
   const tournamentHandoffActive = Boolean(tournamentAdvancePending && tournamentTransition);
-  if (gameplayActive && !paused && !tournamentHandoffActive && (!sim.finished || sim.raceTournament)) {
+  if (gameplayActive && !paused && !tournamentHandoffActive && classicTournamentFightCanStep() && (!sim.finished || sim.raceTournament)) {
     accumulator += elapsed * socialSimulationRate(now);
-    while (accumulator >= fixedStep) {
+    while (accumulator >= fixedStep && classicTournamentFightCanStep()) {
       stepSimulation(sim, fixedStep);
       accumulator -= fixedStep;
     }
@@ -2937,12 +3147,12 @@ function frame(now) {
   consumeSocialEvents(now);
   drawSocialBattle(now);
   syncStatus();
-  finishBattle();
+  finishBattle(now);
   requestAnimationFrame(frame);
 }
 
 function togglePause() {
-  if (sim.finished) return;
+  if (sim.finished || classicTournamentHoldUntil) return;
   paused = !paused;
   elements.pauseButton.textContent = paused ? ">" : "II";
   elements.pauseButton.setAttribute("aria-label", paused ? "Resume simulation" : "Pause simulation");
@@ -2967,7 +3177,10 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
   elements.arenaSizeSelect.value = settings.arenaSize;
   elements.arenaShapeSelect.value = settings.arenaShape;
   elements.setupThemeSelect.value = settings.theme;
-  elements.gameplayModeSelect.value = settings.gameplayMode;
+  elements.gameplayModeSelect.value = settings.classicTournament ? CLASSIC_TOURNAMENT_MODE : settings.gameplayMode;
+  elements.classicTournamentSize.value = String(settings.classicTournament?.size || 8);
+  if (settings.classicTournament) setClassicTournamentEntrants(settings.classicTournament.entrants);
+  else seedClassicTournamentEntrants();
   selectedRaceFormat = settings.gameplayMode === ORB_RACE_MODE
     ? settings.raceTournament ? "tournament" : settings.social.format === "race-landscape" ? "long" : "short"
     : selectedRaceFormat;
@@ -3116,6 +3329,11 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
 }
 
 function readSetup() {
+  const classicTournament = elements.gameplayModeSelect.value === CLASSIC_TOURNAMENT_MODE ? {
+    size: Number(elements.classicTournamentSize.value),
+    entrants: selectedClassicTournamentEntrants(),
+  } : null;
+  if (classicTournament && classicTournament.entrants.length !== classicTournament.size) return null;
   const form = elements.setupDialog.querySelector("form");
   const data = new FormData(form);
   const classicTeams = normalizeClassicTeams([0, 1].map((teamIndex) => {
@@ -3236,6 +3454,7 @@ function readSetup() {
       classicBlackTheme: elements.classicBlackTheme.checked,
       classicTeamColors: elements.classicTeamColors.checked,
       classicReferenceDuel: elements.classicReferenceDuel.checked,
+      classicTournament,
       classicHydrogenHealth: 100,
       seed: Math.max(1, Number(elements.seedInput.value) || 2406),
       theme: elements.setupThemeSelect.value,
@@ -3500,6 +3719,14 @@ elements.raceLayerFields.addEventListener("input", (event) => {
 elements.randomSeedButton.addEventListener("click", () => {
   elements.seedInput.value = String(Math.floor(Math.random() * 999998) + 1);
 });
+elements.classicTournamentWatch.addEventListener("click", () => {
+  const nextSettings = readSetup();
+  if (!nextSettings?.classicTournament) return;
+  setupOrigin = "game";
+  elements.setupDialog.close();
+  launchBattlePreview(nextSettings);
+  audio.unlock().catch(() => false);
+});
 elements.launchButton.addEventListener("click", async (event) => {
   event.preventDefault();
   const nextSettings = readSetup();
@@ -3668,6 +3895,7 @@ window.__ORB_FOUNDRY__ = {
     arenaSize: sim.arenaSize,
     arenaSizeLabel: sim.arenaSizeLabel,
     arenaShape: sim.arenaShape,
+    classicTournament: classicTournamentSession ? structuredClone(classicTournamentSession) : null,
     raceTournament: settings.gameplayMode === ORB_RACE_MODE ? settings.raceTournament : null,
     raceTournamentSnapshot: settings.gameplayMode === ORB_RACE_MODE ? currentTournamentSnapshot() : null,
     tournamentRecordingRequest,
@@ -3689,12 +3917,12 @@ window.__ORB_FOUNDRY__ = {
     } : null,
     phase: socialPresentation.phase,
     countdown: socialPresentation.countdown,
-    fighters: sim.fighters.map(({ id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
-      id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
+    fighters: sim.fighters.map(({ id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
+      id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
     })),
   }),
-  restart: () => launchBattle(settings),
-  launch: (nextSettings) => launchBattle(nextSettings),
+  restart: () => launchBattlePreview(settings),
+  launch: launchBattlePreview,
   record: async (nextSettings) => {
     const preparedSettings = normalizeSettings(nextSettings, validClasses);
     if (preparedSettings.raceTournament) {
@@ -3727,6 +3955,7 @@ window.render_game_to_text = () => JSON.stringify({
     raceMatchupCount: socialRaceMatchupCount,
     raceActionDurationSeconds: socialRaceActionDurationSeconds(),
     gameplayMode: sim.gameplayMode,
+    classicTournament: classicTournamentPresentation(),
     hill: sim.hill ? {
       x: sim.hill.x,
       y: sim.hill.y,
@@ -4505,12 +4734,14 @@ window.render_game_to_text = () => JSON.stringify({
 });
 
 window.advanceTime = (milliseconds) => {
-  if (elements.gameScreen.hidden || paused || (sim.finished && !sim.raceTournament)) return;
+  if (!isBattleVisible() || paused || (sim.finished && !sim.raceTournament && !classicTournamentSession)) return;
   const elapsed = Math.max(0, (Number(milliseconds) || 0) / 1000);
   updateSocialPresentation(elapsed, performance.now());
-  if (socialPresentation.phase === "battle") {
+  if (socialPresentation.phase === "battle" && (!classicTournamentSession || socialPresentation.started)) {
     const steps = Math.max(1, Math.round(elapsed / fixedStep));
-    for (let index = 0; index < steps && !sim.finished; index += 1) stepSimulation(sim, fixedStep);
+    for (let index = 0; index < steps && !sim.finished && classicTournamentFightCanStep(); index += 1) {
+      stepSimulation(sim, fixedStep);
+    }
   }
   audio.consume(sim.events);
   consumeSocialEvents(performance.now());
@@ -4523,6 +4754,7 @@ buildThemeSelectors();
 buildCountryControls();
 buildRaceOrbControls();
 buildRaceTournamentControls();
+buildClassicTournamentControls();
 buildClassControls();
 buildMenu();
 applyTheme(settings.theme);

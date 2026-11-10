@@ -845,6 +845,84 @@ h3,
   gap: 8px;
 }
 
+.classic-bracket-progress {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+  font-size: 0.78rem;
+}
+
+#gameScreen[data-classic-tournament="true"],
+#setupDialog[data-classic-tournament="true"],
+#socialPreviewDialog[data-classic-tournament="true"] {
+  color-scheme: dark;
+  --surface: #0d0e12;
+  --surface-2: #191b22;
+  --line: #353842;
+  --line-bright: #bfc3cd;
+  --text: #fffdf7;
+  --muted: #b4b7c2;
+  --gold: #ffd372;
+  --pixel-shadow: 0 12px 30px #00000040;
+  color: var(--text);
+}
+
+#gameScreen[data-classic-tournament="true"] {
+  background: #08090b;
+}
+
+#gameScreen[data-classic-tournament="true"] .social-preview-shell {
+  background: #050505;
+}
+
+:is(#gameScreen, #setupDialog, #socialPreviewDialog)[data-classic-tournament="true"] .pixel-button.primary {
+  color: #08090b;
+}
+
+#setupDialog[data-classic-tournament="true"] #gameplayModeSelect {
+  max-width: 100%;
+}
+
+.classic-bracket-progress summary {
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+#classicTournamentStatus {
+  color: var(--gold);
+  font-weight: 900;
+}
+
+#classicTournamentRounds {
+  display: grid;
+  gap: 10px;
+  max-height: 32vh;
+  overflow: auto;
+}
+
+#classicTournamentRounds h3,
+#classicTournamentRounds ol {
+  margin: 0;
+}
+
+#classicTournamentRounds ol {
+  padding: 4px 0 0 20px;
+}
+
+#classicTournamentRounds li {
+  padding: 4px;
+}
+
+#classicTournamentRounds li[aria-current] {
+  background: var(--surface-2);
+  border-left: 3px solid var(--gold);
+}
+
+#classicTournamentRounds li strong {
+  display: block;
+}
+
 .setup-dialog {
   width: min(1500px, calc(100vw - 24px));
   max-width: none;
@@ -969,6 +1047,43 @@ legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.classic-bracket-roster {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 6px;
+  max-height: 28vh;
+  overflow: auto;
+  margin-top: 10px;
+}
+
+.classic-bracket-roster label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.classic-bracket-roster label:has(:checked) {
+  background: var(--surface-2);
+  border-color: var(--line-bright);
+}
+
+.classic-bracket-roster label:has(:disabled) {
+  opacity: 0.62;
+  cursor: default;
+}
+
+.classic-bracket-roster input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--gold);
 }
 
 .race-team-orb {

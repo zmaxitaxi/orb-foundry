@@ -31,6 +31,13 @@ import {
   normalizeClassicTeams,
 } from "../src/classic-orbs.js";
 import {
+  CLASSIC_TOURNAMENT_MATCH_LIMIT,
+  CLASSIC_TOURNAMENT_MODE,
+  activeClassicTournamentMatch,
+  createClassicTournament,
+  finishClassicTournamentMatch,
+} from "../src/classic-tournament.js";
+import {
   ARENA,
   CLASS_DEFS,
   ORB_BASE_SPEED,
@@ -1850,6 +1857,81 @@ console.log("feature tests passed");
         classicTeamOptions: [{ wdc: { count: 2 } }, {}],
     }).classicReferenceDuel, false, "the reference scene requires a single fighter per side");
     assert.equal(normalizeSettings({ ...input, classicReferenceDuel: undefined }).classicReferenceDuel, false);
+}
+
+// Fight brackets round-trip without switching the duel simulation or Orb Race.
+{
+    const input = {
+        gameplayMode: CLASSIC_TOURNAMENT_MODE,
+        classicTeams: [["wdc"], ["one-punch-man"]],
+        classicReferenceDuel: true,
+        classicTournament: { size: 4, entrants: ["boxer", "sword", "sword", "not-an-orb"] },
+        classicBlackTheme: false,
+        arenaShape: "circle",
+        seed: 710,
+    };
+    const normalized = normalizeSettings(input, classes);
+    assert.equal(normalized.gameplayMode, "classic");
+    assert.equal(normalized.classicReferenceDuel, false);
+    assert.equal(normalized.classicBlackTheme, true, "Fight tournaments always use the Classic dark arena");
+    assert.equal(normalized.classicTournament.entrants.length, 4);
+    assert.equal(new Set(normalized.classicTournament.entrants).size, 4);
+    assert.ok(normalized.classicTournament.entrants.includes("sword"));
+    assert.ok(normalized.classicTournament.entrants.every((id) => CLASSIC_ORB_IDS.includes(id)));
+    assert.equal(normalizeSettings({ ...input, gameplayMode: ORB_RACE_MODE }).classicTournament, null);
+    assert.equal(normalizeSettings({ ...input, gameplayMode: WORLD_CUP_MODE }).classicTournament, null);
+    assert.deepEqual(settingsFromUrl(settingsToUrl(normalized, "https://example.test/", classes), classes), normalized);
+    assert.deepEqual(normalizeSettings(input, classes).classicTournament, normalized.classicTournament);
+}
+
+// Every fight gets a fresh deterministic duel, and only winners reach the final.
+{
+    const playBracket = () => {
+        const bracket = createClassicTournament({ size: 4, entrants: ["sword", "boxer", "slammy", "vampire"] }, 710);
+        for (let index = 0; index < 3; index += 1) {
+            const match = activeClassicTournamentMatch(bracket);
+            const sim = createSimulation({
+                classicTeams: match.orbIds.map((id) => [id]),
+                seed: match.seed,
+                features: { replay: false },
+            });
+            assert.equal(finishClassicTournamentMatch(bracket, sim), null);
+            assert.ok(sim.fighters.every((fighter) => fighter.health === fighter.maxHealth && fighter.classicDashCharges === 1));
+            run(sim, CLASSIC_TOURNAMENT_MATCH_LIMIT + dt);
+            const result = finishClassicTournamentMatch(bracket, sim);
+            assert.ok(match.orbIds.includes(result.winnerId));
+            assert.equal(finishClassicTournamentMatch(bracket, sim), null, "the same duel cannot advance the next match");
+        }
+        assert.equal(bracket.completedMatches, 3);
+        assert.deepEqual(bracket.rounds[1].matches[0].orbIds, bracket.rounds[0].matches.map(({ winnerId }) => winnerId));
+        assert.equal(bracket.championId, bracket.rounds[1].matches[0].winnerId);
+        return bracket;
+    };
+    assert.deepEqual(playBracket(), playBracket());
+}
+
+// A timeout compares health percentages before considering damage or seed order.
+{
+    const bracket = createClassicTournament({ size: 4, entrants: ["sword", "boxer", "slammy", "vampire"] }, 717);
+    for (const [index, [health, winnerSide, reason]] of [
+        [[40, 80], 0, "Decision"], [[40, 100], 1, "Decision"], [[40, 100], 0, "Seed tiebreak"],
+    ].entries()) {
+        const match = activeClassicTournamentMatch(bracket);
+        const sim = {
+            seed: match.seed,
+            time: CLASSIC_TOURNAMENT_MATCH_LIMIT,
+            fighters: match.orbIds.map((type, side) => ({
+                type,
+                alive: true,
+                health: health[side],
+                maxHealth: side === 0 ? 80 : 200,
+                damageDone: index === 2 ? 10 : side === 0 ? 5 : 20,
+            })),
+        };
+        const result = finishClassicTournamentMatch(bracket, sim);
+        assert.equal(result.winnerId, match.orbIds[winnerSide]);
+        assert.equal(result.reason, reason);
+    }
 }
 
 {

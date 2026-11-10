@@ -66,12 +66,16 @@ and weapons in live fights and the authored showcase.
 Snowball packs snow on wall bounces and launches a ricocheting Avalanche
 every third bounce. The shards deal damage on contact.
 
-The 48 original Classic fighters each have a separate once-per-fight power.
-Sword spends Slipstream to dodge a strike or dash into attack range. Blue
+The 48 original Classic fighters each have a separate signature power that
+recharges 12 seconds after recovery. Sword uses Slipstream to dash into attack
+range, or spends its defensive dash on a Slipstream sidestep. Blue
 Sun releases an expanding Solar Prominence, Black Hole converges twin
 gravity wells, and the gun fighters have separate firing patterns. Windups
 show where to move, and only contact with the live attack deals damage. The
-[Classic roster](docs/CLASSIC_ROSTER.md#once-per-duel-powers) lists every power.
+[Classic roster](docs/CLASSIC_ROSTER.md#signature-powers) lists every power.
+Every orb in a live Classic fight gets one defensive dash. It can trigger
+when a hit would take the orb to half health or below. Signature dodges
+still work independently, including One Punch Man's unlimited dodges.
 
 One-on-one Classic fights open from a seeded diagonal. The fighters circle
 inward, then the first clash sends them apart sideways at about twice their
@@ -83,6 +87,14 @@ ability meters. Team colors and the light arena are optional. The
 standard and the next channel experiment. See the
 [Classic combat style guide](docs/CLASSIC_STYLE.md) for the move design and
 recording criteria.
+
+Select **Orb Fight Tournament** in Battle Setup for a seeded 4-, 8-, 16-, or
+32-orb knockout bracket in the Classic dark theme. Pick any unique Classic entrants or fill the bracket
+from the seed. Winners start the next fight at full health with fresh
+abilities. A fight still running at three minutes goes to the orb with the
+higher remaining HP percentage, then damage dealt, then bracket order.
+**Watch Tournament** plays the full bracket; **Record Tournament** captures
+every fight and result card in one video at the selected format.
 
 ## Visual Language
 
@@ -109,6 +121,7 @@ The Social Battle runtime does not load them.
 - `src/audio.js`: imported combat samples, metallic procedural fallback audio,
   buffered HeyGen announcer cues, mixer ducking, and recording-stream routing
 - `src/presentation-timeline.js`: deterministic versus/countdown/FIGHT cue clock
+- `src/classic-tournament.js`: seeded knockout brackets and fight decisions
 
 `src/tournament.js` and `src/tournament-worker.js` remain dormant for possible
 future reuse. They are not imported, initialized, or reachable from the product.

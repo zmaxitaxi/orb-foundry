@@ -105,8 +105,8 @@ test("Classic team names, announcer routing, and team outlines stay visible in t
 
 test("Short and long-form Orb Race recordings preserve one matchup and measure its action duration", () => {
   const finishBattleSource = mainSource.slice(
-    mainSource.indexOf("function finishBattle()"),
-    mainSource.indexOf("function drawSocialBattle(", mainSource.indexOf("function finishBattle()")),
+    mainSource.indexOf("function finishBattle("),
+    mainSource.indexOf("function drawSocialBattle(", mainSource.indexOf("function finishBattle(")),
   );
   assert.doesNotMatch(finishBattleSource, /startSimulation\(/, "a finished matchup must never restart during recording");
   assert.match(finishBattleSource, /socialRaceActionEndedAt\s*\?\?=/);
@@ -268,7 +268,7 @@ test("Orb Race Tournament is a peer format with a dedicated 1v1 roster and guide
   assert.match(mainSource, /await startSocialRecording\(\)/);
   assert.match(mainSource, /function queueNextTournamentMatch/);
   assert.match(mainSource, /tournamentRecordingShouldContinueAfterPreview/);
-  assert.match(mainSource, /if \(elements\.gameScreen\.hidden \|\| paused \|\| \(sim\.finished && !sim\.raceTournament\)\) return/);
+  assert.match(mainSource, /if \(!isBattleVisible\(\) \|\| paused \|\| \(sim\.finished && !sim\.raceTournament[^)]*\)\) return/);
   assert.match(mainSource, /preserveTournamentSession/);
   assert.match(mainSource, /tournamentSessionState/);
   assert.match(stylesSource, /\.race-tournament-panel/);
@@ -319,7 +319,7 @@ test("continuous tournament recordings preserve MediaRecorder and hand off pan-t
   assert.match(mainSource, /startSocialRecording\(\{ transitionOverride: transition \}\)/);
   assert.match(mainSource, /tournamentTransitionTimer = setTimeout\([\s\S]*?hydrateQueuedTournamentMatch,[\s\S]*?TOURNAMENT_INTER_MATCH_PAN_DURATION_MS/);
   assert.match(mainSource, /const tournamentHandoffActive = Boolean\(tournamentAdvancePending && tournamentTransition\)/);
-  assert.match(mainSource, /!tournamentHandoffActive && \(!sim\.finished \|\| sim\.raceTournament\)/);
+  assert.match(mainSource, /!tournamentHandoffActive[^\n]*&& \(!sim\.finished \|\| sim\.raceTournament\)/);
   assert.match(mainSource, /tournamentTransition: tournamentTransitionForRender\(now\)/);
   assert.match(mainSource, /recorderOptions: \{[\s\S]*?tournamentTransition: transition/);
   assert.match(mainSource, /segment\.presentation = \{ \.\.\.presentation \}/);

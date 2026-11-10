@@ -767,6 +767,7 @@ const PULSE_CUE_SOUNDS = Object.freeze({
   "shockwave-hit": { signature: "pulse-shockwave-impact", layers: [[117, 44, .22, .26, "sine"], [437, 185, .10, .097, "triangle"]], noises: [[.125, .16, 2460, .88, "bandpass"]] },
   "shockwave-wall": { signature: "pulse-shockwave-wall", layers: [[184, 65, .15, .118, "sine"]], noises: [[.13, .10, 1830, .81, "bandpass"]] },
   dodge: { signature: "pulse-sidestep", layers: [[927, 292, .14, .052, "triangle", .012, .028]], noises: [[.16, .12, 2630, 1.23, "bandpass", 0, .041], [.068, .053, 4760, 1.1, "highpass", .039]] },
+  "dash-dodge": { signature: "classic-dash-dodge", layers: [[1260, 355, .15, .063, "triangle"]], noises: [[.17, .11, 3540, 1.18, "bandpass", 0, .03]] },
   limitless: { signature: "pulse-limitless", layers: [[1168, 687, .23, .11, "sine"], [1990, 1630, .29, .081, "sine", .019], [2780, 2260, .18, .048, "triangle", .048]], noises: [[.16, .095, 5100, 1.4, "highpass"]] },
   "purple-merge": { signature: "pulse-purple-merge", layers: [[293, 728, .90, .072, "sine", 0, .27], [949, 733, .79, .079, "sine", .09, .24], [140, 365, .63, .061, "triangle", .22, .16]], noises: [[.62, .058, 2280, 2.2, "bandpass", .20, .16]] },
   "hollow-purple": { signature: "pulse-hollow-purple", priorityEffects: true, layers: [[146, 42, .65, .24, "sine"], [668, 164, .47, .118, "triangle", 0, .016], [1160, 396, .35, .047, "sine", .024, .028]], noises: [[.63, .21, 1040, .92, "lowpass", 0, .029], [.34, .11, 3020, .98, "bandpass"]] },

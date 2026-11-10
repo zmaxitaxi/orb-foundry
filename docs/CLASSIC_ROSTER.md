@@ -131,17 +131,24 @@ such as the bomb siren and the lasso crack are kept where they carry the move.
 | Fairy | Wand Comet | A comet with trailing stars and a chime marks release; one star lands on contact. |
 | Commander | Drone Crossfire | The scout has a narrow blue hull; the heavier missile drone has swept amber wings and a lower report. |
 
-## Once-per-duel powers
+## Signature powers
 
 The signature moves above describe the animation and sound of ordinary
 combat. These specials add a separate attack with its own tell, hitbox,
-and recovery. Each of the 48 original fighters can spend its special once
-per duel. The newer fighters use the form, charge, and move systems in the
+and recovery. Each of the 48 original fighters can use its special again
+after a 12-second cooldown following recovery. The newer fighters use the form, charge, and move systems in the
 [Classic combat style guide](CLASSIC_STYLE.md).
+
+Each live fighter also starts with one automatic defensive dash, used
+against a solid hit that would leave it at half HP or less. Sword's
+defensive Slipstream uses this charge. Character-specific defenses,
+including Luke's signature leaps and One Punch Man's unlimited dodges,
+keep their own rules. The cyan dot on the dark ability meter marks an
+unspent shared dash.
 
 | Fighter | Special | What the opponent has to read |
 | --- | --- | --- |
-| Sword | Slipstream | One dash can sidestep a hit or close the gap for 17 damage along the dash path. |
+| Sword | Slipstream | An attack dash deals 17 damage along its path. Sword can spend its one defensive dash on a Slipstream sidestep. |
 | Blue Sun | Solar Prominence | A bright rim expands from the caster and knocks back fighters caught by its edge for 28 damage. |
 | Black Hole | Binary Crush | Twin gravity wells narrow toward the mark. Getting caught in their path deals 34 damage. |
 | Pistol | Ricochet Relay | Two placed coins redirect shots through the marked area in sequence for 24 damage. |

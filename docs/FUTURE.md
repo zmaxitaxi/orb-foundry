@@ -71,6 +71,27 @@ and settings must replay the same fight. See the
 [Classic roster audit](CLASSIC_ROSTER.md) for the current art decisions and
 [Classic combat style](CLASSIC_STYLE.md) for the implementation and recording guide.
 
+### New fighter ideas
+
+These are proposals, not implemented fighters. Keep the current Classic
+standard: a simple body, a readable tell, visible travel, contact damage,
+and a distinct impact sound.
+
+| Fighter | Signature idea | Visual payoff |
+| --- | --- | --- |
+| Magneto | Pull loose metal from the walls into a shield, then launch it as an aimed fan. | Metal bends toward the raised hand before the shield opens into blades. |
+| Kratos | Throw chained blades, pull toward a caught opponent, then land a heavy slam. | Taut chains, a visible pull, and a short arena dent on wall contact. |
+| Doctor Strange | Place paired portals that redirect projectiles and one body dash. | Attacks enter one ring and visibly emerge from the other at a new angle. |
+| Gambit | Lodge three charged cards in the arena, then detonate their small blast zones in order. | Pink card trails and pulsing corner marks make the danger readable. |
+| Rubber | Stretch against a wall and slingshot across the arena. | The body visibly stretches, releases, and recoils after a heavy impact. |
+| Pinball | Deploy three temporary bumpers and gain momentum from bank shots. | Lit bumpers, a short combo counter, and increasingly strong impact rings. |
+| Origami | Fold into a paper plane for a piercing pass, then return as a boomerang. | Clear fold lines and a single sharp paper trail instead of particle clutter. |
+| Sand Pharaoh | Leave a sand shell as a decoy and reform at its marked exit for a staff strike. | The shell breaks into a brief low dust arc while the real body reforms. |
+
+Start with Magneto, Kratos, or Doctor Strange for recognizable matchups,
+and Rubber or Pinball for a distinctive Orb Foundry mechanic. Gameplay
+still chooses the outcome; the attack animation must follow the live hitbox.
+
 ### First release experiment
 
 Build six distinct Classic Shorts around three questions. Can WDC's beam

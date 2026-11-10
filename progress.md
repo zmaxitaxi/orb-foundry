@@ -1,5 +1,29 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-10 — Recurring Classic powers and Orb Fight Tournament
+
+- Replaced the original fighters' permanent spent state with a 12-second
+  cooldown after recovery. Power hitboxes still hit each target once per
+  cast; the next cast starts a fresh windup, hit list, and recovery.
+- Gave each live fighter one automatic defensive dash against a solid hit
+  that threatens half health. Sword shares this charge with its defensive
+  Slipstream. Preserved One Punch Man's unlimited dodges, Luke's signature
+  moves, and Ben 10's form defenses. Duplicator clones cannot mint charges.
+- Added a separate seeded Classic knockout bracket for 4/8/16/32 unique
+  entrants, full-health rematches, a three-minute decision rule, visible
+  bracket progress, inter-match cards, and a champion. The whole bracket
+  can be watched or recorded into one video; its roster and seed survive
+  share links. Kept the dormant batch-analysis tournament separate.
+- Locked tournaments to the Classic dark theme, including setup, bracket
+  display, fights, result cards, and recording preview.
+- Saved eight proposed new fighters and their visual hooks in
+  [Future plan](docs/FUTURE.md#new-fighter-ideas); these are ideas only.
+- Passed all 223 Node tests, the browser smoke check, publishing validation,
+  and a Friday batch dry run. Playwright completed three fights and recorded
+  a full bracket to one MP4, verified the champion and round metadata,
+  exercised share links and mobile setup, and found no console/page errors
+  or failed assets. FFprobe confirmed 1920×1080 H.264 video and AAC audio.
+
 ## 2026-11-09 — Two daily Orb Foundry Shorts
 
 - Scheduled Orb Foundry Shorts at noon and 3 PM Pacific. Each batch

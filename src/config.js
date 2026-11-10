@@ -1,6 +1,7 @@
 import { THEME_IDS } from "./presentation.js?v=20261109-classic-publish1";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
+import { CLASSIC_TOURNAMENT_MODE, normalizeClassicTournamentOptions } from "./classic-tournament.js?v=20261110-orb-fight1";
 import {
   ORB_RACE_DEFAULT_LAYERS,
   ORB_RACE_DEFAULT_ORB_SCALE,
@@ -313,6 +314,7 @@ export function createDefaultSettings() {
     classicOrbOptions: normalizeClassicOrbOptions(null, classes),
     classicTeams,
     classicTeamOptions: normalizeClassicTeamOptions(null, classicTeams),
+    classicTournament: null,
     classicReferenceDuel: false,
     classicBlackTheme: true,
     classicTeamColors: false,
@@ -549,6 +551,10 @@ export function normalizeSettings(input = {}, validClasses = []) {
   const gameplayMode = input.gameplayMode === ORB_RACE_MODE || input.gameplayMode === KING_OF_HILL_MODE
     ? ORB_RACE_MODE
     : input.gameplayMode === WORLD_CUP_MODE ? WORLD_CUP_MODE : "classic";
+  const seed = clampInt(input.seed, 1, 999999999, defaults.seed);
+  const classicTournament = gameplayMode === "classic"
+    ? normalizeClassicTournamentOptions(input.classicTournament ?? (input.gameplayMode === CLASSIC_TOURNAMENT_MODE), seed)
+    : null;
   const raceTournament = normalizeRaceTournamentSettings(input.raceTournament, gameplayMode);
   const raceLayerCount = raceTournament?.matchSettings?.layerCount ?? baseRaceLayerCount;
   const raceLayerStrengths = raceTournament?.matchSettings?.layerStrengths
@@ -585,17 +591,19 @@ export function normalizeSettings(input = {}, validClasses = []) {
     classicOrbOptions,
     classicTeams,
     classicTeamOptions,
+    classicTournament,
     classicReferenceDuel: input.classicReferenceDuel === true
       && gameplayMode === "classic"
+      && !classicTournament
       && isClassicWdcDuel(classicTeams, classicTeamOptions),
-    classicBlackTheme: input.classicBlackTheme == null
+    classicBlackTheme: classicTournament ? true : input.classicBlackTheme == null
       ? defaults.classicBlackTheme
       : input.classicBlackTheme === true,
     classicTeamColors: input.classicTeamColors == null
       ? defaults.classicTeamColors
       : input.classicTeamColors === true,
     classicHydrogenHealth,
-    seed: clampInt(input.seed, 1, 999999999, defaults.seed),
+    seed,
     theme: THEME_IDS.includes(input.theme) ? input.theme : defaults.theme,
     hazardPreset: ["none", "bumpers", "portals", "ice", "speed", "mixed"].includes(input.hazardPreset)
       ? input.hazardPreset
@@ -740,6 +748,7 @@ function compactSettings(settings) {
     c: settings.classes,
     co: settings.gameplayMode === "classic" ? settings.classicOrbOptions : undefined,
     ct: settings.gameplayMode === "classic" ? settings.classicTeams : undefined,
+    ft: settings.classicTournament ? { n: settings.classicTournament.size, e: settings.classicTournament.entrants } : undefined,
     ci: settings.gameplayMode === "classic" ? settings.classicTeamOptions : undefined,
     cb: settings.gameplayMode === "classic" ? Number(settings.classicBlackTheme) : undefined,
     wd: settings.classicReferenceDuel ? 1 : undefined,
@@ -833,6 +842,7 @@ function expandSettings(value) {
     classes: value.c,
     classicOrbOptions: value.co,
     classicTeams: value.ct,
+    classicTournament: value.ft && { size: value.ft.n, entrants: value.ft.e },
     classicTeamOptions: value.ci,
     classicBlackTheme: value.cb == null ? undefined : value.cb === 1,
     classicReferenceDuel: value.wd === 1,

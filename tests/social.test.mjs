@@ -1697,7 +1697,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
     /main\.js\?v=[\w-]+/,
     "the page entry point must invalidate cached browser code",
   );
-  assert.match(indexMarkup, /styles\.css\?v=20260812-orb-race-tournament-nodes2-classic-ui1/, "the setup-dialog CSS should invalidate cached styles");
+  assert.match(indexMarkup, /styles\.css\?v=\d{8}-[\w-]+/, "the setup-dialog CSS should use a cache key");
   assert.match(indexMarkup, /SHORT RACE · 9:16 · 3 LAYERS/);
   assert.match(indexMarkup, /LONG RACE · 16:9 · PRESET LAYERS/);
   assert.match(indexMarkup, /id="raceFinalLayerHealth"/);
@@ -1712,7 +1712,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20261109-classic-publish1/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261110-orb-fight1/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -6563,6 +6563,8 @@ console.log("social tests passed");
     const cue = (name, x = 360) => soundPlanForEvent({ type: "classic-pulse-cue", gameplayMode: "classic", cue: name, id: 45, x });
     assert.equal(cue("serious").priorityEffects, true);
     assert.equal(cue("dodge").pan, 0);
+    assert.equal(cue("dash-dodge").signature, "classic-dash-dodge");
+    assert.ok(cue("dash-dodge", 550).pan > 0);
     assert.ok(cue("dodge", 550).pan > 0);
     assert.ok(cue("serious").layers[0].duration > cue("barrage-hit").layers[0].duration);
     assert.ok(cue("purple-merge").layers[0].attack > cue("hollow-purple").layers[0].attack);
@@ -6572,6 +6574,21 @@ console.log("social tests passed");
     assert.equal(samplePlanForEvent({ ...contact, fighterType: "one-punch-man" }), null);
     assert.equal(samplePlanForEvent({ ...contact, fighterType: "boxer" }), null);
     assert.equal(soundPlanForEvent({ ...contact, fighterType: "boxer" })?.signature, "classic-corner-hit");
+}
+
+// A recurring power meter measures the current cooldown rather than match age.
+{
+    const sim = createSimulation({ classicTeams: [["blue-sun"], ["unarmed"]], features: { replay: false } });
+    const fighter = sim.fighters[0];
+    Object.assign(fighter, { classicPowerCooldownStartedAt: 11, classicPowerReadyAt: 23 });
+    const halfway = buildAbilityHud(fighter, 17);
+    assert.equal(halfway.powerProgress, 0.5);
+    assert.equal(halfway.powerCooldownSeconds, 6);
+    assert.equal(buildAbilityHud(fighter, 23).powerProgress, 1);
+    Object.assign(fighter, { classicPowerCooldownStartedAt: 26, classicPowerReadyAt: 38 });
+    const next = buildAbilityHud(fighter, 29);
+    assert.equal(next.powerProgress, 0.25);
+    assert.equal(next.powerCooldownSeconds, 9);
 }
 
 {

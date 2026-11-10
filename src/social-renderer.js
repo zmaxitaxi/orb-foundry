@@ -22,7 +22,7 @@ import {
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261109-classic-publish1";
+} from "./simulation.js?v=20261110-orb-fight1";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
@@ -35,8 +35,8 @@ import {
   drawClassicWallDamage,
   drawClassicWdcDuel,
   drawMotionStreak,
-} from "./renderer.js?v=20261109-classic-publish1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261109-classic-publish1";
+} from "./renderer.js?v=20261110-orb-fight1";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261110-orb-fight1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -2276,6 +2276,11 @@ export class SocialBattleRenderer {
       drawClassicWdcDuel(ctx, sim, width, height, motion);
       return;
     }
+    const bracket = presentation.classicTournament;
+    if (bracket?.winner) {
+      this.drawClassicTournamentResult(ctx, bracket, width, height);
+      return;
+    }
     const classicBlackTheme = sim.gameplayMode === "classic" && motion.classicBlackTheme === true;
     const classicTeamColors = sim.gameplayMode === "classic" && motion.classicTeamColors !== false;
     if (sim.finished && this.classicResultSim !== sim) {
@@ -2370,6 +2375,43 @@ export class SocialBattleRenderer {
     if (presentation.phase === "countdown" && sim.gameplayMode !== "classic") {
       this.drawCountdown(ctx, presentation.countdown, presentation.phaseProgress || 0, width, height, motion);
     }
+    if (bracket) {
+      const heading = `${bracket.label.toUpperCase()} · FIGHT ${bracket.fight} / ${bracket.total}`;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = classicBlackTheme ? "#e2e0dc" : "#4b4034";
+      setFittedFont(ctx, heading, layout.names.width, 800, Math.min(26, layout.names.y * 0.8), 12, PIXEL_FONT);
+      ctx.fillText(heading, width / 2, layout.names.y - Math.min(34, layout.names.y / 2));
+      ctx.restore();
+    }
+  }
+
+  drawClassicTournamentResult(ctx, bracket, width, height) {
+    const unit = Math.min(width, height);
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const accent = bracket.champion ? "#ffd372" : "#b9eaff";
+    ctx.save();
+    ctx.fillStyle = "#08090b";
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = Math.max(2, unit * 0.003);
+    ctx.strokeRect(width * 0.08, centerY - unit * 0.265, width * 0.84, unit * 0.53);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const line = (copy, offset, size, color) => {
+      setFittedFont(ctx, copy, width * 0.76, 900, unit * size, 14, PIXEL_FONT);
+      ctx.fillStyle = color;
+      ctx.fillText(copy, centerX, centerY + unit * offset);
+    };
+    line("ORB FIGHT TOURNAMENT", -0.19, 0.027, "#dfdde2");
+    line(bracket.champion ? "CHAMPION" : `${bracket.label.toUpperCase()} · FIGHT ${bracket.fight} / ${bracket.total}`, -0.12, 0.036, accent);
+    line(bracket.winner.toUpperCase(), -0.014, 0.092, "#fffdf7");
+    line(bracket.reason.toUpperCase(), 0.084, 0.025, "#dfdde2");
+    if (bracket.next) line(`NEXT: ${bracket.next.toUpperCase()}`, 0.176, 0.032, accent);
+    else line(`${bracket.total} FIGHTS COMPLETE`, 0.176, 0.032, accent);
+    ctx.restore();
   }
 
   drawOrbRace(ctx, sim, presentation, width, height) {
@@ -11344,10 +11386,15 @@ export class SocialBattleRenderer {
         const abilityLabel = classicBlackTheme && !hud.customLabel
           ? CLASSIC_ORBS[fighter.type]?.statLabel || hud.label
           : hud.label;
-        const status = hud.powerActive ? hud.label : orbital
+        const dashActive = sim.time < (fighter.classicDashUntil || 0);
+        const dashAvailable = fighter.classicDashCharges > 0 && fighter.type !== "one-punch-man";
+        const meterProgress = dashActive || sim.time < (fighter.classicHeldUntil || 0)
+          ? 0 : hud.powerProgress ?? hud.progress;
+        const status = dashActive ? "DODGE" : hud.powerActive ? hud.label : orbital
           ? `${fighter.classicOrbiters || 0} SATELLITES`
           : (swordPhase === "active" ? "STRIKE" : swordPhase?.toUpperCase()) || abilityLabel;
-        const detail = hud.powerActive ? hud.detail : orbital
+        const detail = hud.powerActive ? hud.detail : hud.powerCooldownSeconds > 0
+          ? `HP ${Math.ceil(fighter.health)} / POWER ${hud.powerCooldownSeconds.toFixed(1)}S` : orbital
           ? `+1 PER BOUNCE · ${CLASSIC_ORBS.orbital.classicAbility.satelliteDamage} DMG EACH`
           : hud.powerProgress === 1 ? `HP ${Math.ceil(fighter.health)} / POWER READY` : hud.detail?.split(" · ")[0];
         const accent = hud.color || CLASSIC_ORBS[fighter.type]?.accent || CLASS_DEFS[fighter.type]?.color || "#888888";
@@ -11369,10 +11416,16 @@ export class SocialBattleRenderer {
           ctx.stroke();
           ctx.clip();
           ctx.fillStyle = color + "78";
-          ctx.fillRect(x, y, width * hud.progress, meterHeight);
-          setFittedFont(ctx, status, width * 0.92, 900, Math.min(25, meterHeight * 0.61), 11, PIXEL_FONT);
+          ctx.fillRect(x, y, width * meterProgress, meterHeight);
+          setFittedFont(ctx, status, width * 0.92 - (dashAvailable ? meterHeight : 0), 900, Math.min(25, meterHeight * 0.61), 11, PIXEL_FONT);
           ctx.fillStyle = "#fffdf7";
           ctx.fillText(status, center, y + meterHeight * 0.51);
+          if (dashAvailable) {
+            ctx.fillStyle = "#b9eaff";
+            ctx.beginPath();
+            ctx.arc(x + width - meterHeight * 0.46, y + meterHeight * 0.5, meterHeight * 0.12, 0, Math.PI * 2);
+            ctx.fill();
+          }
           ctx.restore();
           const health = Number.isFinite(fighter.health) ? `HP ${Math.ceil(fighter.health)}` : "";
           const readout = detail?.startsWith("HP ") ? detail : [health, detail].filter(Boolean).join(" / ");
@@ -11390,7 +11443,7 @@ export class SocialBattleRenderer {
           ctx.fillStyle = classicBlackTheme ? "#35383f" : "#e5dfd6";
           ctx.fillRect(center - width / 2, railY, width, 5);
           ctx.fillStyle = color;
-          ctx.fillRect(center - width / 2, railY, width * hud.progress, 5);
+          ctx.fillRect(center - width / 2, railY, width * meterProgress, 5);
         }
         if (detail) {
           setFittedFont(ctx, detail, width, 800, Math.min(27, rect.height * 0.28), 14, PIXEL_FONT);

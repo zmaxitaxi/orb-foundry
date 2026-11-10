@@ -4104,6 +4104,7 @@ test("Duplicator duplicates match Necromancer minion size and can receive damage
     assert.equal(duplicate.classicDuplicateScale, duplicate.radius / duplicator.radius);
     assert.equal(duplicate.maxHealth, 50);
     assert.equal(duplicate.health, 50);
+    assert.equal(duplicate.classicDashCharges, 0, "cloning cannot manufacture fresh defensive charges");
     duplicate.health = duplicate.maxHealth = 10;
     duplicate.classicCoreHealth = duplicate.classicCoreMaxHealth = 10;
     duplicate.stunUntil = Infinity;
@@ -4601,7 +4602,7 @@ test("One Punch Man wins a regular bout with a real 100 damage glove contact", (
     });
     const [punchMan, target] = sim.fighters;
     Object.assign(punchMan, { x: 250, y: 300, vx: 0, vy: 1, baselineSpeed: 1, classicAbilityNextAt: 0 });
-    Object.assign(target, { x: 360, y: 301, vx: 0, vy: 1, baselineSpeed: 1 });
+    Object.assign(target, { x: 360, y: 301, vx: 0, vy: 1, baselineSpeed: 1, classicDashCharges: 0 });
     runSeconds(sim, 1);
     const hit = sim.events.find(({ type }) => type === "classic-punch-hit");
     assert.equal(punchMan.health, 1);
@@ -4690,14 +4691,14 @@ test("The original Classic roster has distinct specials that use real damage and
     assert.deepEqual(Object.keys(CLASSIC_POWER_MOVES).sort(), originals.sort());
     assert.equal(new Set(Object.values(CLASSIC_POWER_MOVES).map(({ name }) => name)).size, originals.length);
 
-    const run = (orb, seed) => {
+    const run = (orb, seed, duration = 13) => {
         const sim = createSimulation({
             classicTeams: [[orb], ["unarmed"]], seed, arenaSize: "large",
             classicOrbOptions: { [orb]: { health: 450 }, unarmed: { health: 450 } },
             features: { replay: false },
         });
         let attackFrame;
-        const events = eventsOverSeconds(sim, 13, (fresh) => {
+        const events = eventsOverSeconds(sim, duration, (fresh) => {
             if (fresh.some(({ type, fighterType, phase }) => type === "classic-power-cue" && fighterType === orb && phase === "hit")) {
                 attackFrame = captureReplayFrame(sim);
             }
@@ -4718,13 +4719,53 @@ test("The original Classic roster has distinct specials that use real damage and
         assert.deepEqual(cues.map(({ phase }) => phase), ["charge", "release", "hit"], orb);
         assert.equal(cues[2].amount, amount, orb);
         assert.equal(cues[2].targetId, sim.fighters[1].id, orb);
-        assert.equal(sim.fighters[0].classicPowerMove.phase, "spent", orb);
+        assert.equal(sim.fighters[0].classicPowerMove, null, orb);
+        assert.ok(sim.fighters[0].classicPowerReadyAt > sim.time, orb);
         assert.ok(attackFrame.fighters[0].classicPowerMove.pose.some(({ shape, live }) => shape === geometry && live), orb);
         const repeat = run(orb, seed);
         assert.deepEqual(cues, repeat.cues, orb);
         assert.deepEqual(attackFrame, repeat.attackFrame, orb);
     }
     assert.deepEqual(run("draftmaster", 1).cues.map(({ phase }) => phase), ["charge", "release"], "an escaped hitbox never emits a hit cue");
+
+    const { sim, cues, attackFrame } = run("blue-sun", 1, 23);
+    assert.deepEqual(cues.map(({ phase }) => phase), ["charge", "release", "hit", "charge", "release", "hit"]);
+    assert.ok(cues[3].time - cues[2].time >= 12, "a new windup follows a full cooldown");
+    assert.deepEqual(cues.filter(({ phase }) => phase === "hit").map(({ amount }) => amount), [28, 28]);
+    assert.ok(sim.fighters[0].classicPowerReadyAt > sim.time, "the second power starts another cooldown");
+    const repeat = run("blue-sun", 1, 23);
+    assert.deepEqual(repeat.cues, cues);
+    assert.deepEqual(repeat.attackFrame, attackFrame);
+});
+
+test("Reactive guard powers can counter again after their cooldown", () => {
+    const sim = createSimulation({
+        classicTeams: [["spikey"], ["unarmed"]], classicOpening: false, classicPowerMoves: false,
+        classicOrbOptions: { spikey: { health: 1000 }, unarmed: { health: 1000 } },
+        seed: 717, features: { replay: false },
+    });
+    const [spikey, source] = sim.fighters;
+    spikey.classicPowerReadyAt = 0;
+    const fire = (id) => {
+        sim.classicEntities.push({
+            id, kind: "pistol-ammo", ownerId: source.id, targetId: spikey.id,
+            x: spikey.x, y: spikey.y, vx: 0, vy: 0, radius: 5, damage: 5,
+            bulletFamily: "pistol", bulletTier: 1, physical: true, solid: true,
+            deflectable: true, expiresAt: sim.time + 1,
+        });
+        step(sim);
+    };
+    fire("guard-first-shot");
+    assert.equal(spikey.classicPowerMove?.mode, "guard");
+    const readyAt = spikey.classicPowerReadyAt;
+    assert.equal(spikey.health, spikey.maxHealth);
+    runSeconds(sim, 14);
+    assert.ok(sim.time >= readyAt);
+    assert.equal(spikey.classicPowerMove, null);
+    fire("guard-second-shot");
+    assert.equal(spikey.classicPowerMove?.mode, "guard");
+    assert.ok(spikey.classicPowerMove.startedAt >= readyAt);
+    assert.ok(spikey.classicPowerReadyAt > readyAt);
 });
 
 test("Sword can spend Slipstream to evade exactly once", () => {
@@ -4745,12 +4786,49 @@ test("Sword can spend Slipstream to evade exactly once", () => {
     const first = sim.events.filter(({ type, fighterType }) => type === "classic-power-cue" && fighterType === "sword");
     assert.deepEqual(first.map(({ phase }) => phase), ["evade"]);
     assert.equal(sword.health, sword.maxHealth);
+    assert.equal(sword.classicDashCharges, 0);
     assert.ok(Math.abs(sword.y - 300) > 10, "Slipstream moves the body off the punch line");
     punch();
     const nextPunch = sim.time;
     const followUp = eventsOverSeconds(sim, 5).filter(({ time }) => time > nextPunch);
     assert.ok(sword.health < sword.maxHealth);
     assert.ok(!followUp.some(({ type, fighterType }) => type === "classic-power-cue" && fighterType === "sword"));
+});
+
+test("Classic fighters can spend one shared dash to evade a damaging hit", () => {
+    const roster = createSimulation({ classicTeams: [CLASSIC_ORB_IDS, ["boxer"]], features: { replay: false } });
+    assert.ok(roster.fighters.every(({ classicDashCharges }) => classicDashCharges === 1));
+    const run = () => {
+        const sim = createSimulation({
+            classicTeams: [["unarmed"], ["boxer"]], classicOpening: false,
+            classicPowerMoves: false, seed: 2406, features: { replay: false },
+        });
+        const [unarmed, boxer] = sim.fighters;
+        assert.equal(unarmed.classicDashCharges, 1);
+        assert.equal(boxer.classicDashCharges, 1);
+        unarmed.health = 42;
+        const lineUpPunch = () => {
+            Object.assign(unarmed, { x: 240, y: 300, vx: 0, vy: 1, baselineSpeed: 1 });
+            Object.assign(boxer, {
+                x: 350, y: 301, vx: 0, vy: 1, baselineSpeed: 1,
+                classicAbilityNextAt: sim.time, classicPunchPhase: "idle",
+            });
+        };
+        lineUpPunch();
+        const first = eventsOverSeconds(sim, 0.65);
+        assert.ok(first.some(({ cue, fighterId, amountBlocked }) => cue === "dash-dodge"
+            && fighterId === unarmed.id && amountBlocked >= 5));
+        assert.equal(unarmed.health, 42);
+        assert.equal(unarmed.classicDashCharges, 0);
+        assert.ok(Math.abs(unarmed.y - 300) > 10, "the dodge changes the body's trajectory");
+        assert.ok(sim.time >= unarmed.classicDashUntil);
+        lineUpPunch();
+        const followUp = eventsOverSeconds(sim, 0.65).filter(({ time }) => time > 0.65);
+        assert.ok(!followUp.some(({ cue }) => cue === "dash-dodge"));
+        assert.ok(unarmed.health < 42);
+        return captureReplayFrame(sim);
+    };
+    assert.deepEqual(run(), run());
 });
 
 test("The Pulse Classics defend and damage real opponents in regular fights", () => {
@@ -4837,7 +4915,7 @@ test("Ben 10's shuffled forms all cause damage, with a real XLR8 dodge", () => {
     let rollSpeed;
     let leftArena = false;
     let lastHp = ben.health;
-    const events = eventsOverSeconds(sim, 28, (fresh) => {
+    const events = eventsOverSeconds(sim, 30.5, (fresh) => {
         if (ben.classicOmnitrix?.form === "cannonbolt") {
             largestRoll = Math.max(largestRoll, ben.classicOmnitrix.rush?.radius || 0);
             if (fresh.some(({ cue }) => cue === "cannonbolt")) rollSpeed ??= Math.hypot(ben.vx, ben.vy);
@@ -4881,7 +4959,7 @@ test("Ben 10's shuffled forms all cause damage, with a real XLR8 dodge", () => {
     assert.ok(dodgeVerified);
     assert.ok(events.some(({ cue }) => cue === "diamond-guard"));
     const repeat = createSimulation(options);
-    assert.deepEqual(eventsOverSeconds(repeat, 28), events);
+    assert.deepEqual(eventsOverSeconds(repeat, 30.5), events);
     assert.deepEqual(captureReplayFrame(repeat), captureReplayFrame(sim));
     const alternate = createSimulation({ ...options, seed: 67 });
     assert.notEqual(eventsOverSeconds(alternate, 1.3).find(({ cue }) => cue === "omnitrix-transform")?.form, forms[0]);
@@ -4911,7 +4989,7 @@ test("A dent replaces the straight border and a breach leaves an actual gap", ()
 test("Luke closes gaps and can land both combo strikes while Vader grips and recalls his saber", () => {
     const options = {
         classicTeams: [["luke-skywalker"], ["darth-vader"]],
-        seed: 3, arenaSize: "large", features: { replay: false },
+        seed: 4, arenaSize: "large", features: { replay: false },
     };
     const sim = createSimulation(options);
     for (const fighter of sim.fighters) {
