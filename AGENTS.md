@@ -49,6 +49,7 @@ This checkout has no commit history, so no established commit convention can be 
 ## Simulation and Asset Contracts
 
 - The simulation advances at `1 / 120` seconds in the browser and tests. Use `SeededRandom` and the simulation seed for gameplay randomness; do not use `Math.random()`, wall-clock time, or DOM state in rules code.
+- Every current and future Classic orb must inherit the shared one-charge defensive dash/dodge per fight. Keep it in the common fighter initialization and damage path, with real body movement and the existing visual/audio cues. Character-specific defenses remain independent. Preserve the all-roster charge assertion in `tests/classic-rework.test.mjs` when adding fighters; see `docs/CLASSIC_STYLE.md#shared-defensive-dodge` for the behavior contract.
 - Themes, export format/FPS, hit-stop, screen shake, highlight slow motion, and audio are presentation concerns and must not alter a deterministic outcome. Balance overrides are the intentional exception and must be sanitized through `config.js`.
 - `src/tournament.js` and `src/tournament-worker.js` are dormant batch-analysis infrastructure. They are not imported by the product flow; changes there need focused tests and should not re-enable old tournament UI accidentally.
 - `index.html` and several browser imports use explicit `?v=...` query strings so static hosting refreshes changed modules/assets. When changing a browser-loaded module or audio manifest, bump the relevant entry/import cache key consistently. Node tests import the same files without query strings.

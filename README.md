@@ -99,6 +99,8 @@ show where to move, and only contact with the live attack deals damage. The
 Every orb in a live Classic fight gets one defensive dash. It can trigger
 when a hit would take the orb to half health or below. Signature dodges
 still work independently, including One Punch Man's unlimited dodges.
+All eight additional fighters inherit this dodge, and every future Classic
+orb must include it by default.
 
 One-on-one Classic fights open from a seeded diagonal. The fighters circle
 inward, then the first clash sends them apart sideways at about twice their

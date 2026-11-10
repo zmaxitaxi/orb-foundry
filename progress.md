@@ -1,5 +1,14 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-10 — Dodge required for future Classic fighters
+
+- Confirmed all eight additional fighters inherit one defensive dash charge
+  through common Classic initialization and the shared incoming-hit handler.
+- Made that dodge a required default for every future Classic orb in the
+  repository instructions, combat style guide, and README. Kept signature
+  defenses independent and documented the existing all-roster assertion.
+- Documentation-only update; skipped further CLI tests as requested.
+
 ## 2026-11-10 — Eight new Classic fighters
 
 - Added eight separate stable IDs: Magneto, Kratos, Doctor Strange, Gambit,

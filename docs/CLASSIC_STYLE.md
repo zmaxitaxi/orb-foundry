@@ -18,6 +18,24 @@ Keep the black square, thin white border, centered health, and color-coded abili
 - Use the existing controls for reduced motion, flash reduction, and effects volume. Keep short sounds distinct even when several moves overlap.
 - Verify an ordinary Classic fight through the same 9:16 canvas used for export. Inspect a tell, a clean hit, an evasion or miss, and the fading aftermath before choosing a seed for a video.
 
+## Shared defensive dodge
+
+Every current and future Classic orb gets one automatic defensive dash/dodge
+per fight, including all eight additional fighters. This is a required roster
+default. Use the common fighter initialization and damage path so new fighters
+inherit it without an individual ability entry.
+
+An unused charge can evade a hostile hit of at least 5 damage that would leave
+the fighter at half of its maximum HP or below. The fighter needs room to move
+and must be free to act. The dodge moves the real body, boosts its sideways
+escape, and uses the existing dash trail and sound cue. It spends the shared
+charge once; a new fight or tournament match starts with a fresh charge.
+
+Keep signature defenses independent, including Luke's leaps, Ben 10's form
+defenses, and One Punch Man's unlimited dodges. Sword's defensive Slipstream
+spends the shared charge. When adding an orb, keep it in the all-roster charge
+assertion in `tests/classic-rework.test.mjs`.
+
 ## Roster pass
 
 - **Original fighters** keep their regular moves and gain a separate power that recharges 12 seconds after recovery. Commit to a readable path, hazard, or counter. Aiming can track during the early tell and should settle before a placed strike lands. Bind the visuals and sound to that same attack's geometry and timing.
