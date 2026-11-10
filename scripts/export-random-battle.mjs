@@ -503,20 +503,28 @@ async function waitForDownloadedVideo(outputDir, afterMs, timeoutMs) {
 }
 
 async function pageSafeClose(chrome) {
-  if (!chrome?.child || chrome.child.exitCode !== null) return;
-  await new Promise((resolvePromise) => {
-    const timeout = setTimeout(resolvePromise, 5_000);
-    chrome.child.once("close", () => {
-      clearTimeout(timeout);
-      resolvePromise();
+  const child = chrome?.child;
+  if (!child) return;
+  try {
+    if (child.exitCode !== null || child.signalCode !== null) return;
+    await new Promise((resolvePromise) => {
+      const timeout = setTimeout(resolvePromise, 5_000);
+      const done = () => {
+        clearTimeout(timeout);
+        child.removeListener("exit", done);
+        resolvePromise();
+      };
+      child.once("exit", done);
+      try {
+        if (!child.kill("SIGTERM")) done();
+      } catch {
+        done();
+      }
     });
-    try {
-      chrome.child.kill("SIGTERM");
-    } catch {
-      clearTimeout(timeout);
-      resolvePromise();
-    }
-  });
+  } finally {
+    // Chrome helpers can retain the stderr pipe after the main process exits.
+    child.stderr?.destroy();
+  }
 }
 
 async function fetchJson(url) {
