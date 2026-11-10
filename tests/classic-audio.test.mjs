@@ -12,6 +12,7 @@ import {
     samplePlanForEvent,
     soundPlanForEvent,
 } from "../src/audio.js";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "../src/classic-showcase.js";
 
 const CLASSIC_IDS = Object.freeze([
     "sword",
@@ -26,6 +27,7 @@ const CLASSIC_IDS = Object.freeze([
     "parasites", "grappler", "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
     "commander", "wdc", "one-punch-man", "gojo", "john-rod", "one-above-all", "knight",
     "ben-10", "darth-vader", "luke-skywalker",
+    "magneto", "kratos", "doctor-strange", "gambit", "rubber", "pinball", "origami", "sand-pharaoh",
 ]);
 
 test("Classic announcer registry covers the launch roster with valid generated or verified clips", () => {
@@ -55,6 +57,34 @@ test("Classic matchup announcement retains Pick Your Winner", () => {
         "intro-trapper",
         "race-pick-your-winner",
     ]);
+});
+
+test("New fighters have named tell, release, impact, and material sounds without generic gun samples", () => {
+    const signatures = new Set();
+    for (const [id, def] of Object.entries(CLASSIC_SHOWCASE_FIGHTERS)) {
+        for (const move of def.moves) {
+            assert.ok(CLASSIC_SHOWCASE_MOVES[move]);
+            for (const phase of ["tell", "release", "hit"]) {
+                const event = { type: "classic-showcase-cue", gameplayMode: "classic", fighterType: id, move, phase, id: 33, x: 560 };
+                const sound = soundPlanForEvent(event);
+                assert.ok(sound, `${id} ${move} ${phase}`);
+                assert.ok(sound.layers.length + sound.noises.length > 0);
+                assert.ok(sound.pan > 0, "the cue follows the event's actual arena position");
+                assert.equal(samplePlanForEvent(event), null);
+                assert.ok(!signatures.has(sound.signature));
+                signatures.add(sound.signature);
+            }
+        }
+    }
+    const cue = (fighterType, move, phase) => soundPlanForEvent({
+        type: "classic-showcase-cue", gameplayMode: "classic", fighterType, move, phase, id: 34,
+    });
+    for (const [id, move, phase] of [
+        ["magneto", "iron-halo", "block"], ["kratos", "leviathan", "return"],
+        ["doctor-strange", "sling-ring", "warp"], ["gambit", "charged-deck", "detonate"],
+        ["pinball", "bumper-run", "bank"], ["origami", "paper-return", "catch"],
+        ["sand-pharaoh", "mirage-step", "reform"],
+    ]) assert.ok(cue(id, move, phase));
 });
 
 test("Classic powers have distinct charge, release, and impact audio", () => {

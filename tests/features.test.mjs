@@ -37,6 +37,7 @@ import {
   createClassicTournament,
   finishClassicTournamentMatch,
 } from "../src/classic-tournament.js";
+import { CLASSIC_SHOWCASE_IDS } from "../src/classic-showcase.js";
 import {
   ARENA,
   CLASS_DEFS,
@@ -110,6 +111,28 @@ import {
 
 const classes = Object.keys(CLASS_DEFS);
 const dt = 1 / 120;
+
+// All eight additions are real selectable/shareable Classic and bracket entrants.
+{
+    const settings = normalizeSettings({
+        classicTeams: [CLASSIC_SHOWCASE_IDS.slice(0, 4), CLASSIC_SHOWCASE_IDS.slice(4)],
+        seed: 88,
+    }, classes);
+    assert.deepEqual(settings.classicTeams.flat(), CLASSIC_SHOWCASE_IDS);
+    const restored = settingsFromUrl(settingsToUrl(settings, "https://example.test/", classes), classes);
+    assert.deepEqual(restored.classicTeams, settings.classicTeams);
+    for (const [index, id] of CLASSIC_SHOWCASE_IDS.entries()) {
+        assert.equal(settings.classicTeamOptions[index < 4 ? 0 : 1][id].health, CLASSIC_ORBS[id].defaultHealth);
+    }
+    const bracketSettings = normalizeSettings({
+        gameplayMode: CLASSIC_TOURNAMENT_MODE,
+        classicTournament: { size: 8, entrants: CLASSIC_SHOWCASE_IDS },
+        seed: 88,
+    }, classes);
+    const tournament = createClassicTournament(bracketSettings.classicTournament, bracketSettings.seed);
+    assert.deepEqual(new Set(tournament.entrants), new Set(CLASSIC_SHOWCASE_IDS));
+    assert.equal(tournament.rounds[0].matches.length, 4);
+}
 
 function run(sim, seconds = 120) {
   for (let step = 0; step < seconds / dt && !sim.finished; step += 1) stepSimulation(sim, dt);

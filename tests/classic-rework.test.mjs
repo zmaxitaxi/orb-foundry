@@ -11,6 +11,7 @@ import {
     normalizeClassicSpeedMode,
 } from "../src/classic-orbs.js";
 import { CLASSIC_POWER_MOVES } from "../src/classic-powers.js";
+import { CLASSIC_SHOWCASE_IDS, CLASSIC_SHOWCASE_MOVES } from "../src/classic-showcase.js";
 import { classicWallStrokeRuns } from "../src/renderer.js";
 import {
     ORB_BASE_SPEED,
@@ -38,6 +39,7 @@ const EXPECTED_CLASSIC_IDS = [
     "train", "frost-ball", "jackpot", "boxer", "artist", "monster", "fairy",
     "commander", "wdc", "one-punch-man", "gojo", "john-rod", "one-above-all", "knight",
     "ben-10", "darth-vader", "luke-skywalker",
+    "magneto", "kratos", "doctor-strange", "gambit", "rubber", "pinball", "origami", "sand-pharaoh",
 ];
 
 function step(sim, count = 1) {
@@ -62,6 +64,196 @@ function eventsOverSeconds(sim, seconds, observeStep = () => {}) {
     }
     return events;
 }
+
+function showcaseDuel(type, seed = 41) {
+    return createSimulation({
+        classicTeams: [[type], ["knight"]],
+        classicOrbOptions: { [type]: { health: 1000 }, knight: { health: 1000 } },
+        classicOpening: false, seed, features: { replay: false },
+    });
+}
+
+function reachShowcase(sim, predicate) {
+    for (let index = 0; index < 7200 && !sim.finished; index += 1) {
+        step(sim);
+        if (predicate(sim)) return;
+    }
+    assert.fail("the requested live move state should be reached");
+}
+
+test("Eight new Classic fighters repeat their real attacks and entity states from a seed", () => {
+    for (const id of CLASSIC_SHOWCASE_IDS) {
+        const first = showcaseDuel(id);
+        const second = showcaseDuel(id);
+        const events = eventsOverSeconds(first, 33);
+        const repeat = eventsOverSeconds(second, 33);
+        const moves = events.filter((e) => e.type === "classic-showcase-cue" && e.fighterType === id);
+        assert.ok(new Set(moves.filter((e) => e.phase === "release").map((e) => e.move)).size >= 2, id);
+        assert.ok(moves.some((e) => e.phase === "hit" && e.amount > 0), `${id} should land real damage`);
+        assert.ok(first.fighters[1].health < first.fighters[1].maxHealth, id);
+        assert.ok(first.fighters.every((f) => [f.x, f.y, f.vx, f.vy, f.health].every(Number.isFinite)), id);
+        assert.deepEqual(events, repeat, `${id} cues`);
+        assert.deepEqual(captureReplayFrame(first), captureReplayFrame(second), `${id} live geometry`);
+    }
+    const sequence = (seed) => eventsOverSeconds(showcaseDuel("origami", seed), 24)
+        .filter((e) => e.type === "classic-showcase-cue" && e.fighterType === "origami" && e.phase === "tell")
+        .map((e) => e.move);
+    assert.notDeepEqual(sequence(41), sequence(62), "another seed changes the move order");
+});
+
+test("A Kratos blade damages contact once per swing and misses a fighter off its path", () => {
+    const sim = showcaseDuel("kratos");
+    reachShowcase(sim, (s) => s.fighters[0].classicShowcase.move?.key === "chaos-chain"
+        && s.fighters[0].classicShowcase.move.phase === "active");
+    const [kratos, target] = sim.fighters;
+    const pose = kratos.classicShowcase.move.pose[0];
+    Object.assign(target, { x: pose.x2, y: pose.y2, vx: 0, vy: 0, stunUntil: sim.time + 1, classicDashCharges: 0 });
+    const before = target.health;
+    step(sim);
+    assert.equal(before - target.health, 10);
+    step(sim, 3);
+    assert.equal(before - target.health, 10, "holding contact cannot repeat the same blade damage");
+    const miss = showcaseDuel("kratos");
+    reachShowcase(miss, (s) => s.fighters[0].classicShowcase.move?.key === "chaos-chain"
+        && s.fighters[0].classicShowcase.move.phase === "active");
+    Object.assign(miss.fighters[1], { x: 60, y: 60, vx: 0, vy: 0, stunUntil: miss.time + 1 });
+    const health = miss.fighters[1].health;
+    step(miss, 8);
+    assert.equal(miss.fighters[1].health, health);
+});
+
+test("Strange portals redirect hostile shots and one real fighter, with a reentry cooldown", () => {
+    const sim = showcaseDuel("doctor-strange");
+    reachShowcase(sim, (s) => s.classicShowcaseEntities.some((e) => e.kind === "sling-portal"));
+    const [strange, opponent] = sim.fighters;
+    const portal = sim.classicShowcaseEntities.find((e) => e.kind === "sling-portal");
+    const shot = {
+        id: "portal-test-shot", kind: "pistol-ammo", ownerId: opponent.id,
+        x: portal.x, y: portal.y, vx: 80, vy: 0, radius: 4, damage: 5,
+        physical: true, solid: true, expiresAt: sim.time + 2,
+    };
+    sim.classicEntities.push(shot);
+    step(sim);
+    assert.ok(shot.classicPortalReadyAt > sim.time);
+    assert.ok(Math.hypot(shot.x - portal.exit.x, shot.y - portal.exit.y) < strange.radius * 2);
+    assert.ok(Math.hypot(shot.x - portal.x, shot.y - portal.y) > strange.radius);
+    Object.assign(opponent, { x: portal.x, y: portal.y, vx: 1, vy: 0, classicDashCharges: 0 });
+    portal.bodyUsed = false;
+    step(sim);
+    assert.equal(portal.bodyUsed, true);
+    assert.ok(opponent.classicPortalReadyAt > sim.time);
+    assert.ok(Math.hypot(opponent.x - portal.exit.x, opponent.y - portal.exit.y) < opponent.radius);
+    assert.ok(sim.events.some((e) => e.type === "classic-showcase-cue" && e.phase === "warp" && e.body));
+});
+
+test("Gambit's planted cards wait for their armed time and explode only in their blast area", () => {
+    const sim = showcaseDuel("gambit");
+    reachShowcase(sim, (s) => s.classicShowcaseEntities.some((e) => e.kind === "charged-card" && e.phase === "armed"));
+    const [gambit, target] = sim.fighters;
+    const card = sim.classicShowcaseEntities.find((e) => e.kind === "charged-card" && e.phase === "armed");
+    card.stuckTo = null;
+    card.armedAt = sim.time + .3;
+    card.expiresAt = sim.time + 2;
+    card.x = 350; card.y = 350;
+    sim.classicShowcaseEntities = [card];
+    gambit.classicShowcase.move = null;
+    gambit.classicAbilityNextAt = Infinity;
+    Object.assign(target, {
+        x: card.x, y: card.y, vx: 0, vy: 0, stunUntil: Infinity, classicDashCharges: 0,
+        classicAbilityNextAt: Infinity, classicPulseMove: null, classicPulseGuardUntil: 0, invulnerableUntil: 0,
+    });
+    const health = target.health;
+    runSeconds(sim, .275);
+    assert.equal(target.health, health);
+    runSeconds(sim, .05);
+    assert.equal(health - target.health, card.damage);
+    assert.ok(!sim.classicShowcaseEntities.includes(card));
+    assert.ok(sim.events.some((e) => e.type === "classic-showcase-cue" && e.phase === "detonate"));
+    const after = target.health;
+    sim.classicShowcaseEntities.push({ ...card, id: "far-card", x: 60, y: 60, armedAt: sim.time, expiresAt: sim.time + 1 });
+    step(sim);
+    assert.equal(target.health, after, "a blast outside the hitbox cannot deal damage");
+});
+
+test("Pinball bumpers change physical momentum and only build combos on actual contact", () => {
+    const sim = showcaseDuel("pinball");
+    reachShowcase(sim, (s) => s.classicShowcaseEntities.some((e) => e.kind === "bumper"));
+    const owner = sim.fighters[0];
+    const bumper = sim.classicShowcaseEntities.find((e) => e.kind === "bumper");
+    const before = owner.classicShowcase.combo;
+    Object.assign(owner, { x: bumper.x + bumper.radius + owner.radius - 1, y: bumper.y, vx: -5, vy: 0 });
+    step(sim);
+    assert.equal(owner.classicShowcase.combo, Math.min(5, before + 1));
+    assert.ok(bumper.litUntil > sim.time);
+    assert.ok(Math.hypot(owner.vx, owner.vy) > owner.baselineSpeed * 2);
+    const combo = owner.classicShowcase.combo;
+    step(sim);
+    assert.equal(owner.classicShowcase.combo, combo, "one contact cannot farm a combo on every fixed tick");
+    owner.classicFrostFrozen = true;
+    Object.assign(owner, { x: bumper.x, y: bumper.y, vx: 0, vy: 0 });
+    const position = [owner.x, owner.y];
+    step(sim);
+    assert.deepEqual([owner.x, owner.y], position, "a bumper cannot move an orb while it is frozen");
+});
+
+test("Rubber's wall launch and Origami's fold use their moving bodies as the damage path", () => {
+    for (const [id, key] of [["rubber", "wall-sling"], ["origami", "paper-plane"]]) {
+        const sim = showcaseDuel(id);
+        reachShowcase(sim, (s) => s.fighters[0].classicShowcase.move?.key === key
+            && s.fighters[0].classicShowcase.move.phase === "active");
+        const fighter = sim.fighters[0];
+        const move = fighter.classicShowcase.move;
+        assert.ok(Math.hypot(fighter.vx, fighter.vy) > fighter.baselineSpeed * 2);
+        assert.ok(move.pose.some((p) => p.shape.endsWith("dash") && p.width === fighter.radius * 2));
+        const snapshot = captureReplayFrame(sim).fighters[0].classicShowcase;
+        assert.equal(snapshot.move.key, key);
+        assert.notEqual(snapshot, fighter.classicShowcase);
+        if (id === "rubber") assert.ok(move.anchor.side, "the stretch is attached to a real wall contact");
+    }
+});
+
+test("A slingshot counts exact body contact consistently despite subpixel rounding", () => {
+    const contactDamage = (offset) => {
+        const sim = showcaseDuel("rubber", 418);
+        reachShowcase(sim, (s) => s.fighters[0].classicShowcase.move?.key === "wall-sling"
+            && s.fighters[0].classicShowcase.move.phase === "active");
+        const [rubber, target] = sim.fighters;
+        Object.assign(rubber, { x: 300, y: 300, vx: 1, vy: 0, baselineSpeed: 1 });
+        rubber.classicShowcase.move.last = { x: rubber.x, y: rubber.y };
+        Object.assign(target, {
+            x: rubber.x + rubber.radius + target.radius + offset, y: rubber.y, vx: 0, vy: 0,
+            stunUntil: Infinity, classicDashCharges: 0, classicPulseGuardUntil: 0,
+            classicPulseMove: null, classicAbilityNextAt: Infinity, invulnerableUntil: 0,
+        });
+        const before = target.health;
+        step(sim);
+        return before - target.health;
+    };
+    assert.equal(contactDamage(-1e-8), 29);
+    assert.equal(contactDamage(1e-8), 29);
+});
+
+test("Sand Pharaoh reforms at its telegraphed exit and its shell intercepts a hostile projectile", () => {
+    const sim = showcaseDuel("sand-pharaoh");
+    reachShowcase(sim, (s) => s.classicShowcaseEntities.some((e) => e.kind === "sand-shell"));
+    const [pharaoh, opponent] = sim.fighters;
+    const move = pharaoh.classicShowcase.move;
+    const shell = sim.classicShowcaseEntities.find((e) => e.kind === "sand-shell");
+    assert.ok(Math.hypot(pharaoh.x - shell.x, pharaoh.y - shell.y) > pharaoh.radius);
+    assert.equal(sim.fighters.length, 2, "the shell is a decoy rather than an extra scored fighter");
+    assert.ok(Math.hypot(pharaoh.x - move.exit.x, pharaoh.y - move.exit.y) < .1);
+    const shot = {
+        id: "shell-test-shot", kind: "pistol-ammo", ownerId: opponent.id,
+        x: shell.x, y: shell.y, vx: 5, vy: 0, radius: 5, damage: 5,
+        physical: true, solid: true, expiresAt: sim.time + 1,
+    };
+    sim.classicEntities.push(shot);
+    const health = pharaoh.health;
+    step(sim);
+    assert.ok(shot.expiresAt <= sim.time);
+    assert.equal(pharaoh.health, health);
+    assert.ok(!sim.classicShowcaseEntities.includes(shell));
+});
 
 function forceWallBounce(sim, fighter, side = "left", verticalVelocity = 0) {
     const bounds = sim.arenaBounds;

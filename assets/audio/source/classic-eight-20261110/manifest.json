@@ -1,0 +1,47 @@
+{
+  "voice": "Alex",
+  "rate": 175,
+  "generator": "scripts/generate-classic-showcase-announcements.mjs",
+  "clips": {
+    "magneto": {
+      "text": "Magneto",
+      "source": "magneto.aiff",
+      "live": "classic-local/magneto.mp3"
+    },
+    "kratos": {
+      "text": "Kratos",
+      "source": "kratos.aiff",
+      "live": "classic-local/kratos.mp3"
+    },
+    "doctor-strange": {
+      "text": "Doctor Strange",
+      "source": "doctor-strange.aiff",
+      "live": "classic-local/doctor-strange.mp3"
+    },
+    "gambit": {
+      "text": "Gambit",
+      "source": "gambit.aiff",
+      "live": "classic-local/gambit.mp3"
+    },
+    "rubber": {
+      "text": "Rubber",
+      "source": "rubber.aiff",
+      "live": "classic-local/rubber.mp3"
+    },
+    "pinball": {
+      "text": "Pinball",
+      "source": "pinball.aiff",
+      "live": "classic-local/pinball.mp3"
+    },
+    "origami": {
+      "text": "Origami",
+      "source": "origami.aiff",
+      "live": "classic-local/origami.mp3"
+    },
+    "sand-pharaoh": {
+      "text": "Sand Pharaoh",
+      "source": "sand-pharaoh.aiff",
+      "live": "classic-local/sand-pharaoh.mp3"
+    }
+  }
+}

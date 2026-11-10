@@ -63,9 +63,10 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261109-classic-publish1";
-import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261109-classic-publish1";
+} from "./classic-orbs.js?v=20261110-eight-fighters1";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-eight-fighters1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-eight-fighters1";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -1376,6 +1377,7 @@ const WORLD_CUP_DELAYED_ITEMS = new Set(["soccer-ball", "yellow-card", "red-card
 const LAST_STAND_HEALTH_RATIO = 0.25;
 const CLASSIC_POWER_COOLDOWN_SECONDS = 12;
 const CLASSIC_DASH_SECONDS = 0.18;
+const CLASSIC_SHOWCASE_CONTACT_EPSILON = 1e-6;
 
 export class SeededRandom {
   constructor(seed = 1) {
@@ -3053,6 +3055,8 @@ export function createSimulation({
     classicPotionTriangles: [],
     classicSliceQueue: [],
     classicEntities: [],
+    classicShowcaseEntities: [],
+    nextClassicShowcaseId: 1,
     classicDots: [],
     // Blue Sun has eight visual rays, but a target standing in overlapping
     // rays still receives one aggregate 3-DPS stream. Each target keeps a
@@ -3129,6 +3133,10 @@ export function createSimulation({
   if (modernClassic && !sim.classicWdcDuel) {
     for (const [index, fighter] of fighters.entries()) {
       fighter.classicDashCharges = 1;
+      if (CLASSIC_SHOWCASE_FIGHTERS[fighter.type]) {
+        fighter.classicAbilityNextAt = 1.15 + (index % 4) * .13;
+        fighter.classicShowcase = { move: null, recent: [], casts: 0, combo: 0, guardCharges: 0 };
+      }
       const profile = (classicPowerMoves ?? classicTeamLayoutEnabled) && CLASSIC_POWER_MOVES[fighter.type];
       if (profile) fighter.classicPowerReadyAt = profile.ready + (index % 5) * 0.12;
     }
@@ -3621,6 +3629,7 @@ export function stepSimulation(sim, dt) {
   resolveClassicSnakeTailHits(sim);
   resolveClassicAttachedWeaponHits(sim);
   updateClassicAbilities(sim, dt);
+  updateClassicShowcaseWorld(sim, dt);
   updateClassicEntities(sim, dt);
   // Entity-owned minions are updated after fighter latches. Re-apply the
   // deterministic moving latch pose for the rendered frame.
@@ -4184,6 +4193,10 @@ function spawnClassicDuplicate(sim, parent) {
 function applyClassicBounceProgression(sim, fighter, wallContact = null) {
   if (sim.gameplayMode !== "classic" || sim.legacyClassicRules || !fighter.alive) return;
   fighter.classicBounces += 1;
+  if (wallContact && sim.time < (fighter.classicShowcaseWallUntil || 0)) {
+    fighter.classicShowcaseWallUntil = 0;
+    deformClassicWall(sim, wallContact, "dent", fighter.radius, Math.atan2(fighter.vy, fighter.vx));
+  }
   if (wallContact) resolveClassicThrownWallImpact(sim, fighter, wallContact);
   if (!fighter.alive) return;
   if (fighter.type === "duplicator") {
@@ -11347,6 +11360,13 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
     fighter.classicPulseBlockedAt = time;
     return true;
   }
+  const showcase = fighter.classicShowcase;
+  if (showcase?.guardCharges > 0 && time < showcase.guardUntil && amount >= 3) {
+    showcase.guardCharges -= 1;
+    fighter.classicPulseBlockedAt = time;
+    classicShowcaseCue(sim, fighter, "iron-halo", "block", fighter, { targetId: source?.id });
+    return true;
+  }
   if (tryClassicReactivePower(sim, fighter, source, amount)) return true;
   let cue;
   const omnitrix = fighter.classicOmnitrix;
@@ -12549,6 +12569,530 @@ function updateClassicSaber(sim, fighter, target, ability) {
   if (fighter.classicSaberMove) fighter.classicSaberLastMove = fighter.classicSaberMove.key;
 }
 
+function classicShowcaseCue(sim, fighter, moveKey, phase, point = fighter, detail = {}) {
+    const profile = CLASSIC_SHOWCASE_MOVES[moveKey];
+    const event = emitEvent(sim, "classic-showcase-cue", {
+        fighterId: fighter.id, move: moveKey, phase, label: profile?.name,
+        x: point.x, y: point.y, ...detail,
+    });
+    if (["hit", "block", "bank", "warp", "reform", "detonate"].includes(phase)) {
+        sim.effects.push({
+            kind: "classic-showcase-impact", fighterType: fighter.type, move: moveKey, phase,
+            x: point.x, y: point.y, radius: detail.radius || fighter.radius,
+            angle: detail.angle || 0, color: moveKey === "leviathan" ? "#b7edff" : CLASSIC_SHOWCASE_FIGHTERS[fighter.type].accent,
+            life: phase === "reform" ? .58 : .38, maxLife: phase === "reform" ? .58 : .38,
+        });
+    }
+    return event;
+}
+
+function addClassicShowcaseEntity(sim, fighter, kind, detail) {
+    const entity = {
+        id: `showcase-${sim.nextClassicShowcaseId++}`, kind, ownerId: fighter.id,
+        fighterType: fighter.type, at: sim.time, expiresAt: sim.time + 3,
+        radius: fighter.radius * .28, vx: 0, vy: 0, hits: {}, ...detail,
+    };
+    sim.classicShowcaseEntities.push(entity);
+    return entity;
+}
+
+function classicShowcaseHit(sim, fighter, target, amount, key, point = target, detail = {}) {
+    if (!classicCombatantIsAlive(sim, target)) return 0;
+    const dealt = damage(sim, target, amount, fighter.id, CLASSIC_SHOWCASE_MOVES[key].name, "classic-showcase", "critical");
+    if (dealt <= 0) return 0;
+    classicShowcaseCue(sim, fighter, key, "hit", point, { targetId: target.id, amount: dealt, ...detail });
+    return dealt;
+}
+
+function classicShowcaseAim(sim, fighter, target, lead = .16) {
+    return clampPointToArena(sim, target.x + target.vx * lead, target.y + target.vy * lead, target.radius);
+}
+
+function prepareClassicShowcasePlacement(sim, fighter, move) {
+    const r = fighter.radius;
+    if (move.key === "bumper-run" || move.key === "royal-flush") {
+        const bumper = move.key === "bumper-run";
+        move.nodes = Array.from({ length: bumper ? 3 : 5 }, (_, index) => {
+            const angle = move.angle + (bumper ? index * TAU / 3 : (index - 2) * .52);
+            const reach = r * (bumper ? 3.1 : 2.3);
+            return {
+                ...clampPointToArena(sim, move.mark.x + Math.cos(angle) * reach, move.mark.y + Math.sin(angle) * reach, r * (bumper ? 1.25 : .4)),
+                angle,
+            };
+        });
+    } else if (move.key === "sling-ring") {
+        const entry = clampPointToArena(sim, fighter.x + Math.cos(move.angle) * r * 2.5, fighter.y + Math.sin(move.angle) * r * 2.5, r * 1.25);
+        const exits = [Math.PI, Math.PI / 2, -Math.PI / 2, 0].map((offset) => clampPointToArena(sim,
+            move.mark.x + Math.cos(move.angle + offset) * r * 2.9,
+            move.mark.y + Math.sin(move.angle + offset) * r * 2.9, r * 1.25));
+        const distance = (point) => Math.hypot(point.x - entry.x, point.y - entry.y);
+        const exit = distance(exits[0]) >= r * 4 ? exits[0]
+            : exits.reduce((best, point) => distance(point) - distance(best) > 1e-6 ? point : best);
+        move.portals = [entry, exit];
+    }
+}
+
+function startClassicShowcaseMove(sim, fighter, target) {
+    const state = fighter.classicShowcase;
+    const definition = CLASSIC_SHOWCASE_FIGHTERS[fighter.type];
+    const distance = Math.hypot(target.x - fighter.x, target.y - fighter.y) / fighter.radius;
+    const pool = definition.moves.filter((key) => {
+        const profile = CLASSIC_SHOWCASE_MOVES[key];
+        if (profile.near && distance > profile.near + 1) return false;
+        if (key === "bank-shot") return sim.classicShowcaseEntities.some((e) => e.kind === "bumper" && e.ownerId === fighter.id && e.expiresAt > sim.time);
+        return true;
+    });
+    const weights = pool.map((key) => state.recent.at(-1) === key ? .15 : state.recent.includes(key) ? .72 : 1);
+    let pick = sim.rng.range(0, weights.reduce((sum, weight) => sum + weight, 0));
+    let key = pool[0];
+    for (let index = 0; index < pool.length; index += 1) {
+        pick -= weights[index];
+        if (pick <= 0) { key = pool[index]; break; }
+    }
+    const profile = CLASSIC_SHOWCASE_MOVES[key];
+    const mark = classicShowcaseAim(sim, fighter, target);
+    const angle = Math.atan2(mark.y - fighter.y, mark.x - fighter.x);
+    const move = {
+        key, at: sim.time, activeAt: sim.time + profile.tell,
+        endAt: sim.time + profile.tell + profile.duration, phase: "tell",
+        targetId: target.id, angle, mark, origin: { x: fighter.x, y: fighter.y },
+        last: { x: fighter.x, y: fighter.y }, hits: {}, shots: 0, pose: [],
+    };
+    if (key === "wall-sling") move.anchor = classicWallContactFor(sim, fighter);
+    if (key === "mirage-step") {
+        const side = sim.rng.next() > .5 ? 1 : -1;
+        move.exit = clampPointToArena(sim,
+            mark.x + Math.cos(angle + side * Math.PI * .65) * fighter.radius * 2.8,
+            mark.y + Math.sin(angle + side * Math.PI * .65) * fighter.radius * 2.8, fighter.radius);
+    }
+    prepareClassicShowcasePlacement(sim, fighter, move);
+    state.move = move;
+    state.casts += 1;
+    state.recent = [...state.recent, key].slice(-2);
+    fighter.classicAbilityUses += 1;
+    fighter.classicAbilityNextAt = move.endAt + profile.cooldown * sim.rng.range(.90, 1.12);
+    state.cooldownStartedAt = move.endAt;
+    fighter.classicAbilityActiveUntil = move.endAt;
+    classicShowcaseCue(sim, fighter, key, "tell", fighter, { targetId: target.id, angle, mark: { ...mark } });
+    return move;
+}
+
+function classicShowcaseProjectile(sim, fighter, move, kind, angle, detail = {}) {
+    const r = fighter.radius;
+    const speed = detail.speed || 620;
+    const origin = detail.origin || { x: fighter.x + Math.cos(angle) * r * 1.28, y: fighter.y + Math.sin(angle) * r * 1.28 };
+    return addClassicShowcaseEntity(sim, fighter, kind, {
+        move: move.key, x: origin.x, y: origin.y, previousX: origin.x, previousY: origin.y,
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, speed,
+        angle, targetId: move.targetId, damage: 10, phase: "outbound",
+        expiresAt: sim.time + 2.8, ...detail,
+    });
+}
+
+function classicShowcasePortals(sim, fighter, move) {
+    const r = fighter.radius;
+    const [entry, exit] = move.portals;
+    addClassicShowcaseEntity(sim, fighter, "sling-portal", {
+        move: move.key, ...entry, radius: r * 1.25, exit, angle: move.angle,
+        exitAngle: Math.atan2(move.mark.y - exit.y, move.mark.x - exit.x), bodyUsed: false,
+        expiresAt: sim.time + 2.65,
+    });
+}
+
+function releaseClassicShowcaseMove(sim, fighter, move) {
+    const r = fighter.radius;
+    move.phase = "active";
+    classicShowcaseCue(sim, fighter, move.key, "release", fighter, { angle: move.angle });
+    if (move.key === "iron-halo") {
+        fighter.classicShowcase.guardCharges = 2;
+        fighter.classicShowcase.guardUntil = sim.time + .92;
+    } else if (move.key === "leviathan") {
+        classicShowcaseProjectile(sim, fighter, move, "chaos-axe", move.angle, { damage: 15, returnDamage: 18, radius: r * .65, returnAt: sim.time + .55 });
+    } else if (move.key === "sling-ring") {
+        classicShowcasePortals(sim, fighter, move);
+    } else if (move.key === "royal-flush") {
+        for (const [index, point] of move.nodes.entries()) {
+            addClassicShowcaseEntity(sim, fighter, "charged-card", {
+                ...point, move: move.key, phase: "armed", damage: 10,
+                radius: r * .4, blastRadius: r * 2.15, armedAt: sim.time + .48 + index * .20,
+            });
+        }
+    } else if (move.key === "bumper-run") {
+        sim.classicShowcaseEntities = sim.classicShowcaseEntities.filter((e) => e.ownerId !== fighter.id || e.kind !== "bumper");
+        fighter.classicShowcase.combo = 0;
+        for (const [index, p] of move.nodes.entries()) {
+            addClassicShowcaseEntity(sim, fighter, "bumper", {
+                ...p, move: move.key, radius: r * 1.05, index,
+                cooldowns: {}, expiresAt: sim.time + 7.8,
+            });
+        }
+        const first = sim.classicShowcaseEntities.find((e) => e.kind === "bumper" && e.ownerId === fighter.id);
+        if (first) move.angle = Math.atan2(first.y - fighter.y, first.x - fighter.x);
+        launchClassicPulseTarget(sim, fighter, move.angle, 2.3);
+        fighter.classicPulseLaunchUntil = move.endAt;
+    } else if (["wall-sling", "paper-plane", "bank-shot"].includes(move.key)) {
+        if (move.key === "bank-shot") move.angle = Math.atan2(move.mark.y - fighter.y, move.mark.x - fighter.x);
+        launchClassicPulseTarget(sim, fighter, move.angle, move.key === "wall-sling" ? 3.3 : 2.85);
+        fighter.classicPulseLaunchUntil = move.endAt;
+    } else if (move.key === "paper-return") {
+        classicShowcaseProjectile(sim, fighter, move, "paper-boomerang", move.angle, {
+            radius: r * .7, damage: 11, returnDamage: 15, returnAt: sim.time + .51, speed: 570,
+        });
+    } else if (move.key === "mirage-step") {
+        const from = { x: fighter.x, y: fighter.y };
+        addClassicShowcaseEntity(sim, fighter, "sand-shell", {
+            ...from, move: move.key, radius: r, expiresAt: sim.time + 2.6,
+        });
+        Object.assign(fighter, move.exit);
+        move.angle = Math.atan2(move.mark.y - fighter.y, move.mark.x - fighter.x);
+        move.last = { x: fighter.x, y: fighter.y };
+        classicShowcaseCue(sim, fighter, move.key, "reform", fighter, { from, angle: move.angle });
+    }
+}
+
+// These shapes are the live collision geometry and the renderer's only source
+// for the attack pose. A missed blade, fist, or shock front never changes HP.
+export function classicShowcasePose(fighter, time) {
+    const move = fighter.classicShowcase?.move;
+    if (!move || time < move.activeAt || time > move.endAt) return [];
+    const r = fighter.radius;
+    const t = time - move.activeAt;
+    const duration = move.endAt - move.activeAt;
+    const line = (key, angle, reach, width, damage, shape = "blade") => ({
+        key, shape, x1: fighter.x + Math.cos(angle) * r * .65, y1: fighter.y + Math.sin(angle) * r * .65,
+        x2: fighter.x + Math.cos(angle) * reach, y2: fighter.y + Math.sin(angle) * reach,
+        width, damage, angle,
+    });
+    if (move.key === "rail-spear") {
+        return [-1, 0, 1].flatMap((index) => {
+            const age = t - (index + 1) * .16;
+            if (age < 0 || age > .25) return [];
+            const cross = move.angle + Math.PI / 2;
+            const offset = index * r * 1.7;
+            return [{
+                key: `rail-${index}`, shape: "rail",
+                x1: move.origin.x + Math.cos(cross) * offset, y1: move.origin.y + Math.sin(cross) * offset,
+                x2: move.mark.x + Math.cos(move.angle) * r * 5 + Math.cos(cross) * offset,
+                y2: move.mark.y + Math.sin(move.angle) * r * 5 + Math.sin(cross) * offset,
+                width: r * .55, damage: 13, angle: move.angle,
+            }];
+        });
+    }
+    if (move.key === "chaos-chain") {
+        if (t < .64) {
+            const strike = t < .32 ? 0 : 1;
+            const p = (t - strike * .32) / .32;
+            const a = move.angle + (strike ? 1 : -1) * (1.3 - p * 2.6);
+            return [line(`chain-${strike}`, a, r * (2.2 + Math.sin(p * Math.PI) * 4.3), r * .72, 10, "chain")];
+        }
+        if (t > .90 && t < 1.08) return [{ key: "slam", shape: "slam", x: fighter.x, y: fighter.y, radius: r * 3.05, damage: 23, angle: move.angle }];
+    }
+    if (move.key === "mirror-mandala") {
+        const p = t / duration;
+        return [{ key: "mandala", shape: "ring", x: fighter.x, y: fighter.y, radius: r * (1.7 + p * 9.4), width: r * .8, damage: 23, angle: move.angle + p * Math.PI }];
+    }
+    if (move.key === "bo-staff") {
+        const strike = t < .39 ? 0 : 1;
+        const p = (t - strike * .39) / .39;
+        return [line(`staff-${strike}`, move.angle + (strike ? 1 : -1) * (1.45 - p * 2.9), r * 4.9, r * .58, strike ? 15 : 9, "staff")];
+    }
+    if (move.key === "elastic-fist") {
+        const strike = t < .39 ? 0 : 1;
+        const p = (t - strike * .39) / .39;
+        return [line(`fist-${strike}`, move.angle + (strike ? .22 : -.22), r * (1.4 + Math.sin(Math.min(1, p) * Math.PI) * 7), r * 1.3, strike ? 14 : 11, "fist")];
+    }
+    if (["wall-sling", "paper-plane", "bank-shot", "bumper-run"].includes(move.key)) {
+        return [{
+            key: "dash", shape: move.key === "paper-plane" ? "paper-dash" : "body-dash",
+            x1: move.last.x, y1: move.last.y, x2: fighter.x, y2: fighter.y,
+            width: r * 2, angle: Math.atan2(fighter.vy, fighter.vx),
+            damage: move.key === "wall-sling" ? 29 : move.key === "paper-plane" ? 21
+                : 14 + Math.min(5, fighter.classicShowcase.combo) * 4,
+        }];
+    }
+    if (move.key === "mirage-step" && t > .18 && t < .69) {
+        const p = (t - .18) / .51;
+        return [line("khopesh", move.angle - 1.3 + p * 2.6, r * 4.55, r * .8, 26, "khopesh")];
+    }
+    return [];
+}
+
+function classicShowcaseSegmentTouches(segment, target) {
+    const point = closestPointOnSegment(target.x, target.y, segment);
+    // Body collisions separate two touching orbs before a dash resolves.
+    // Count that exact contact consistently across Node and browser V8.
+    return Math.hypot(target.x - point.x, target.y - point.y)
+        <= target.radius + segment.width * .5 + CLASSIC_SHOWCASE_CONTACT_EPSILON;
+}
+
+function resolveClassicShowcasePose(sim, fighter, move) {
+    move.pose = classicShowcasePose(fighter, sim.time);
+    for (const shape of move.pose) {
+        for (const target of classicCombatTargets(sim, fighter)) {
+            const hitKey = `${shape.key}:${target.id}`;
+            if (move.hits[hitKey]) continue;
+            const distance = Math.hypot(target.x - shape.x, target.y - shape.y);
+            const touches = shape.shape === "ring"
+                ? Math.abs(distance - shape.radius) <= target.radius + shape.width * .5 + CLASSIC_SHOWCASE_CONTACT_EPSILON
+                : shape.shape === "slam" ? distance <= target.radius + shape.radius + CLASSIC_SHOWCASE_CONTACT_EPSILON
+                    : classicShowcaseSegmentTouches(shape, target);
+            if (!touches) continue;
+            move.hits[hitKey] = true;
+            const dealt = classicShowcaseHit(sim, fighter, target, shape.damage, move.key, target, { strike: shape.key, angle: shape.angle });
+            if (dealt <= 0 || !target.alive) continue;
+            if (shape.shape === "chain") move.hookTargetId = target.id;
+            if (["slam", "body-dash", "paper-dash"].includes(shape.shape)) {
+                launchClassicPulseTarget(sim, target, shape.angle, 2.1);
+                target.classicShowcaseWallUntil = sim.time + .75;
+            }
+        }
+    }
+}
+
+function updateClassicShowcaseFighter(sim, fighter, target, dt) {
+    const state = fighter.classicShowcase;
+    if (!state) return;
+    if (sim.time >= (state.guardUntil || 0)) state.guardCharges = 0;
+    if (sim.time < fighter.stunUntil || fighter.classicFrostFrozen) return;
+    let move = state.move;
+    if (move && sim.time >= move.endAt) {
+        classicShowcaseCue(sim, fighter, move.key, "recover");
+        state.move = move = null;
+    }
+    if (!move) {
+        if (!target || sim.time < fighter.classicAbilityNextAt) return;
+        move = startClassicShowcaseMove(sim, fighter, target);
+    }
+    const r = fighter.radius;
+    if (move.phase === "tell") {
+        if (target?.alive && sim.time < move.activeAt - .14) {
+            move.mark = classicShowcaseAim(sim, fighter, target);
+            if (move.key !== "wall-sling") move.angle = Math.atan2(move.mark.y - fighter.y, move.mark.x - fighter.x);
+            prepareClassicShowcasePlacement(sim, fighter, move);
+        }
+        if (move.key === "wall-sling") {
+            const angle = Math.atan2(move.anchor.y - fighter.y, move.anchor.x - fighter.x);
+            fighter.vx = Math.cos(angle) * fighter.baselineSpeed * .42;
+            fighter.vy = Math.sin(angle) * fighter.baselineSpeed * .42;
+        }
+        if (sim.time < move.activeAt) return;
+        if (move.key === "wall-sling") move.angle = Math.atan2(move.mark.y - fighter.y, move.mark.x - fighter.x);
+        releaseClassicShowcaseMove(sim, fighter, move);
+    }
+    const elapsed = sim.time - move.activeAt;
+    if (move.key === "iron-halo" && elapsed >= .89 && !move.shots) {
+        move.shots = 3;
+        state.guardCharges = 0;
+        const focus = classicCombatantById(sim, move.targetId);
+        if (focus?.alive) move.angle = classicPulseAim(fighter, focus, .18);
+        for (const offset of [-.22, 0, .22]) classicShowcaseProjectile(sim, fighter, move, "metal-shard", move.angle + offset, { damage: 13, radius: r * .32 });
+        classicShowcaseCue(sim, fighter, move.key, "fan", fighter, { angle: move.angle });
+    }
+    const volley = move.key === "charged-deck" ? { kind: "charged-card", count: 3, spacing: .16, damage: 3 }
+        : move.key === "sling-ring" ? { kind: "arcane-bolt", count: 3, spacing: .18, damage: 12 }
+            : move.key === "crane-flight" ? { kind: "paper-crane", count: 3, spacing: .18, damage: 10 }
+                : move.key === "scarab-cavalcade" ? { kind: "scarab", count: 5, spacing: .13, damage: 8 } : null;
+    if (volley && move.shots < volley.count && elapsed >= move.shots * volley.spacing) {
+        const index = move.shots++;
+        const offset = (index - (volley.count - 1) / 2) * (volley.kind === "scarab" ? .32 : .13);
+        classicShowcaseProjectile(sim, fighter, move, volley.kind, move.angle + offset, {
+            damage: volley.damage, radius: r * (volley.kind === "scarab" ? .27 : .33),
+            speed: volley.kind === "scarab" ? 340 : volley.kind === "paper-crane" ? 420 : 640,
+            ...(volley.kind === "charged-card" ? { blastRadius: r * 2.05 } : {}),
+        });
+        classicShowcaseCue(sim, fighter, move.key, "shot", fighter, { index, angle: move.angle + offset });
+    }
+    if (move.key === "chaos-chain" && elapsed > .52 && elapsed < .91) {
+        const hooked = classicCombatantById(sim, move.hookTargetId);
+        if (hooked?.alive && !hooked.classicFrostFrozen && sim.time >= (hooked.stunUntil || 0) && !classicAbilityHeld(hooked, sim.time)) {
+            const angle = Math.atan2(fighter.y - hooked.y, fighter.x - hooked.x);
+            launchClassicPulseTarget(sim, hooked, angle, 1.5);
+            launchClassicPulseTarget(sim, fighter, angle + Math.PI, 1.7);
+        }
+    }
+    resolveClassicShowcasePose(sim, fighter, move);
+    move.last = { x: fighter.x, y: fighter.y };
+}
+
+function classicShowcaseWarp(sim, entity, portal, fighter = null) {
+    if (sim.time < (entity.classicPortalReadyAt || 0)) return false;
+    const radius = fighter ? fighter.radius * .2 : (entity.radius || 2);
+    if (Math.hypot(entity.x - portal.x, entity.y - portal.y) > portal.radius + radius + CLASSIC_SHOWCASE_CONTACT_EPSILON) return false;
+    const from = { x: entity.x, y: entity.y };
+    const turn = portal.exitAngle - portal.angle;
+    const speed = Math.hypot(entity.vx, entity.vy);
+    const angle = Math.atan2(entity.vy, entity.vx) + turn;
+    Object.assign(entity, {
+        x: portal.exit.x + Math.cos(portal.exitAngle) * (fighter ? fighter.radius * .2 : portal.radius * .75),
+        y: portal.exit.y + Math.sin(portal.exitAngle) * (fighter ? fighter.radius * .2 : portal.radius * .75),
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        angle,
+        classicPortalReadyAt: sim.time + .72,
+    });
+    if (fighter) Object.assign(entity, clampPointToArena(sim, entity.x, entity.y, fighter.radius));
+    entity.previousX = entity.x;
+    entity.previousY = entity.y;
+    const owner = sim.fighters.find((f) => f.id === portal.ownerId);
+    classicShowcaseCue(sim, owner, "sling-ring", "warp", entity, { from, entityId: entity.id, body: Boolean(fighter) });
+    return true;
+}
+
+function updateClassicShowcasePortals(sim, portal) {
+    const projectiles = [
+        ...sim.classicShowcaseEntities.filter((e) => e.kind !== "sling-portal" && Math.hypot(e.vx, e.vy) > 1),
+        ...sim.classicEntities.filter((e) => e.physical && Math.hypot(e.vx, e.vy) > 1),
+        ...sim.projectiles,
+    ];
+    for (const projectile of projectiles) classicShowcaseWarp(sim, projectile, portal);
+    if (portal.bodyUsed) return;
+    for (const fighter of sim.fighters) {
+        if (!fighter.alive || fighter.classicWdcReserve || fighter.classicCannonOutside || fighter.classicFrostFrozen
+            || sim.time < fighter.stunUntil || classicFighterActionLocked(sim, fighter)) continue;
+        if (classicShowcaseWarp(sim, fighter, portal, fighter)) {
+            portal.bodyUsed = true;
+            break;
+        }
+    }
+}
+
+function updateClassicShowcaseBumper(sim, owner, bumper) {
+    for (const fighter of sim.fighters) {
+        if (!fighter.alive || fighter.classicWdcReserve || fighter.classicFrostFrozen
+            || sim.time < fighter.stunUntil || classicAbilityHeld(fighter, sim.time)) continue;
+        if (sim.time < (bumper.cooldowns[fighter.id] || 0)) continue;
+        const dx = fighter.x - bumper.x;
+        const dy = fighter.y - bumper.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        if (distance > fighter.radius + bumper.radius + CLASSIC_SHOWCASE_CONTACT_EPSILON) continue;
+        bumper.cooldowns[fighter.id] = sim.time + .28;
+        bumper.litUntil = sim.time + .32;
+        const normal = Math.atan2(dy, dx);
+        const overlap = fighter.radius + bumper.radius - distance + 1;
+        Object.assign(fighter, clampPointToArena(sim, fighter.x + dx / distance * overlap, fighter.y + dy / distance * overlap, fighter.radius));
+        if (fighter.id === owner.id) {
+            owner.classicShowcase.combo = Math.min(5, owner.classicShowcase.combo + 1);
+            const target = nearestClassicOpponent(sim, fighter);
+            const other = sim.classicShowcaseEntities.find((e) => e.kind === "bumper" && e.ownerId === owner.id && e.index === (bumper.index + 1) % 3);
+            const aim = owner.classicShowcase.combo < 3 && other ? other : target;
+            const angle = aim ? Math.atan2(aim.y - fighter.y, aim.x - fighter.x) : normal;
+            launchClassicPulseTarget(sim, fighter, angle, 2.2 + owner.classicShowcase.combo * .15);
+            fighter.classicPulseLaunchUntil = sim.time + .65;
+            classicShowcaseCue(sim, owner, "bumper-run", "bank", bumper, { combo: owner.classicShowcase.combo });
+        } else {
+            launchClassicPulseTarget(sim, fighter, normal, 1.9);
+            if (classicCombatantIsEnemy(sim, owner, fighter)) classicShowcaseHit(sim, owner, fighter, 7, "bumper-run", bumper);
+        }
+    }
+}
+
+function updateClassicShowcaseShot(sim, owner, entity, dt) {
+    const previous = { x: entity.x, y: entity.y };
+    const returning = entity.kind === "chaos-axe" || entity.kind === "paper-boomerang";
+    if (returning && entity.phase !== "returning" && sim.time >= entity.returnAt) {
+        entity.phase = "returning";
+        classicShowcaseCue(sim, owner, entity.move, "return", entity);
+    }
+    if (entity.phase === "armed") {
+        const target = classicCombatantById(sim, entity.stuckTo);
+        if (target?.alive) {
+            entity.x = target.x + Math.cos(entity.stickAngle) * target.radius * .75;
+            entity.y = target.y + Math.sin(entity.stickAngle) * target.radius * .75;
+        }
+        if (sim.time < entity.armedAt) return;
+        classicShowcaseCue(sim, owner, entity.move, "detonate", entity, { radius: entity.blastRadius });
+        for (const enemy of classicCombatTargets(sim, owner)) {
+            if (Math.hypot(enemy.x - entity.x, enemy.y - entity.y) <= entity.blastRadius + enemy.radius + CLASSIC_SHOWCASE_CONTACT_EPSILON) {
+                classicShowcaseHit(sim, owner, enemy, entity.damage, entity.move, entity);
+            }
+        }
+        entity.expiresAt = sim.time;
+        return;
+    }
+    if (entity.phase === "returning" || ["scarab", "paper-crane"].includes(entity.kind)) {
+        const target = entity.phase === "returning" ? owner : classicCombatantById(sim, entity.targetId);
+        if (target?.alive) {
+            const desired = Math.atan2(target.y - entity.y, target.x - entity.x);
+            const current = Math.atan2(entity.vy, entity.vx);
+            const delta = Math.atan2(Math.sin(desired - current), Math.cos(desired - current));
+            const angle = current + clamp(delta, -(returning ? 8 : 2.6) * dt, (returning ? 8 : 2.6) * dt);
+            entity.vx = Math.cos(angle) * entity.speed;
+            entity.vy = Math.sin(angle) * entity.speed;
+        }
+    }
+    entity.x += entity.vx * dt;
+    entity.y += entity.vy * dt;
+    entity.angle = Math.atan2(entity.vy, entity.vx);
+    const segment = { x1: previous.x, y1: previous.y, x2: entity.x, y2: entity.y, width: entity.radius * 2 };
+    for (const target of classicCombatTargets(sim, owner)) {
+        const key = `${entity.phase}:${target.id}`;
+        if (entity.hits[key] || !classicShowcaseSegmentTouches(segment, target)) continue;
+        entity.hits[key] = true;
+        const card = entity.kind === "charged-card";
+        const dealt = classicShowcaseHit(sim, owner, target, card ? 3 : entity.phase === "returning" ? entity.returnDamage : entity.damage,
+            entity.move, target, { projectileKind: entity.kind, phaseOfShot: entity.phase });
+        if (card) {
+            if (dealt <= 0) { entity.expiresAt = sim.time; break; }
+            entity.phase = "armed";
+            entity.stuckTo = target.id;
+            entity.stickAngle = entity.angle;
+            entity.armedAt = sim.time + 1.05;
+            entity.expiresAt = entity.armedAt + .15;
+            entity.damage = 11;
+            entity.vx = entity.vy = 0;
+            classicShowcaseCue(sim, owner, entity.move, "stick", entity, { targetId: target.id });
+        } else if (!returning) entity.expiresAt = sim.time;
+        break;
+    }
+    if (entity.phase === "returning" && Math.hypot(entity.x - owner.x, entity.y - owner.y) < owner.radius + entity.radius) {
+        entity.expiresAt = sim.time;
+        classicShowcaseCue(sim, owner, entity.move, "catch", owner);
+    }
+    if (projectileOutsideArena(sim, entity)) {
+        const point = clampPointToArena(sim, entity.x, entity.y, entity.radius);
+        Object.assign(entity, point);
+        if (entity.kind === "charged-card") {
+            entity.phase = "armed";
+            entity.armedAt = sim.time + .80;
+            entity.expiresAt = entity.armedAt + .15;
+            entity.damage = 11;
+            entity.vx = entity.vy = 0;
+            classicShowcaseCue(sim, owner, entity.move, "stick", entity);
+        } else if (returning) {
+            if (entity.phase !== "returning") classicShowcaseCue(sim, owner, entity.move, "return", entity);
+            entity.phase = "returning";
+            entity.vx *= -1;
+            entity.vy *= -1;
+        } else entity.expiresAt = sim.time;
+    }
+    entity.previousX = previous.x;
+    entity.previousY = previous.y;
+}
+
+function updateClassicShowcaseWorld(sim, dt) {
+    if (sim.gameplayMode !== "classic" || sim.legacyClassicRules || sim.classicWdcDuel) return;
+    for (const entity of sim.classicShowcaseEntities) {
+        const owner = sim.fighters.find((fighter) => fighter.id === entity.ownerId);
+        if (!owner?.alive || sim.time >= entity.expiresAt) continue;
+        if (entity.kind === "sling-portal") updateClassicShowcasePortals(sim, entity);
+        else if (entity.kind === "bumper") updateClassicShowcaseBumper(sim, owner, entity);
+        else if (entity.kind === "sand-shell") {
+            const shots = [...sim.classicEntities, ...sim.classicShowcaseEntities];
+            for (const shot of shots) {
+                if (shot.ownerId === owner.id || Math.hypot(shot.vx || 0, shot.vy || 0) < 1 || shot.expiresAt <= sim.time) continue;
+                const source = sim.fighters.find((f) => f.id === shot.ownerId);
+                if (!source || source.classicTeamIndex === owner.classicTeamIndex) continue;
+                if (Math.hypot(shot.x - entity.x, shot.y - entity.y) > entity.radius + (shot.radius || 0)) continue;
+                shot.expiresAt = entity.expiresAt = sim.time;
+                classicShowcaseCue(sim, owner, "mirage-step", "block", entity);
+                break;
+            }
+        } else if (!classicVampireLatchBlocksAttacker(sim, owner)) updateClassicShowcaseShot(sim, owner, entity, dt);
+    }
+    sim.classicShowcaseEntities = sim.classicShowcaseEntities.filter((entity) => (
+        entity.expiresAt > sim.time && sim.fighters.some((f) => f.id === entity.ownerId && f.alive)
+    )).slice(-400);
+}
+
 const CLASSIC_PULSE_UPDATES = {
   gojo: updateClassicGojo,
   "john-rod": updateClassicJohnRod,
@@ -12605,6 +13149,10 @@ function updateClassicAbilities(sim, dt) {
     }
     if (!vampireLatchSuppressesAttack && updateClassicPowerMove(sim, fighter, liveTarget, dt)) continue;
     if (!ability.kind) continue;
+    if (ability.kind === "showcase") {
+      if (!vampireLatchSuppressesAttack) updateClassicShowcaseFighter(sim, fighter, liveTarget, dt);
+      continue;
+    }
     if (fighter.type === "hydrogen-bomb") {
       const countdownSeconds = Math.max(0.1, Number(ability.duration) || 60);
       if (!fighter.classicHydrogenCountdownStarted) {
@@ -27006,6 +27554,9 @@ export function captureReplayFrame(sim) {
     finished: sim.finished,
     winnerId: sim.winner?.id ?? null,
     ...(sim.classicDraw ? { classicDraw: sim.classicDraw } : {}),
+    ...(sim.classicShowcaseEntities?.length ? {
+      classicShowcaseEntities: structuredClone(sim.classicShowcaseEntities),
+    } : {}),
     ...(sim.classicWdcDuel ? {
       classicWdcDuel: { ...sim.classicWdcDuel, effects: [...sim.classicWdcDuel.effects] },
     } : {}),
@@ -27171,6 +27722,7 @@ export function captureReplayFrame(sim) {
       classicAbilityKind: fighter.classicAbilityKind,
       classicAbilityUses: fighter.classicAbilityUses,
       classicAbilityNextAt: fighter.classicAbilityNextAt,
+      ...(fighter.classicShowcase ? { classicShowcase: structuredClone(fighter.classicShowcase) } : {}),
       classicReactorCharge: fighter.classicReactorCharge,
       classicReactorChargePercent: fighter.classicReactorChargePercent,
       classicReactorColor: fighter.classicReactorColor,

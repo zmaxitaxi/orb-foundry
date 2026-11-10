@@ -73,9 +73,10 @@ and settings must replay the same fight. See the
 
 ### New fighter ideas
 
-These are proposals, not implemented fighters. Keep the current Classic
-standard: a simple body, a readable tell, visible travel, contact damage,
-and a distinct impact sound.
+These eight fighters were implemented on November 10, 2026. Their live
+move sets are recorded in the [roster](CLASSIC_ROSTER.md#eight-additional-fighters).
+Keep the current Classic standard when tuning them: a simple body, a
+readable tell, visible travel, contact damage, and a distinct impact sound.
 
 | Fighter | Signature idea | Visual payoff |
 | --- | --- | --- |
@@ -88,7 +89,7 @@ and a distinct impact sound.
 | Origami | Fold into a paper plane for a piercing pass, then return as a boomerang. | Clear fold lines and a single sharp paper trail instead of particle clutter. |
 | Sand Pharaoh | Leave a sand shell as a decoy and reform at its marked exit for a staff strike. | The shell breaks into a brief low dust arc while the real body reforms. |
 
-Start with Magneto, Kratos, or Doctor Strange for recognizable matchups,
+Test Magneto, Kratos, or Doctor Strange for recognizable matchups,
 and Rubber or Pinball for a distinctive Orb Foundry mechanic. Gameplay
 still chooses the outcome; the attack animation must follow the live hitbox.
 

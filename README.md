@@ -66,6 +66,29 @@ and weapons in live fights and the authored showcase.
 Snowball packs snow on wall bounces and launches a ricocheting Avalanche
 every third bounce. The shards deal damage on contact.
 
+Eight more fighters use seeded move pools and original animated weapons:
+
+- **Magneto:** Iron Halo blocks two solid hits, then launches metal shards.
+  Rail Spear telegraphs three staggered metal lanes.
+- **Kratos:** Blades of Chaos chain two swings into a pull and slam.
+  Leviathan travels outward and curves back for another possible hit.
+- **Doctor Strange:** Sling Ring redirects moving shots and one fighter
+  through separated portals. Mirror Mandala expands as a damaging edge.
+- **Gambit:** spinning cards stick and explode after a delay; Royal Flush
+  plants five marked blasts. A nearby opponent can face a two-swing staff combo.
+- **Rubber:** winds against a real wall before a slingshot, or extends a fist
+  for a two-pass attack. Its body visibly stretches along the movement.
+- **Pinball:** deploys three physical bumpers. Actual bank contacts build
+  its combo and strengthen the next body strike.
+- **Origami:** folds into a piercing paper plane, throws a returning paper
+  boomerang, and launches three homing cranes.
+- **Sand Pharaoh:** leaves an intercepting sand shell, reforms at a visible
+  exit mark, and swings a khopesh. Five flying scarabs provide a ranged move.
+
+They work in Classic teams and Orb Fight Tournament with their own HUD,
+effects, material sounds, and spoken name clips. All attacks use real
+contact or blast geometry; a shared seed repeats the move choices and result.
+
 The 48 original Classic fighters each have a separate signature power that
 recharges 12 seconds after recovery. Sword uses Slipstream to dash into attack
 range, or spends its defensive dash on a Slipstream sidestep. Blue
@@ -122,6 +145,9 @@ The Social Battle runtime does not load them.
   buffered HeyGen announcer cues, mixer ducking, and recording-stream routing
 - `src/presentation-timeline.js`: deterministic versus/countdown/FIGHT cue clock
 - `src/classic-tournament.js`: seeded knockout brackets and fight decisions
+- `src/classic-showcase.js`: metadata for the eight new fighters and 18 moves
+- `src/classic-showcase-renderer.js`: live bodies, weapons, portals, and impact drawing
+- `src/classic-showcase-audio.js`: original event-driven sound designs
 
 `src/tournament.js` and `src/tournament-worker.js` remain dormant for possible
 future reuse. They are not imported, initialized, or reachable from the product.
@@ -274,3 +300,9 @@ study-and-show lives in [`docs/FUTURE.md`](docs/FUTURE.md).
 ```bash
 npm test
 ```
+
+With the local server running, `npm run qa:classic-showcase` checks the 18
+new move poses, Node/Chromium replay agreement, an eight-fighter tournament
+recording, spoken cues, and mobile setup. It writes screenshots and a test
+MP4 under the system temp folder. The bracket check accelerates simulation
+time to verify the recording flow.

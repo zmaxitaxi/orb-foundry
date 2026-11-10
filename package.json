@@ -13,6 +13,7 @@
     "audio:generate-classic-race-voice": "node scripts/generate-race-announcements.mjs --classic-only",
     "audio:generate-new-orbs": "node scripts/generate-race-new-orb-announcements.mjs",
     "audio:generate-classic-overhaul": "node scripts/generate-classic-overhaul-announcements.mjs",
+    "audio:generate-showcase": "node scripts/generate-classic-showcase-announcements.mjs",
     "audio:generate-race-announcements": "node scripts/generate-race-announcements.mjs",
     "battle:export": "node scripts/export-random-battle.mjs",
     "battle:transcode": "node scripts/transcode-battle-video.mjs",
@@ -22,7 +23,8 @@
     "youtube:validate": "node scripts/youtube-publishing.mjs",
     "youtube:publish": "node scripts/youtube-publish.mjs",
     "youtube:oauth": "node scripts/youtube-oauth.mjs",
-    "qa:browser-smoke": "node scripts/ci-browser-smoke.mjs"
+    "qa:browser-smoke": "node scripts/ci-browser-smoke.mjs",
+    "qa:classic-showcase": "node scripts/qa-classic-showcase.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0"

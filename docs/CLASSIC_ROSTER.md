@@ -1,5 +1,10 @@
 # Classic roster audit
 
+The eight fighters added November 10 are listed in
+[Eight additional fighters](#eight-additional-fighters). Their 18 moves
+use the live geometry and material-sound rules in the
+[Classic combat style guide](CLASSIC_STYLE.md#eight-additional-move-sets).
+
 Reviewed all 54 playable Classic fighters on November 8, 2026. Each
 fighter launched through the regular Classic setup and was sampled on the
 portrait export canvas. Ability samples used seed 2406 and an opponent
@@ -71,6 +76,23 @@ including the light-theme variants and the large weapon sprites.
 | John Rod | Added | Stick-figure silhouette, rotating rods, and a collapsing Final Wrap. |
 | One Above All | Added | Pearl orbits, a Convergence Ring, and a cursor with a pixel burst. |
 | Knight | Added | Steel blade, shield ring, and a radial bash impact. |
+
+## Eight additional fighters
+
+| Fighter | Repeating abilities | Readable tell and counterplay |
+| --- | --- | --- |
+| Magneto | Iron Halo, Rail Spear | Metal plates close for two blocks, then fan out. Three spear lanes settle before firing. |
+| Kratos | Blades of Chaos, Leviathan Return | Chains wind into two swings. A connected blade enables the pull; the axe can hit on both flight legs. |
+| Doctor Strange | Sling Ring, Mirror Mandala | Separated portals show their entry and exit. The mandala's moving edge can be escaped. |
+| Gambit | Charged Deck, Royal Flush, Bo Staff Combo | Cards stick before arming. Corner arcs mark each blast radius; the staff needs close contact. |
+| Rubber | Wall Slingshot, Elastic Double Back | A wall tether and stretched body reveal the launch. Fist extensions have two distinct contact passes. |
+| Pinball | Bumper Run, Jackpot Bank | Three temporary bumpers light on contact. Banked momentum raises combo damage. |
+| Origami | Paper Plane, Boomerang Fold, Crane Flight | Folds precede the body rush, returning weapon, or three flying cranes. |
+| Sand Pharaoh | Mirage Khopesh, Scarab Cavalcade | An exit mark leads the reformation. The old shell blocks a projectile; the staff can miss a moving opponent. |
+
+The moves have separate windup, release, contact, and recovery states.
+Their effects and sounds follow the same simulation events. Each fighter
+also retains the shared one-charge defensive dash.
 
 ## Signature moves
 

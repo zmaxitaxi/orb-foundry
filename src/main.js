@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261110-orb-fight1";
+} from "./simulation.js?v=20261110-eight-fighters1";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261110-orb-fight1";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261110-orb-fight1";
+} from "./audio.js?v=20261110-eight-fighters1";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261110-eight-fighters1";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261110-orb-fight1";
+} from "./social.js?v=20261110-eight-fighters1";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261110-orb-fight1";
+} from "./config.js?v=20261110-eight-fighters1";
 import {
   CLASSIC_TOURNAMENT_MATCH_LIMIT,
   CLASSIC_TOURNAMENT_MODE,
@@ -60,7 +60,7 @@ import {
   createClassicTournament,
   finishClassicTournamentMatch,
   normalizeClassicTournamentOptions,
-} from "./classic-tournament.js?v=20261110-orb-fight1";
+} from "./classic-tournament.js?v=20261110-eight-fighters1";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -70,7 +70,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261109-classic-publish1";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261110-eight-fighters1";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -118,7 +118,7 @@ import {
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261109-classic-publish1";
+} from "./classic-orbs.js?v=20261110-eight-fighters1";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);
@@ -3896,6 +3896,8 @@ window.__ORB_FOUNDRY__ = {
     arenaSizeLabel: sim.arenaSizeLabel,
     arenaShape: sim.arenaShape,
     classicTournament: classicTournamentSession ? structuredClone(classicTournamentSession) : null,
+    classicShowcaseEntities: structuredClone(sim.classicShowcaseEntities || []),
+    classicShowcaseCues: sim.events.filter(({ type }) => type === "classic-showcase-cue").slice(-24),
     raceTournament: settings.gameplayMode === ORB_RACE_MODE ? settings.raceTournament : null,
     raceTournamentSnapshot: settings.gameplayMode === ORB_RACE_MODE ? currentTournamentSnapshot() : null,
     tournamentRecordingRequest,
@@ -3917,8 +3919,8 @@ window.__ORB_FOUNDRY__ = {
     } : null,
     phase: socialPresentation.phase,
     countdown: socialPresentation.countdown,
-    fighters: sim.fighters.map(({ id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
-      id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
+    fighters: sim.fighters.map(({ id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, classicShowcase, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits }) => ({
+      id, name, type, health, maxHealth, classicBoss, classicIsDuplicate, classicDashCharges, classicDashUntil, classicPowerReadyAt, classicShowcase: classicShowcase ? structuredClone(classicShowcase) : null, mana, alive, x, y, vx, vy, weaponAngle, damage, abilityKind, abilityValue, abilityRate, rangedInterval, rangedCooldown, rangedShots, rangedHits,
     })),
   }),
   restart: () => launchBattlePreview(settings),
@@ -3990,6 +3992,11 @@ window.render_game_to_text = () => JSON.stringify({
     classicWallDeformations: sim.classicWallDeformations || [],
     classicPowerCues: sim.events.filter(({ type }) => type === "classic-power-cue")
       .slice(-16).map(({ time, fighterType, phase, amount, x, y }) => ({ time, fighterType, phase, amount, x, y })),
+    showcaseCues: sim.events.filter(({ type }) => type === "classic-showcase-cue")
+      .slice(-20).map(({ time, fighterType, move, phase, amount }) => ({ time, fighterType, move, phase, amount })),
+    showcaseEntities: (sim.classicShowcaseEntities || []).map(({ id, kind, x, y, phase, expiresAt }) => ({
+      id, kind, x: Number(x.toFixed(1)), y: Number(y.toFixed(1)), phase, remaining: Number((expiresAt - sim.time).toFixed(2)),
+    })),
     classicActionEffects: sim.effects.filter(({ kind }) => ["classic-action-burst", "classic-saber-scar", "classic-saber-burn", "classic-wall-debris"].includes(kind))
       .map(({ kind, cue, life, cuts, marks }) => ({ kind, cue, life: Number(life.toFixed(3)), cuts: cuts?.length, marks: marks?.length })),
     pulseCues: sim.events.filter(({ type }) => type === "classic-wdc-cue" || type === "classic-pulse-cue")
@@ -4541,6 +4548,13 @@ window.render_game_to_text = () => JSON.stringify({
         punchVariant: fighter.classicPunchVariant || null,
         dodging: sim.time < (fighter.classicDodgeUntil || 0),
         pulseMove: fighter.classicPulseMove?.phase || null,
+        showcase: fighter.classicShowcase ? {
+          move: fighter.classicShowcase.move?.key || null,
+          phase: fighter.classicShowcase.move?.phase || "cooldown",
+          combo: fighter.classicShowcase.combo,
+          guard: fighter.classicShowcase.guardCharges,
+          casts: fighter.classicShowcase.casts,
+        } : null,
         omnitrix: fighter.classicOmnitrix ? {
           form: fighter.classicOmnitrix.form, phase: fighter.classicOmnitrix.phase,
           rushing: Boolean(fighter.classicOmnitrix.rush), guard: fighter.classicOmnitrix.guard,

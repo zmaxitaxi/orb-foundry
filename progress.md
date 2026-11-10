@@ -1,5 +1,31 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-10 — Eight new Classic fighters
+
+- Added eight separate stable IDs: Magneto, Kratos, Doctor Strange, Gambit,
+  Rubber, Pinball, Origami, and Sand Pharaoh. They appear in both Classic
+  team pickers and the Orb Fight Tournament roster.
+- Added 18 weighted seeded moves with actual contact geometry, repeating
+  cooldowns, and less weight for recently used moves. Damage, weapons,
+  portals, cards, elastic bodies, bumpers, paper folds, and decoys consume
+  the same live state. Existing fighters retain their move sets.
+- Created separate material sound designs and eight spoken name clips.
+  Added their original speech sources and a reproducible generator.
+- Included all eight in the video posting roster. Their real release,
+  hit, block, warp, reform, and bank events count toward the signature gate;
+  their spawned objects count toward the planner's entity budget.
+- Verified all 18 poses on the portrait canvas, eight Node/Chromium replay
+  comparisons, and a seven-match tournament recorded to one portrait MP4.
+  The recording included 28 spoken cues, with no failed assets or browser
+  errors. Also exercised mobile setup and shared tournament URLs.
+- Real-time Magneto vs Kratos recording contained H.264 video and AAC
+  effects audio with a -3.6 dB peak. Each new fighter found an approved close
+  Short matchup. Added a regression for exact dash/body tangency after
+  finding a subpixel Node/browser contact difference.
+- Saved the completed move sets and counterplay in the roster and style
+  guides. `npm run qa:classic-showcase` repeats the browser verification
+  and writes its screenshots, report, and test recording to a temp folder.
+
 ## 2026-11-10 — Recurring Classic powers and Orb Fight Tournament
 
 - Replaced the original fighters' permanent spent state with a 12-second

@@ -1,5 +1,5 @@
-import { CLASSIC_ORB_IDS, CLASSIC_ORBS } from "./classic-orbs.js?v=20261109-classic-publish1";
-import { SeededRandom } from "./simulation.js?v=20261110-orb-fight1";
+import { CLASSIC_ORB_IDS, CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-eight-fighters1";
+import { SeededRandom } from "./simulation.js?v=20261110-eight-fighters1";
 
 export const CLASSIC_TOURNAMENT_SIZES = Object.freeze([4, 8, 16, 32]);
 export const CLASSIC_TOURNAMENT_MODE = "classic-tournament";

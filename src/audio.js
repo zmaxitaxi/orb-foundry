@@ -6,9 +6,10 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261109-classic-publish1";
-import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261109-classic-publish1";
+} from "./classic-orbs.js?v=20261110-eight-fighters1";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-eight-fighters1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
+import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-eight-fighters1";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -68,6 +69,14 @@ export const ANNOUNCER_NAMES = Object.freeze({
   "ben-10": "Ben 10",
   "darth-vader": "Darth Vader",
   "luke-skywalker": "Luke Skywalker",
+  magneto: "Magneto",
+  kratos: "Kratos",
+  "doctor-strange": "Doctor Strange",
+  gambit: "Gambit",
+  rubber: "Rubber",
+  pinball: "Pinball",
+  origami: "Origami",
+  "sand-pharaoh": "Sand Pharaoh",
 });
 
 export const ANNOUNCER_TYPES = Object.freeze(Object.keys(ANNOUNCER_NAMES));
@@ -314,7 +323,7 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20261108-omnitrix-announcer1";
+export const ANNOUNCER_ASSET_VERSION = "20261110-eight-fighters1";
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
@@ -426,6 +435,8 @@ export const INTRO_ANNOUNCER_ASSETS = Object.freeze({
   "intro-ben-10": "classic-local/ben-10.mp3",
   "intro-darth-vader": "classic-local/darth-vader.mp3",
   "intro-luke-skywalker": "classic-local/luke-skywalker.mp3",
+  ...Object.fromEntries(["magneto", "kratos", "doctor-strange", "gambit", "rubber", "pinball", "origami", "sand-pharaoh"]
+    .map((id) => [`intro-${id}`, `classic-local/${id}.mp3`])),
 });
 
 const WORLD_CUP_ANNOUNCER_ASSET_OVERRIDES = Object.freeze({
@@ -1254,6 +1265,7 @@ export const CLASSIC_AUDIO_POLICY = Object.freeze({
       "classic-wdc-cue",
       "classic-pulse-cue",
       "classic-power-cue",
+      "classic-showcase-cue",
       "classic-artist-drawing",
       "classic-artist-drawing-complete",
       "classic-boxer-punch-start",
@@ -1584,7 +1596,7 @@ function classicPowerSoundFor(event) {
 export function soundPlanForEvent(event = {}) {
   const cueSounds = event.type === "classic-wdc-cue" ? WDC_CUE_SOUNDS
     : event.type === "classic-pulse-cue" ? PULSE_CUE_SOUNDS : null;
-  const craftSound = classicCraftSoundFor(event);
+  const craftSound = classicShowcaseSoundFor(event) || classicCraftSoundFor(event);
   const signatureSound = classicSignatureSoundFor(event);
   const powerSound = classicPowerSoundFor(event);
   if (event.gameplayMode === "classic" && !cueSounds && !craftSound && !signatureSound && !powerSound) return null;

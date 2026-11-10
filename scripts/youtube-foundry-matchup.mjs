@@ -153,7 +153,7 @@ function evaluateFoundryYouTubeBattle({ classicTeams, seed, arenaShape, quality,
             const nextEventId = sim.nextEventId;
             stepSimulation(sim, SIMULATION_STEP_SECONDS);
             if (step % PLANNING_ENTITY_CHECK_STEPS === 0
-                && (sim.fighters.length + sim.classicEntities.length + sim.projectiles.length > MAX_PLANNING_SPAWNED_ENTITIES
+                && (sim.fighters.length + sim.classicEntities.length + (sim.classicShowcaseEntities?.length || 0) + sim.projectiles.length > MAX_PLANNING_SPAWNED_ENTITIES
                     || (contentType === "longform" && sim.fighters.length > orbIds.length + MAX_LONGFORM_DUPLICATES))) {
                 runaway = true;
                 break;
@@ -212,7 +212,8 @@ function evaluateFoundryYouTubeBattle({ classicTeams, seed, arenaShape, quality,
 function countFoundryAction(action, event) {
     if ((event.type === "classic-power-cue" && FOUNDRY_SPECIAL_PHASES.has(event.phase))
         || (event.type === "classic-wdc-cue" && FOUNDRY_FORM_CUES.has(event.cue))
-        || (event.type === "classic-pulse-cue" && (event.amount > 0 || FOUNDRY_DEFENSE_CUES.has(event.cue)))) {
+        || (event.type === "classic-pulse-cue" && (event.amount > 0 || FOUNDRY_DEFENSE_CUES.has(event.cue)))
+        || (event.type === "classic-showcase-cue" && ["release", "hit", "block", "warp", "reform", "bank"].includes(event.phase))) {
         action.signatureMoments += 1;
     }
     if (event.type !== "classic-pulse-cue" || event.fighterType !== "one-punch-man") return;

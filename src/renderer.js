@@ -10,13 +10,14 @@ import {
   classicWdcSummonPunchPose,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261110-orb-fight1";
+} from "./simulation.js?v=20261110-eight-fighters1";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
-import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261109-classic-publish1";
+import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261110-eight-fighters1";
 import { drawClassicSignatureAmbient, drawClassicSignatures } from "./classic-signature-renderer.js?v=20261109-classic-publish1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 import { drawClassicLegacyPowerMotif } from "./classic-legacy-power-art.js?v=20261109-classic-publish1";
-import { themeById } from "./presentation.js?v=20261109-classic-publish1";
+import { drawClassicShowcaseBody, drawClassicShowcaseStage } from "./classic-showcase-renderer.js?v=20261110-eight-fighters1";
+import { themeById } from "./presentation.js?v=20261110-eight-fighters1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
 import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";
@@ -5701,6 +5702,8 @@ export class ArenaRenderer {
         });
         this.drawSimpleOrb(ctx, fighter, 0, 0, true, time);
       }
+    } else if (this.lastSim?.gameplayMode === "classic" && fighter.classicShowcase) {
+      drawClassicShowcaseBody(ctx, fighter, time, this.options);
     } else if (this.lastSim?.gameplayMode === "classic" && CLASSIC_ACTION_BODIES.has(fighter.type)) {
       drawClassicActionBody(ctx, fighter, time, this.options);
     } else if (this.lastSim?.gameplayMode === "classic" && this.options.classicBlackTheme && CLASSIC_BODY_COLORS[fighter.type]) {
@@ -6298,7 +6301,7 @@ export class ArenaRenderer {
   }
 
   drawEffect(ctx, effect) {
-    if (["classic-signature", "classic-action-burst", "classic-saber-scar", "classic-saber-burn", "classic-wall-debris", "classic-power-impact"].includes(effect.kind)) return;
+    if (["classic-signature", "classic-action-burst", "classic-saber-scar", "classic-saber-burn", "classic-wall-debris", "classic-power-impact", "classic-showcase-impact"].includes(effect.kind)) return;
     if (effect.kind === "classic-pulse-burst") {
       const life = effect.life - (this.options.classicResultAge || 0);
       if (life > 0 && !classicPulseIsWide(effect.style)) drawClassicPulseBurst(ctx, { ...effect, life }, this.options);
@@ -8056,6 +8059,7 @@ function drawClassicPowerStage(ctx, fighter, sim, options) {
 function drawClassicActionStage(ctx, sim, options) {
     ctx.save();
     clipClassicPulseArena(ctx, sim);
+    drawClassicShowcaseStage(ctx, sim, options);
     const resultAge = options.classicResultAge || 0;
     for (const effect of sim.effects) {
         const alpha = (effect.life - resultAge) / effect.maxLife;

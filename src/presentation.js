@@ -1,4 +1,5 @@
-import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261109-classic-publish1";
+import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-eight-fighters1";
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-eight-fighters1";
 
 export const THEME_IDS = Object.freeze([
   "cream-foundry",
@@ -161,10 +162,12 @@ function classicProfileCopy(def) {
     weakness: "Its strongest window can be anticipated",
   });
   return {
-    epithet: CLASSIC_PROFILE_EPITHETS[def.id] || archetype.epithet,
+    epithet: CLASSIC_SHOWCASE_FIGHTERS[def.id]?.epithet || CLASSIC_PROFILE_EPITHETS[def.id] || archetype.epithet,
     backstory: `${def.name} enters the Classic foundry with one unmistakable promise: ${def.power.toLowerCase()}. That rule shapes every route it takes and every collision it risks. Its ${def.statLabel.toLowerCase()} readout exposes the plan in real time, so opponents always know whether momentum is building. The bright shell, heavy black outline, and compact silhouette keep the action legible through rebounds, summons, and projectiles. There are no hidden rolls outside the seeded simulation. Winning means creating the right angle, protecting the mechanic's setup, and converting its visible advantage before the rival establishes a stronger rhythm.`,
     strengths: [def.power, archetype.strength, `Readable ${def.statLabel.toLowerCase()} progression`],
-    weaknesses: [archetype.weakness, "Starts at one base damage", "Positioning still determines conversion"],
+    weaknesses: CLASSIC_SHOWCASE_FIGHTERS[def.id]
+      ? ["Windups reveal the intended attack", "Moves can miss a changing route", "Cooldowns leave time to counter"]
+      : [archetype.weakness, "Starts at one base damage", "Positioning still determines conversion"],
   };
 }
 

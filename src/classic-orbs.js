@@ -1,3 +1,5 @@
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-eight-fighters1";
+
 export const CLASSIC_MODE = "classic";
 
 const weapon = (
@@ -485,6 +487,12 @@ export const CLASSIC_ORBS = Object.freeze({
         defaultHealth: 155,
         ability: { kind: "luke-skywalker", interval: 0.72 },
     }),
+    ...Object.fromEntries(Object.entries(CLASSIC_SHOWCASE_FIGHTERS).map(([id, def]) => [
+        id, orb(id, def.name, def.color, def.accent, {
+            power: def.power, statLabel: def.statLabel, defaultHealth: def.health,
+            ability: { kind: "showcase", interval: 2.2, firstMove: 1.15 },
+        }),
+    ])),
 });
 
 export const CLASSIC_ALIENS = Object.freeze({
@@ -541,7 +549,7 @@ export const CLASSIC_ORB_GROUPS = Object.freeze([
     Object.freeze({
         id: "superhero",
         label: "SUPERHERO ORBS",
-        orbIds: Object.freeze(["flash", "batman"]),
+        orbIds: Object.freeze(["flash", "batman", "magneto", "doctor-strange", "gambit"]),
     }),
     Object.freeze({
         id: "weapon",

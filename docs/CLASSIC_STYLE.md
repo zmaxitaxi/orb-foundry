@@ -20,8 +20,8 @@ Keep the black square, thin white border, centered health, and color-coded abili
 
 ## Roster pass
 
-- **Original fighters** keep their regular moves and gain one separate power per fight. Commit to a readable path, hazard, or counter. Aiming can track during the early tell and should settle before a placed strike lands. Bind the visuals and sound to that same attack's geometry and timing.
-- **Sword** has one Slipstream dash. It can answer a direct hit with a sidestep or commit to a gap closer. The attacking dash damages opponents along its real path.
+- **Original fighters** keep their regular moves and gain a separate power that recharges 12 seconds after recovery. Commit to a readable path, hazard, or counter. Aiming can track during the early tell and should settle before a placed strike lands. Bind the visuals and sound to that same attack's geometry and timing.
+- **Sword** can spend its one shared defensive dash on a Slipstream sidestep. Its attacking Slipstream can recur after cooldown and damages opponents along its real path.
 - **Blue Sun and Black Hole** make opposite shapes. Solar Prominence expands from the Sun's live position. Binary Crush pulls toward a point as two wells converge. Give each room to read as a distinct event even when normal shots are still visible.
 - **Gun fighters** change the threat on the field when their powers are ready. Use ricochet sockets, a pressure wave, staggered firing lanes, a marked drop, crossed fire, or deployed support depending on the fighter. Draw the lanes or marks before the strongest sound.
 - **One Punch Man** evades hostile damage without spending a charge or waiting on a cooldown. The body moves and leaves a brief echo when a dodge begins. A mirror stalemate ends in a draw after 36 seconds.
@@ -30,3 +30,34 @@ Keep the black square, thin white border, centered health, and color-coded abili
 - **Vader and Luke** use the same blade geometry for hits and rendering. Draw the entire hilt outside the body and show the hand closing around its grip. Vader reaches toward the opponent with his free hand, holds it in place for four damage ticks, and lets go. The returning throw and the slower 34-damage single strike have different tells. Luke uses a Force Vault to close space, a Saber Lunge to cut across a gap, and a two-hit combo up close. Saber trails fade in open space. Wall contacts leave a dark scorch with a short ember glow.
 - **WDC** gives each summon a silhouette that identifies its move. Unarmed wears wraps and a headband. Exoelectric has a glowing emitter. Emerald has a faceted miner crest. Keep the weapon and health readable in both the live and authored fights.
 - Keep bodies simple. Put motion and recognizable shapes on weapons and form silhouettes. The two lightsabers use distinct swing, movement, and return sounds.
+
+## Eight additional move sets
+
+- **Magneto:** give the halo visible metal plates, two guard charges, and a
+  clear opening into a three-shard fan. Rail Spear uses marked lanes that
+  settle before the staggered metal launches.
+- **Kratos:** draw chain links from the hand to the actual blade tip. Only a
+  connected chain pulls the opponent into the slam. Give the rotating
+  returning axe a cold edge and a separate return and catch sound.
+- **Doctor Strange:** keep the two portal rims visibly separated. Both
+  projectiles and one unrestrained body can pass through; the exit angle
+  rotates their real velocity. Mandala damage follows its expanding rim.
+- **Gambit:** cards tumble while flying and settle when lodged. Corner arcs
+  show the live blast radius and charge before detonation. The staff combo
+  has wooden contact sounds and a separate two-swing silhouette.
+- **Rubber:** attach the stretch to an actual wall point. Deform the body
+  before the launch and use the body's swept path for damage. Extended
+  fists have visible knuckles at their live contact tips.
+- **Pinball:** bumpers move fighters through physical collision. Their light
+  and bell follow a bank; combo charges come from contact, not a timer.
+  Bumpers respect frozen and held fighters.
+- **Origami:** use fold lines and a distinct paper-plane body. Boomerangs
+  have separate outward and returning contacts. Crane wings turn along
+  their flight paths. Sound like paper and air, with no generic gun sample.
+- **Sand Pharaoh:** show the exit before the body reforms. Leave the shell
+  where the body was at departure; it can intercept a hostile projectile.
+  Staff strikes and scarabs use real paths, with restrained sand aftermath.
+
+These fighters use weighted seeded move choices. Range and available
+objects affect the pool, and recent moves receive less weight. Shared
+dash charges remain independent of their repeating attacks.

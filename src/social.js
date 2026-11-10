@@ -1,7 +1,8 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261110-orb-fight1";
+import { CLASS_DEFS } from "./simulation.js?v=20261110-eight-fighters1";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
-import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261109-classic-publish1";
+import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261110-eight-fighters1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-eight-fighters1";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),
@@ -251,6 +252,20 @@ function classicSpecialHud(fighter, def, time, entities) {
   const hp = `HP ${Math.ceil(fighter.health)}`;
   if (time < (fighter.classicHeldUntil || 0)) {
     return { label: fighter.classicHeldKind === "force-choke" ? "STUNNED" : "GRABBED", detail: hp, progress: 0 };
+  }
+  if (fighter.classicShowcase) {
+    const state = fighter.classicShowcase;
+    const move = state.move;
+    const profile = move && CLASSIC_SHOWCASE_MOVES[move.key];
+    const remaining = Math.max(0, fighter.classicAbilityNextAt - time);
+    return {
+      label: profile?.name || def.statLabel,
+      detail: `${hp} / ${move ? move.phase === "tell" ? "WINDUP" : "ACTIVE"
+        : fighter.type === "pinball" && state.combo ? `COMBO ×${state.combo}` : remaining > 0 ? `${remaining.toFixed(1)}S` : "READY"}`,
+      color: CLASSIC_SHOWCASE_FIGHTERS[fighter.type].accent,
+      progress: move ? Math.max(0, Math.min(1, (time - move.at) / (move.endAt - move.at)))
+        : Math.max(0, Math.min(1, 1 - remaining / Math.max(.01, fighter.classicAbilityNextAt - (state.cooldownStartedAt || 0)))),
+    };
   }
   const power = fighter.classicPowerMove;
   if (power && time < power.recoverUntil) {
