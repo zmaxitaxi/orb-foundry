@@ -313,7 +313,7 @@ test("Classic exposes the approved stable roster and rejects removed weapon orbs
     }
 });
 
-test("Classic launches both fighters on one seeded random heading and remains constant-speed", () => {
+test("Classic shares a seeded heading and returns to baseline outside dash windows", () => {
   const sim = createSimulation({ classes: ["sword", "orbital"], seed: 7 });
     const [left, right] = sim.fighters;
     assert.equal(left.classicLaunchAngle, right.classicLaunchAngle, "both Classic fighters share the seeded launch heading");
@@ -324,12 +324,22 @@ test("Classic launches both fighters on one seeded random heading and remains co
         "Classic opening spawns leave ample visual room between the orbs",
     );
     assert.equal(left.baselineSpeed, ORB_BASE_SPEED * 0.75);
+    let lunged = false;
+    let recovered = false;
     for (let index = 0; index < 720; index += 1) {
         step(sim);
         for (const fighter of sim.fighters.filter(({ alive }) => alive)) {
-            assert.ok(Math.abs(Math.hypot(fighter.vx, fighter.vy) - fighter.baselineSpeed) < 1e-7);
+            const move = fighter.classicDashMove;
+            const telling = move?.kind === "lunge" && move.phase === "tell" && sim.time < move.activeAt;
+            const dashing = sim.time < (fighter.classicDashUntil || 0);
+            const scale = telling ? 0.2 : dashing ? move?.kind === "lunge" ? 2.75 : 2.65 : 1;
+            assert.ok(Math.abs(Math.hypot(fighter.vx, fighter.vy) - fighter.baselineSpeed * scale) < 1e-7);
+            if (dashing && move?.kind === "lunge") lunged = true;
+            if (move?.kind === "lunge" && move.phase === "recover" && scale === 1) recovered = true;
         }
     }
+    assert.ok(lunged, "an approach can temporarily boost the shared launch speed");
+    assert.ok(recovered, "ordinary movement resumes after the lunge");
 });
 
 test("Classic per-orb options preserve speed, trail, and collision settings", () => {
@@ -1501,6 +1511,39 @@ test("Hydrogen Bomb uses custom health and deterministically wins at 60 seconds"
     assert.ok(sim.events.some(({ type, countdownSeconds }) => type === "classic-hydrogen-bomb-countdown-start" && countdownSeconds === 60));
     assert.ok(sim.events.some(({ type }) => type === "classic-hydrogen-detonate"));
     assert.ok(sim.events.some(({ type, flashSeconds }) => type === "classic-hydrogen-bomb-flash-start" && flashSeconds === 4));
+});
+
+test("Classic approach lunges do not delay countdowns or turret deployments", () => {
+    const bomb = createSimulation({
+        classicTeams: [["hydrogen-bomb"], ["unarmed"]], classicHydrogenHealth: 1234,
+        classicOpening: false, classicPowerMoves: false, seed: 31, features: { replay: false },
+    });
+    step(bomb);
+    const [hydrogen, target] = bomb.fighters;
+    const deadline = hydrogen.classicHydrogenCountdownStartedAt + 60;
+    bomb.time = 59.88;
+    Object.assign(hydrogen, { x: 180, y: 350, vx: 0, vy: 1, classicDashReadyAt: 0 });
+    Object.assign(target, { x: 540, y: 350, vx: 0, vy: 0, stunUntil: Infinity, classicDashReadyAt: Infinity });
+    runSeconds(bomb, 0.2);
+    const detonation = bomb.events.find(({ type }) => type === "classic-hydrogen-detonate");
+    assert.ok(detonation && detonation.time >= deadline && detonation.time <= deadline + STEP + 1e-9);
+    assert.equal(hydrogen.classicDashMove?.kind, "lunge");
+    assert.equal(hydrogen.classicDashMove?.phase, "active", "the bomb resolves during its real approach");
+    assert.equal(target.alive, false);
+    assert.equal(bomb.winner?.id, hydrogen.id);
+
+    const deployment = createSimulation({
+        classicTeams: [["turret"], ["unarmed"]], classicOpening: false,
+        classicPowerMoves: false, seed: 31, features: { replay: false },
+    });
+    const [turret, opponent] = deployment.fighters;
+    Object.assign(turret, { x: 180, y: 350, vx: 0, vy: 1, classicDashReadyAt: 0, classicTurretNextSpawnAt: 0.15 });
+    Object.assign(opponent, { x: 540, y: 350, vx: 0, vy: 0, stunUntil: Infinity, classicDashReadyAt: Infinity });
+    const events = eventsOverSeconds(deployment, 0.2);
+    const spawn = events.find(({ type, hazardKind }) => type === "classic-hazard-spawn" && hazardKind === "turret");
+    assert.ok(spawn && Math.abs(spawn.time - 0.15) <= STEP);
+    assert.ok(spawn.time >= turret.classicDashMove.activeAt && spawn.time < turret.classicDashMove.until);
+    assert.equal(turret.classicTurretSpawnCount, 1);
 });
 
 test("seeded projectile abilities and replay state are byte-for-byte deterministic", () => {
@@ -4889,6 +4932,8 @@ test("The original Classic roster has distinct specials that use real damage and
             classicOrbOptions: { [orb]: { health: 450 }, unarmed: { health: 450 } },
             features: { replay: false },
         });
+        // Keep signature geometry fixed; shared approaches have separate roster coverage.
+        for (const fighter of sim.fighters) fighter.classicDashReadyAt = Infinity;
         let attackFrame;
         const events = eventsOverSeconds(sim, duration, (fresh) => {
             if (fresh.some(({ type, fighterType, phase }) => type === "classic-power-cue" && fighterType === orb && phase === "hit")) {
@@ -5227,7 +5272,13 @@ test("Luke closes gaps and can land both combo strikes while Vader grips and rec
         classicTeams: [["luke-skywalker"], ["darth-vader"]],
         seed: 4, arenaSize: "large", features: { replay: false },
     };
-    const sim = createSimulation(options);
+    const createSaberDuel = () => {
+        const duel = createSimulation(options);
+        // Exercise signature leaps/throws independently of the shared approach charge.
+        for (const fighter of duel.fighters) fighter.classicDashReadyAt = Infinity;
+        return duel;
+    };
+    const sim = createSaberDuel();
     for (const fighter of sim.fighters) {
         const blade = classicSaberBlade(fighter, 0);
         assert.ok(Math.hypot(blade.x1 - fighter.x, blade.y1 - fighter.y) - blade.width * 1.62 > fighter.radius);
@@ -5265,7 +5316,7 @@ test("Luke closes gaps and can land both combo strikes while Vader grips and rec
     const { x, y, width, height } = sim.arenaBounds;
     assert.ok(burned.marks.every((mark) => [x, x + width].includes(mark.x) || [y, y + height].includes(mark.y)));
     assert.ok(!sim.effects.some(({ key }) => key === burned.key), "the first scorch should fade out");
-    const repeat = createSimulation(options);
+    const repeat = createSaberDuel();
     assert.deepEqual(eventsOverSeconds(repeat, 23), events);
     assert.deepEqual(captureReplayFrame(repeat), captureReplayFrame(sim));
 });

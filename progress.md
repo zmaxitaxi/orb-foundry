@@ -1,5 +1,24 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-10 — CI correction for approach lunges
+
+- Traced main's failed run 42931630432 to four Classic regressions. Moved
+  the approach suppression below independent countdown/deployment handling;
+  Hydrogen Bomb now resolves on its deadline during a lunge, Turret keeps
+  deploying, and Reactor's charge readout keeps advancing.
+- Updated the baseline-speed assertion to verify tell/rush speeds and the
+  return to normal movement. Kept signature geometry and saber-return
+  fixtures independent of incidental approach choices; all-roster approach
+  and defensive dodge tests remain enabled.
+- Added a regression for an active lunge across the bomb's deadline and a
+  Turret deployment. Passed the eight focused Node tests, including all four
+  previously failing scenarios and the shared movement checks.
+- Playwright confirmed the countdown resolves within one fixed step of its
+  deadline while lunging, and the normal portrait fight still shows LUNGE
+  with a spent charge. No page/console errors or failed assets. Reviewed
+  `/private/tmp/orb-shared-dash-qa/ci-fixed-lunge.png` and refreshed module
+  cache keys. Full CLI and publishing dry-run repeats remain skipped.
+
 ## 2026-11-10 — Shared approach lunges and dodges
 
 - Let every Classic fighter spend its one shared dash charge on an approach

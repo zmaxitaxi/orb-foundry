@@ -63,10 +63,10 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261110-shared-lunge1";
-import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-shared-lunge1";
+} from "./classic-orbs.js?v=20261110-shared-lunge2";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-shared-lunge2";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-shared-lunge1";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-shared-lunge2";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -13198,8 +13198,8 @@ function updateClassicAbilities(sim, dt) {
       updateClassicWdcForm(sim, fighter, ability, classicVampireLatchBlocksAttacker(sim, fighter), dt);
       continue;
     }
-    if (fighter.classicDashMove?.kind === "lunge"
-      && fighter.classicDashMove.phase !== "recover" && sim.time < fighter.classicDashMove.until) continue;
+    const approaching = fighter.classicDashMove?.kind === "lunge"
+      && fighter.classicDashMove.phase !== "recover" && sim.time < fighter.classicDashMove.until;
     if (fighter.type === "reactor") {
       const interval = Math.max(0.001, Number(ability.interval) || 6);
       const nextAt = Number(fighter.classicAbilityNextAt);
@@ -13233,10 +13233,10 @@ function updateClassicAbilities(sim, dt) {
     if (vampireLatchSuppressesAttack) {
       suppressClassicVampireLatchedTargetAttack(sim, fighter);
     }
-    if (!vampireLatchSuppressesAttack && updateClassicPowerMove(sim, fighter, liveTarget, dt)) continue;
+    if (!approaching && !vampireLatchSuppressesAttack && updateClassicPowerMove(sim, fighter, liveTarget, dt)) continue;
     if (!ability.kind) continue;
     if (ability.kind === "showcase") {
-      if (!vampireLatchSuppressesAttack) updateClassicShowcaseFighter(sim, fighter, liveTarget, dt);
+      if (!approaching && !vampireLatchSuppressesAttack) updateClassicShowcaseFighter(sim, fighter, liveTarget, dt);
       continue;
     }
     if (fighter.type === "hydrogen-bomb") {
@@ -13283,6 +13283,9 @@ function updateClassicAbilities(sim, dt) {
       updateClassicTurretState(sim, fighter, ability);
       continue;
     }
+    // A lunge delays new committed attacks, never independent countdowns,
+    // deployment timers, or Reactor's charge readout above.
+    if (approaching) continue;
     if (CLASSIC_HOMING_FIGHTERS.has(fighter.type) && liveTarget) {
       setClassicHomingVelocity(fighter, liveTarget, sim.time);
     }

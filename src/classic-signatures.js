@@ -1,4 +1,4 @@
-import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-shared-lunge1";
+import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-shared-lunge2";
 
 // Original Classic abilities, mapped to presentation beats. The base move and
 // its follow-ups share a visual language; incidental rebounds never enter it.

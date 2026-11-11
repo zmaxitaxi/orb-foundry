@@ -10,14 +10,14 @@ import {
   classicWdcSummonPunchPose,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261110-shared-lunge1";
+} from "./simulation.js?v=20261110-shared-lunge2";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
-import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261110-shared-lunge1";
+import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261110-shared-lunge2";
 import { drawClassicSignatureAmbient, drawClassicSignatures } from "./classic-signature-renderer.js?v=20261109-classic-publish1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 import { drawClassicLegacyPowerMotif } from "./classic-legacy-power-art.js?v=20261109-classic-publish1";
-import { drawClassicShowcaseBody, drawClassicShowcaseStage } from "./classic-showcase-renderer.js?v=20261110-shared-lunge1";
-import { themeById } from "./presentation.js?v=20261110-shared-lunge1";
+import { drawClassicShowcaseBody, drawClassicShowcaseStage } from "./classic-showcase-renderer.js?v=20261110-shared-lunge2";
+import { themeById } from "./presentation.js?v=20261110-shared-lunge2";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
 import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";

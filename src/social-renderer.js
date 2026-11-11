@@ -22,7 +22,7 @@ import {
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261110-shared-lunge1";
+} from "./simulation.js?v=20261110-shared-lunge2";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
@@ -35,8 +35,8 @@ import {
   drawClassicWallDamage,
   drawClassicWdcDuel,
   drawMotionStreak,
-} from "./renderer.js?v=20261110-shared-lunge1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261110-shared-lunge1";
+} from "./renderer.js?v=20261110-shared-lunge2";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261110-shared-lunge2";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -60,7 +60,7 @@ import {
   CLASSIC_ORBS,
   classicTeamDisplayName,
   classicTeamOutlineColorFor,
-} from "./classic-orbs.js?v=20261110-shared-lunge1";
+} from "./classic-orbs.js?v=20261110-shared-lunge2";
 import {
   TOURNAMENT_CONNECTOR_COLORS,
   TOURNAMENT_PRESENTATION_TIMING,

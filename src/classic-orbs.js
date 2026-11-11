@@ -1,4 +1,4 @@
-import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-shared-lunge1";
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-shared-lunge2";
 
 export const CLASSIC_MODE = "classic";
 

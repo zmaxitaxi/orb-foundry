@@ -6,10 +6,10 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261110-shared-lunge1";
-import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-shared-lunge1";
+} from "./classic-orbs.js?v=20261110-shared-lunge2";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-shared-lunge2";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-shared-lunge1";
+import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-shared-lunge2";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -323,7 +323,7 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20261110-shared-lunge1";
+export const ANNOUNCER_ASSET_VERSION = "20261110-shared-lunge2";
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
