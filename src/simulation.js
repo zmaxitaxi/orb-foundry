@@ -63,10 +63,10 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261110-eight-fighters1";
-import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-eight-fighters1";
+} from "./classic-orbs.js?v=20261110-shared-lunge1";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-shared-lunge1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-eight-fighters1";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-shared-lunge1";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -1377,6 +1377,8 @@ const WORLD_CUP_DELAYED_ITEMS = new Set(["soccer-ball", "yellow-card", "red-card
 const LAST_STAND_HEALTH_RATIO = 0.25;
 const CLASSIC_POWER_COOLDOWN_SECONDS = 12;
 const CLASSIC_DASH_SECONDS = 0.18;
+const CLASSIC_LUNGE_SECONDS = 0.28;
+const CLASSIC_LUNGE_SCALE = 2.75;
 const CLASSIC_SHOWCASE_CONTACT_EPSILON = 1e-6;
 
 export class SeededRandom {
@@ -3131,8 +3133,13 @@ export function createSimulation({
   };
   if (modernClassic && classicReferenceDuel) sim.classicWdcDuel = createClassicWdcDuel(sim);
   if (modernClassic && !sim.classicWdcDuel) {
+    // Give dash timing its own seeded stream without shifting signature choices.
+    const dashRng = new SeededRandom(sim.rng.state);
     for (const [index, fighter] of fighters.entries()) {
       fighter.classicDashCharges = 1;
+      fighter.classicDashUntil = 0;
+      fighter.classicDashReadyAt = 3.2 + dashRng.range(0, 3.8);
+      fighter.classicDashMove = null;
       if (CLASSIC_SHOWCASE_FIGHTERS[fighter.type]) {
         fighter.classicAbilityNextAt = 1.15 + (index % 4) * .13;
         fighter.classicShowcase = { move: null, recent: [], casts: 0, combo: 0, guardCharges: 0 };
@@ -3592,8 +3599,10 @@ export function stepSimulation(sim, dt) {
     }
 
     const modernClassic = sim.gameplayMode === "classic" && !sim.legacyClassicRules;
+    updateClassicSharedDash(sim, fighter);
     const rushTrail = modernClassic && sim.time < (fighter.classicPulseLaunchUntil || 0)
-      && (fighter.type === "ben-10" || fighter.type === "luke-skywalker");
+      && (sim.time < (fighter.classicDashUntil || 0)
+        || fighter.type === "ben-10" || fighter.type === "luke-skywalker");
     const orbitTrail = sim.classicOpening?.phase === "orbit" || sim.classicOpening?.phase === "converge"
       || sim.time < Math.max(fighter.classicCollisionKick?.until || 0, fighter.classicWallThrow?.until || 0);
     const trailLimit = rushTrail ? 24 : orbitTrail ? 18 : modernClassic && fighter.classicSolidTrailsEnabled
@@ -4162,6 +4171,8 @@ function spawnClassicDuplicate(sim, parent) {
     classicIsDuplicate: true,
     classicDashCharges: 0,
     classicDashUntil: 0,
+    classicDashReadyAt: Infinity,
+    classicDashMove: null,
     classicDuplicateGeneration: parent.classicDuplicateGeneration + 1,
     classicBounceSinceDuplicate: 0,
     classicDuplicateSequence: 0,
@@ -9550,10 +9561,12 @@ function classicMovementTargetSpeed(fighter, time) {
     : time < (fighter.classicSlowUntil || 0) ? 0.65 : 1;
   const flashScale = fighter.type === "flash" && time < (fighter.classicAbilityActiveUntil || 0) ? 2 : 1;
   const yingYangScale = fighter.type === "ying-yang" && fighter.classicYingYangPhase === "speed" ? 1.35 : 1;
+  const dashTellScale = fighter.classicDashMove?.kind === "lunge"
+    && fighter.classicDashMove.phase === "tell" && time < fighter.classicDashMove.activeAt ? 0.2 : 1;
   const launchScale = time < (fighter.classicPulseLaunchUntil || 0) ? fighter.classicPulseLaunchScale : 1;
   const kick = fighter.classicCollisionKick;
   const kickScale = kick && time < kick.until ? 1 + kick.boost * ((kick.until - time) / (kick.until - kick.at)) ** 1.38 : 1;
-  return Math.max(1, fighter.baselineSpeed * slowScale * flashScale * yingYangScale * Math.max(launchScale, kickScale));
+  return Math.max(1, fighter.baselineSpeed * slowScale * flashScale * yingYangScale * dashTellScale * Math.max(launchScale, kickScale));
 }
 
 function setClassicHomingVelocity(fighter, target, time = 0) {
@@ -10904,6 +10917,8 @@ function classicPulseBurst(sim, style, point, radius, life, detail = {}) {
 const CLASSIC_ACTION_BURSTS = Object.freeze({
   "lateral-clash": [0.37, 2.18, "#f2f6ff"],
   "dash-dodge": [0.34, 1.75, "#b9eaff"],
+  "dash-windup": [0.18, 1.25, "#b9eaff"],
+  "dash-lunge": [0.34, 1.95, "#b9eaff"],
   "snow-pack": [0.24, 1.12, "#bcf5ff"],
   "snow-release": [0.48, 1.9, "#a5f1ff"],
   "snow-bank": [0.29, 0.68, "#a5f1ff"],
@@ -11315,6 +11330,70 @@ function classicSidestep(sim, fighter, source) {
   return right.room - left.room > 1e-6 ? right : left;
 }
 
+function stopClassicSharedLunge(sim, fighter, move) {
+  move.phase = "recover";
+  fighter.classicDashUntil = Math.min(fighter.classicDashUntil || 0, sim.time);
+  if (fighter.classicPulseLaunchUntil === move.until) fighter.classicPulseLaunchUntil = sim.time;
+}
+
+function updateClassicSharedDash(sim, fighter) {
+  if (sim.gameplayMode !== "classic" || sim.legacyClassicRules || fighter.classicIsDuplicate) return;
+  const move = fighter.classicDashMove;
+  if (move?.kind === "lunge" && move.phase !== "recover") {
+    const target = classicCombatantById(sim, move.targetId);
+    if (!classicCombatantIsAlive(sim, target) || classicFighterActionLocked(sim, fighter)
+      || fighter.classicFrostFrozen || sim.time >= move.until
+      || (move.phase === "tell" && (sim.time < (fighter.classicPulseLaunchUntil || 0)
+        || (fighter.classicCollisionKick?.at ?? -Infinity) >= move.at))) {
+      stopClassicSharedLunge(sim, fighter, move);
+      return;
+    }
+    if (move.phase === "tell") {
+      if (sim.time < move.activeAt) return;
+      move.phase = "active";
+      move.angle = classicPulseAim(fighter, target, 0.11);
+      move.activeAt = sim.time;
+      move.until = sim.time + CLASSIC_LUNGE_SECONDS;
+      move.origin = { x: fighter.x, y: fighter.y };
+      fighter.classicDashUntil = move.until;
+      launchClassicPulseTarget(sim, fighter, move.angle, CLASSIC_LUNGE_SCALE);
+      fighter.classicPulseLaunchUntil = move.until;
+      fighter.trail = [];
+      emitClassicPulseCue(sim, fighter, "dash-lunge", fighter, { angle: move.angle, targetId: target.id });
+    } else if (fighter.classicPulseLaunchUntil !== move.until
+      || (fighter.classicCollisionKick?.at ?? -Infinity) >= move.activeAt) {
+      // A real collision, knockback, or signature move can interrupt the approach.
+      stopClassicSharedLunge(sim, fighter, move);
+    }
+    return;
+  }
+  if (fighter.classicDashCharges !== 1 || sim.time < fighter.classicDashReadyAt
+    || fighter.health <= fighter.maxHealth * 0.55
+    || sim.time < fighter.stunUntil || fighter.classicFrostFrozen
+    || classicFighterActionLocked(sim, fighter) || classicVampireLatchBlocksAttacker(sim, fighter)
+    || sim.time < (fighter.classicAbilityActiveUntil || 0)
+    || sim.time < (fighter.classicPowerMove?.endAt || 0)
+    || sim.time < (fighter.classicPulseLaunchUntil || 0)
+    || sim.time < (fighter.classicCollisionKick?.until || 0)
+    || ["orbit", "converge"].includes(sim.classicOpening?.phase)) return;
+  const target = nearestClassicOpponent(sim, fighter);
+  if (!target || target.classicCannonOutside) return;
+  const distance = Math.hypot(target.x - fighter.x, target.y - fighter.y);
+  const gap = distance - fighter.radius - target.radius;
+  const reach = fighter.baselineSpeed * CLASSIC_LUNGE_SCALE * CLASSIC_LUNGE_SECONDS;
+  if (gap < fighter.radius * 1.4 - 1e-6 || gap > reach * 0.9 + 1e-6) return;
+  const angle = classicPulseAim(fighter, target, 0.11);
+  const wall = classicRayToArenaBoundary(sim, fighter.x, fighter.y, Math.cos(angle), Math.sin(angle));
+  if (wall.distance < fighter.radius * 2 + gap * 0.6 - 1e-6) return;
+  fighter.classicDashCharges = 0;
+  fighter.classicDashMove = {
+    kind: "lunge", phase: "tell", at: sim.time, activeAt: sim.time + 0.10,
+    until: sim.time + 0.10 + CLASSIC_LUNGE_SECONDS,
+    targetId: target.id, angle, origin: { x: fighter.x, y: fighter.y },
+  };
+  emitClassicPulseCue(sim, fighter, "dash-windup", fighter, { angle, targetId: target.id });
+}
+
 function tryClassicSharedDash(sim, fighter, source, amount) {
   if (fighter.classicDashCharges !== 1 || !source || source.classicTeamIndex === fighter.classicTeamIndex
     || amount < 5 || fighter.health - amount > fighter.maxHealth * 0.5
@@ -11330,6 +11409,10 @@ function tryClassicSharedDash(sim, fighter, source, amount) {
   fighter.y += Math.sin(escape.angle) * step;
   fighter.classicDashCharges = 0;
   fighter.classicDashUntil = sim.time + CLASSIC_DASH_SECONDS;
+  fighter.classicDashMove = {
+    kind: "dodge", phase: "active", at: sim.time, activeAt: sim.time,
+    until: fighter.classicDashUntil, targetId: source.id, angle: escape.angle, origin,
+  };
   launchClassicPulseTarget(sim, fighter, escape.angle, 2.65);
   fighter.classicPulseLaunchUntil = fighter.classicDashUntil;
   fighter.classicPulseBlockedAt = sim.time;
@@ -11356,7 +11439,8 @@ function blockClassicPulseHit(sim, fighter, source, category, amount) {
     return true;
   }
   if (["classic-dot", "classic-hydrogen", "classic-slice", "burn", "poison"].includes(category)) return false;
-  if (time < (fighter.classicDashUntil || 0)) {
+  if (time < (fighter.classicDashUntil || 0)
+    && (fighter.classicDashMove?.kind !== "lunge" || time < fighter.classicDashMove.activeAt + 0.09)) {
     fighter.classicPulseBlockedAt = time;
     return true;
   }
@@ -13114,6 +13198,8 @@ function updateClassicAbilities(sim, dt) {
       updateClassicWdcForm(sim, fighter, ability, classicVampireLatchBlocksAttacker(sim, fighter), dt);
       continue;
     }
+    if (fighter.classicDashMove?.kind === "lunge"
+      && fighter.classicDashMove.phase !== "recover" && sim.time < fighter.classicDashMove.until) continue;
     if (fighter.type === "reactor") {
       const interval = Math.max(0.001, Number(ability.interval) || 6);
       const nextAt = Number(fighter.classicAbilityNextAt);
@@ -27861,6 +27947,10 @@ export function captureReplayFrame(sim) {
       ...(fighter.classicDashCharges !== undefined ? {
         classicDashCharges: fighter.classicDashCharges,
         classicDashUntil: fighter.classicDashUntil,
+        classicDashReadyAt: fighter.classicDashReadyAt,
+        classicDashMove: fighter.classicDashMove && {
+          ...fighter.classicDashMove, origin: { ...fighter.classicDashMove.origin },
+        },
       } : {}),
       ...(fighter.classicPowerReadyAt !== undefined ? {
         classicPowerReadyAt: fighter.classicPowerReadyAt,

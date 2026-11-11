@@ -1,5 +1,5 @@
-import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-eight-fighters1";
-import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-eight-fighters1";
+import { CLASSIC_ORBS } from "./classic-orbs.js?v=20261110-shared-lunge1";
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-shared-lunge1";
 
 export const THEME_IDS = Object.freeze([
   "cream-foundry",

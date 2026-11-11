@@ -50,6 +50,15 @@ test("Classic announcer registry covers the launch roster with valid generated o
     assert.equal(INTRO_ANNOUNCER_ASSETS["intro-trapper"], "generated-classic-overhaul/classic-cowboy.mp3");
 });
 
+test("Shared approaches and dodges have distinct movement sounds", () => {
+    const signatures = ["dash-windup", "dash-lunge", "dash-dodge"].map((cue) => {
+        const plan = soundPlanForEvent({ type: "classic-pulse-cue", gameplayMode: "classic", fighterType: "magneto", cue });
+        assert.ok(plan && (plan.layers?.length || plan.noises?.length), cue);
+        return plan.signature;
+    });
+    assert.equal(new Set(signatures).size, 3);
+});
+
 test("Classic matchup announcement retains Pick Your Winner", () => {
     assert.deepEqual(announcerIntroSequence("vampire", "trapper"), [
         "intro-vampire",

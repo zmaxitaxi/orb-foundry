@@ -10,14 +10,14 @@ import {
   classicWdcSummonPunchPose,
   classicWeaponRenderAngle,
   getWeaponSegment,
-} from "./simulation.js?v=20261110-eight-fighters1";
+} from "./simulation.js?v=20261110-shared-lunge1";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
-import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261110-eight-fighters1";
+import { CLASSIC_ALIENS, classicTeamOutlineColorFor } from "./classic-orbs.js?v=20261110-shared-lunge1";
 import { drawClassicSignatureAmbient, drawClassicSignatures } from "./classic-signature-renderer.js?v=20261109-classic-publish1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
 import { drawClassicLegacyPowerMotif } from "./classic-legacy-power-art.js?v=20261109-classic-publish1";
-import { drawClassicShowcaseBody, drawClassicShowcaseStage } from "./classic-showcase-renderer.js?v=20261110-eight-fighters1";
-import { themeById } from "./presentation.js?v=20261110-eight-fighters1";
+import { drawClassicShowcaseBody, drawClassicShowcaseStage } from "./classic-showcase-renderer.js?v=20261110-shared-lunge1";
+import { themeById } from "./presentation.js?v=20261110-shared-lunge1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, WORLD_CUP_PICKUPS } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE } from "./king-of-hill.js";
 import { ORB_RACERS } from "./orb-race.js?v=20261108-arena-cut1";
@@ -7408,6 +7408,30 @@ function drawClassicActionProjectile(ctx, entity, time, options) {
 
 function drawClassicActionTrail(ctx, fighter, time) {
     if (time < (fighter.classicHeldUntil || 0)) return false;
+    const approach = fighter.classicDashMove;
+    if (approach?.kind === "lunge" && approach.phase === "tell" && time < approach.activeAt) {
+        const r = fighter.radius;
+        const progress = Math.max(0, Math.min(1, (time - approach.at) / (approach.activeAt - approach.at)));
+        ctx.save();
+        ctx.translate(fighter.x, fighter.y);
+        ctx.rotate(approach.angle);
+        ctx.strokeStyle = CLASS_DEFS[fighter.type].accent;
+        ctx.lineWidth = Math.max(1.5, r * 0.065);
+        ctx.lineCap = "round";
+        ctx.globalAlpha = 0.35 + progress * 0.5;
+        for (const side of [-1, 1]) {
+            ctx.beginPath();
+            ctx.moveTo(-r * (1.8 - progress * 0.3), side * r * 0.5);
+            ctx.lineTo(-r * 1.12, side * r * 0.25);
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.moveTo(r * 1.28, -r * 0.21);
+        ctx.lineTo(r * 1.52, 0);
+        ctx.lineTo(r * 1.28, r * 0.21);
+        ctx.stroke();
+        ctx.restore();
+    }
     const thrown = time < (fighter.classicWallThrow?.until || 0);
     const kicked = thrown || time < (fighter.classicCollisionKick?.until || 0);
     if (!kicked && time >= (fighter.classicPulseLaunchUntil || 0)) return false;
@@ -7570,7 +7594,7 @@ function drawClassicActionBurst(ctx, effect, alpha, options) {
     const p = 1 - alpha;
     const snow = cue.startsWith("snow-");
     const spark = cue.endsWith("-hit") || cue.endsWith("-bank") || cue === "force-choke-tick";
-    const dash = ["dash-dodge", "xlr8", "xlr8-dodge", "force-vault", "saber-lunge"].includes(cue);
+    const dash = ["dash-dodge", "dash-windup", "dash-lunge", "xlr8", "xlr8-dodge", "force-vault", "saber-lunge"].includes(cue);
     const crystal = cue.startsWith("diamond");
     const transform = cue === "omnitrix-transform";
     ctx.save();

@@ -18,23 +18,32 @@ Keep the black square, thin white border, centered health, and color-coded abili
 - Use the existing controls for reduced motion, flash reduction, and effects volume. Keep short sounds distinct even when several moves overlap.
 - Verify an ordinary Classic fight through the same 9:16 canvas used for export. Inspect a tell, a clean hit, an evasion or miss, and the fading aftermath before choosing a seed for a video.
 
-## Shared defensive dodge
+## Shared dash and dodge
 
-Every current and future Classic orb gets one automatic defensive dash/dodge
-per fight, including all eight additional fighters. This is a required roster
-default. Use the common fighter initialization and damage path so new fighters
-inherit it without an individual ability entry.
+Every current and future Classic orb gets one shared dash charge per fight,
+including all eight additional fighters. This is a required roster default.
+Use the common fighter initialization, movement, and damage paths so new
+fighters inherit it without an individual ability entry.
+
+After the opening, an orb above 55% HP can spend the charge on an approach
+lunge when the opponent is separated but within dash reach. A seeded delay
+varies the timing. Give it a 0.10-second braking tell, then a 0.28-second rush
+at 2.75 times normal speed toward the opponent's predicted position. The aim
+commits at launch; the body follows real physics, can miss, and can be
+interrupted by collisions or other knockback. Only the first 0.09 seconds
+evade direct hits. Do not add guaranteed damage to an approach.
 
 An unused charge can evade a hostile hit of at least 5 damage that would leave
 the fighter at half of its maximum HP or below. The fighter needs room to move
 and must be free to act. The dodge moves the real body, boosts its sideways
-escape, and uses the existing dash trail and sound cue. It spends the shared
-charge once; a new fight or tournament match starts with a fresh charge.
+escape, and uses a separate trail and sound cue. Either action spends the
+single shared charge; a new fight or tournament match starts with a fresh one.
+Keep the HUD's DASH tell, LUNGE, and DODGE labels in sync with the live state.
 
 Keep signature defenses independent, including Luke's leaps, Ben 10's form
 defenses, and One Punch Man's unlimited dodges. Sword's defensive Slipstream
 spends the shared charge. When adding an orb, keep it in the all-roster charge
-assertion in `tests/classic-rework.test.mjs`.
+assertions in `tests/classic-rework.test.mjs`.
 
 ## Roster pass
 
@@ -78,4 +87,4 @@ assertion in `tests/classic-rework.test.mjs`.
 
 These fighters use weighted seeded move choices. Range and available
 objects affect the pool, and recent moves receive less weight. Shared
-dash charges remain independent of their repeating attacks.
+approach/dodge charges remain independent of their repeating attacks.

@@ -92,7 +92,7 @@ including the light-theme variants and the large weapon sprites.
 
 The moves have separate windup, release, contact, and recovery states.
 Their effects and sounds follow the same simulation events. Each fighter
-also retains the shared one-charge defensive dash.
+also retains the shared charge for an approach lunge or defensive dodge.
 
 ## Signature moves
 
@@ -161,7 +161,8 @@ and recovery. Each of the 48 original fighters can use its special again
 after a 12-second cooldown following recovery. The newer fighters use the form, charge, and move systems in the
 [Classic combat style guide](CLASSIC_STYLE.md).
 
-Each live fighter also starts with one automatic defensive dash, used
+Each live fighter also starts with one shared dash charge. A healthy fighter
+can use it for a telegraphed approach lunge, or save it for an automatic dodge
 against a solid hit that would leave it at half HP or less. Sword's
 defensive Slipstream uses this charge. Character-specific defenses,
 including Luke's signature leaps and One Punch Man's unlimited dodges,

@@ -1,5 +1,28 @@
 Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs are the weakest and which are strongest
 
+## 2026-11-10 — Shared approach lunges and dodges
+
+- Let every Classic fighter spend its one shared dash charge on an approach
+  lunge or retain it for the existing defensive dodge. Healthy fighters seek
+  a gap-closing opportunity after a seeded delay; the opening orbit, active
+  signatures, holds, freeze, and stun keep priority.
+- Added a 0.10-second braking tell and 0.28-second forward rush at 2.75 times
+  normal speed, with committed aim, real collision/knockback interruption,
+  and a short initial evasion window. Approaching adds no guaranteed damage.
+- Added directional tells, longer live motion trails, distinct windup and
+  launch sounds, and DASH/LUNGE/DODGE HUD states. Kept Luke's signature leaps,
+  One Punch Man's unlimited dodges, and clone charge restrictions intact.
+- Saved the expanded default in the repository instructions, README, and
+  Classic style/roster guides. Added regression coverage for every roster
+  member's approach, repeatability, stun recovery, and movement sounds;
+  isolated the older Pulse signature-contact fixture from approach timing.
+- Playwright checked all 65 fighters' lunges, spending, expiry, and identical
+  replays; all eight new fighters dodged real Boxer hits and lunged naturally
+  in ordinary square/circle fights. Reviewed the live 1080x1920 canvas and
+  the supplied game client's screenshot/state, with no browser errors or
+  failed assets. Skipped full CLI test and publishing dry-run repeats as
+  requested. Browser evidence is in `/private/tmp/orb-shared-dash-qa/`.
+
 ## 2026-11-10 — Dodge required for future Classic fighters
 
 - Confirmed all eight additional fighters inherit one defensive dash charge

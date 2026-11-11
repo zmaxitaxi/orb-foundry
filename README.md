@@ -96,11 +96,13 @@ Sun releases an expanding Solar Prominence, Black Hole converges twin
 gravity wells, and the gun fighters have separate firing patterns. Windups
 show where to move, and only contact with the live attack deals damage. The
 [Classic roster](docs/CLASSIC_ROSTER.md#signature-powers) lists every power.
-Every orb in a live Classic fight gets one defensive dash. It can trigger
-when a hit would take the orb to half health or below. Signature dodges
-still work independently, including One Punch Man's unlimited dodges.
-All eight additional fighters inherit this dodge, and every future Classic
-orb must include it by default.
+Every orb in a live Classic fight gets one shared dash charge. A healthy orb
+can spend it on a telegraphed forward lunge to close a gap, or keep it for
+an automatic dodge against a hit that would leave it at half health or below.
+Lunges move the body at 2.75 times its normal speed, with a trail and their
+own sound. Signature dodges still work independently, including One Punch
+Man's unlimited dodges. All eight additional fighters inherit this system,
+and every future Classic orb must include it by default.
 
 One-on-one Classic fights open from a seeded diagonal. The fighters circle
 inward, then the first clash sends them apart sideways at about twice their

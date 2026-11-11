@@ -22,7 +22,7 @@ import {
   RACE_RGB_COLORS,
   RACE_SCISSOR_ANIMATION_SECONDS,
   raceLaserIntervalLevelFor,
-} from "./simulation.js?v=20261110-eight-fighters1";
+} from "./simulation.js?v=20261110-shared-lunge1";
 import {
   ArenaRenderer,
   PIXEL_WEAPON_PROFILES,
@@ -35,8 +35,8 @@ import {
   drawClassicWallDamage,
   drawClassicWdcDuel,
   drawMotionStreak,
-} from "./renderer.js?v=20261110-eight-fighters1";
-import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261110-eight-fighters1";
+} from "./renderer.js?v=20261110-shared-lunge1";
+import { SOCIAL_FORMATS, buildAbilityHud, buildBattleStats } from "./social.js?v=20261110-shared-lunge1";
 import { WORLD_CUP_COUNTRIES, WORLD_CUP_MODE, worldCupCombatStats } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_CONTENDERS, KING_OF_HILL_MODE } from "./king-of-hill.js";
 import {
@@ -60,7 +60,7 @@ import {
   CLASSIC_ORBS,
   classicTeamDisplayName,
   classicTeamOutlineColorFor,
-} from "./classic-orbs.js?v=20261110-eight-fighters1";
+} from "./classic-orbs.js?v=20261110-shared-lunge1";
 import {
   TOURNAMENT_CONNECTOR_COLORS,
   TOURNAMENT_PRESENTATION_TIMING,
@@ -11387,10 +11387,13 @@ export class SocialBattleRenderer {
           ? CLASSIC_ORBS[fighter.type]?.statLabel || hud.label
           : hud.label;
         const dashActive = sim.time < (fighter.classicDashUntil || 0);
+        const dashTelling = fighter.classicDashMove?.kind === "lunge"
+          && fighter.classicDashMove.phase === "tell" && sim.time < fighter.classicDashMove.activeAt;
         const dashAvailable = fighter.classicDashCharges > 0 && fighter.type !== "one-punch-man";
-        const meterProgress = dashActive || sim.time < (fighter.classicHeldUntil || 0)
+        const meterProgress = dashActive || dashTelling || sim.time < (fighter.classicHeldUntil || 0)
           ? 0 : hud.powerProgress ?? hud.progress;
-        const status = dashActive ? "DODGE" : hud.powerActive ? hud.label : orbital
+        const status = dashActive ? fighter.classicDashMove?.kind === "lunge" ? "LUNGE" : "DODGE"
+          : dashTelling ? "DASH" : hud.powerActive ? hud.label : orbital
           ? `${fighter.classicOrbiters || 0} SATELLITES`
           : (swordPhase === "active" ? "STRIKE" : swordPhase?.toUpperCase()) || abilityLabel;
         const detail = hud.powerActive ? hud.detail : hud.powerCooldownSeconds > 0

@@ -1,4 +1,4 @@
-import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-eight-fighters1";
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-shared-lunge1";
 
 const voice = (layers, noises = [], gain = .8) => ({ layers, noises, gain });
 

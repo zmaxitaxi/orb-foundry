@@ -4987,6 +4987,48 @@ test("Sword can spend Slipstream to evade exactly once", () => {
     assert.ok(!followUp.some(({ type, fighterType }) => type === "classic-power-cue" && fighterType === "sword"));
 });
 
+test("Every Classic fighter can spend its shared dash on a real approach lunge", () => {
+    const run = (id) => {
+        const sim = createSimulation({
+            classicTeams: [[id], ["unarmed"]], classicOpening: false, classicPowerMoves: false,
+            seed: 2406, features: { replay: false },
+        });
+        const [fighter, target] = sim.fighters;
+        Object.assign(fighter, { x: 180, y: 350, vx: -1, vy: 0, classicDashReadyAt: 0, classicAbilityNextAt: Infinity });
+        Object.assign(target, { x: 540, y: 350, vx: 0, vy: 0, stunUntil: 5, classicAbilityNextAt: Infinity });
+        step(sim);
+        assert.equal(fighter.classicDashMove?.phase, "tell", `${id}: an approach has a visible tell`);
+        assert.equal(fighter.classicDashCharges, 0);
+        const before = Math.hypot(target.x - fighter.x, target.y - fighter.y);
+        const events = eventsOverSeconds(sim, 0.15);
+        assert.ok(events.some(({ cue, fighterId }) => cue === "dash-lunge" && fighterId === fighter.id), id);
+        assert.equal(fighter.classicDashMove.phase, "active", id);
+        assert.ok(fighter.vx > fighter.baselineSpeed * 2, `${id}: the body rushes toward the opponent`);
+        assert.ok(Math.hypot(target.x - fighter.x, target.y - fighter.y) < before - 30, id);
+        runSeconds(sim, 0.5);
+        assert.equal(fighter.classicDashCharges, 0, "approaching cannot create another dodge charge");
+        assert.ok(sim.time >= fighter.classicDashUntil, "the speed and evasion windows expire");
+        return captureReplayFrame(sim);
+    };
+    for (const id of CLASSIC_ORB_IDS) assert.deepEqual(run(id), run(id), `${id}: repeatable lunge`);
+});
+
+test("A stunned Classic orb preserves its shared approach until it can move", () => {
+    const sim = createSimulation({
+        classicTeams: [["magneto"], ["unarmed"]], classicOpening: false,
+        classicPowerMoves: false, features: { replay: false },
+    });
+    const [fighter, target] = sim.fighters;
+    Object.assign(fighter, { x: 180, y: 350, vx: 0, vy: 1, stunUntil: 0.3, classicDashReadyAt: 0, classicAbilityNextAt: Infinity });
+    Object.assign(target, { x: 540, y: 350, vx: 0, vy: 0, stunUntil: 5 });
+    runSeconds(sim, 0.2);
+    assert.equal(fighter.classicDashCharges, 1);
+    assert.equal(fighter.classicDashMove, null);
+    runSeconds(sim, 0.25);
+    assert.equal(fighter.classicDashMove?.kind, "lunge");
+    assert.equal(fighter.classicDashCharges, 0);
+});
+
 test("Classic fighters can spend one shared dash to evade a damaging hit", () => {
     const roster = createSimulation({ classicTeams: [CLASSIC_ORB_IDS, ["boxer"]], features: { replay: false } });
     assert.ok(roster.fighters.every(({ classicDashCharges }) => classicDashCharges === 1));
@@ -5031,6 +5073,8 @@ test("The Pulse Classics defend and damage real opponents in regular fights", ()
             arenaSize: "large",
             features: { replay: false },
         });
+        // Isolate signature contacts; shared approaches have all-roster coverage above.
+        for (const fighter of sim.fighters) fighter.classicDashReadyAt = Infinity;
         runSeconds(sim, seconds);
         return sim;
     };

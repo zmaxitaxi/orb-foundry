@@ -6,10 +6,10 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261110-eight-fighters1";
-import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-eight-fighters1";
+} from "./classic-orbs.js?v=20261110-shared-lunge1";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-shared-lunge1";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-eight-fighters1";
+import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-shared-lunge1";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -323,7 +323,7 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20261110-eight-fighters1";
+export const ANNOUNCER_ASSET_VERSION = "20261110-shared-lunge1";
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
@@ -779,6 +779,8 @@ const PULSE_CUE_SOUNDS = Object.freeze({
   "shockwave-wall": { signature: "pulse-shockwave-wall", layers: [[184, 65, .15, .118, "sine"]], noises: [[.13, .10, 1830, .81, "bandpass"]] },
   dodge: { signature: "pulse-sidestep", layers: [[927, 292, .14, .052, "triangle", .012, .028]], noises: [[.16, .12, 2630, 1.23, "bandpass", 0, .041], [.068, .053, 4760, 1.1, "highpass", .039]] },
   "dash-dodge": { signature: "classic-dash-dodge", layers: [[1260, 355, .15, .063, "triangle"]], noises: [[.17, .11, 3540, 1.18, "bandpass", 0, .03]] },
+  "dash-windup": { signature: "classic-dash-windup", layers: [[280, 640, .10, .033, "sine", 0, .035]], noises: [[.09, .037, 1850, 1.2, "bandpass", 0, .03]] },
+  "dash-lunge": { signature: "classic-dash-lunge", layers: [[670, 155, .20, .066, "triangle"], [120, 55, .12, .06, "sine"]], noises: [[.21, .15, 2250, 1.08, "bandpass", 0, .015], [.07, .045, 4900, .9, "highpass"]] },
   limitless: { signature: "pulse-limitless", layers: [[1168, 687, .23, .11, "sine"], [1990, 1630, .29, .081, "sine", .019], [2780, 2260, .18, .048, "triangle", .048]], noises: [[.16, .095, 5100, 1.4, "highpass"]] },
   "purple-merge": { signature: "pulse-purple-merge", layers: [[293, 728, .90, .072, "sine", 0, .27], [949, 733, .79, .079, "sine", .09, .24], [140, 365, .63, .061, "triangle", .22, .16]], noises: [[.62, .058, 2280, 2.2, "bandpass", .20, .16]] },
   "hollow-purple": { signature: "pulse-hollow-purple", priorityEffects: true, layers: [[146, 42, .65, .24, "sine"], [668, 164, .47, .118, "triangle", 0, .016], [1160, 396, .35, .047, "sine", .024, .028]], noises: [[.63, .21, 1040, .92, "lowpass", 0, .029], [.34, .11, 3020, .98, "bandpass"]] },

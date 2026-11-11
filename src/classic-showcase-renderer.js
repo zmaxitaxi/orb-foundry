@@ -1,4 +1,4 @@
-import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-eight-fighters1";
+import { CLASSIC_SHOWCASE_FIGHTERS } from "./classic-showcase.js?v=20261110-shared-lunge1";
 
 const TAU = Math.PI * 2;
 const limit = (value) => Math.max(0, Math.min(1, value));
