@@ -1,0 +1,2260 @@
+{
+  "voice": {
+    "id": "alex",
+    "name": "Alex",
+    "rate": 175,
+    "version": "20261112-single-voice1",
+    "reference": "classic-local/luke-skywalker.mp3",
+    "referenceSha256": "ff8bfeb08218636320dac383c2556f3fb21379110740e5973da3e60f5c7e230b"
+  },
+  "generator": "scripts/generate-unified-announcer.mjs",
+  "phrases": {
+    "single-voice/three.mp3": {
+      "text": "Three",
+      "spokenText": "Three",
+      "reference": false,
+      "source": "three.aiff",
+      "sha256": "de1c7d7994154106efb45dc8c2aab4c84f4f33a172a68cf099210ae5de2de5f8"
+    },
+    "single-voice/two.mp3": {
+      "text": "Two",
+      "spokenText": "Two",
+      "reference": false,
+      "source": "two.aiff",
+      "sha256": "8aa8a0015d41c001e87b02a7ca9f461af57915a2d33a6755b7a05d812548fbdc"
+    },
+    "single-voice/one.mp3": {
+      "text": "One",
+      "spokenText": "One",
+      "reference": false,
+      "source": "one.aiff",
+      "sha256": "2c222f30124c15d3f95cb64d4648973ed12a183600b7dc81f278a282307d3461"
+    },
+    "single-voice/fight.mp3": {
+      "text": "Fight",
+      "spokenText": "Fight",
+      "reference": false,
+      "source": "fight.aiff",
+      "sha256": "7acf7bf1060d0ccd691a8f4f238d0687802f9ff8f423c94bc3e5a13fd0ffe490"
+    },
+    "single-voice/versus.mp3": {
+      "text": "Versus",
+      "spokenText": "Versus",
+      "reference": false,
+      "source": "versus.aiff",
+      "sha256": "7f251a7e5a93d97603bd271317ffbaaf128b0f60a1972053b47f5536471b4cec"
+    },
+    "single-voice/pick-your-winner.mp3": {
+      "text": "Pick your winner",
+      "spokenText": "Pick your winner",
+      "reference": false,
+      "source": "pick-your-winner.aiff",
+      "sha256": "3f0cf0285ae6bdfcbbe7ab0e2127ab5ff32df5776378f62e7957a23119133a13"
+    },
+    "single-voice/overtime.mp3": {
+      "text": "Overtime",
+      "spokenText": "Overtime",
+      "reference": false,
+      "source": "overtime.aiff",
+      "sha256": "1fb43ca82390b84c610c2fbbb7d92ca41fdbb256d6654ceda8b244591ca7b066"
+    },
+    "single-voice/sword.mp3": {
+      "text": "Sword",
+      "spokenText": "Sword",
+      "reference": false,
+      "source": "sword.aiff",
+      "sha256": "3a43526ffde56a6ff8f55350d15ea2b043faa3eacae86c13eeb0c44742b995c0"
+    },
+    "single-voice/duplicator.mp3": {
+      "text": "Duplicator",
+      "spokenText": "Duplicator",
+      "reference": false,
+      "source": "duplicator.aiff",
+      "sha256": "400f99ef00db4434661728e46b3870137786e60e6e77319f1281e9d53b445008"
+    },
+    "single-voice/orbital.mp3": {
+      "text": "Orbital",
+      "spokenText": "Orbital",
+      "reference": false,
+      "source": "orbital.aiff",
+      "sha256": "2e4065d79edcbac39481fe2b64e27eb05d2098ba56bded89e127d003ab8c6fdb"
+    },
+    "single-voice/unarmed.mp3": {
+      "text": "Unarmed",
+      "spokenText": "Unarmed",
+      "reference": false,
+      "source": "unarmed.aiff",
+      "sha256": "24492b5eca1261f4e7d53132d422ce9076e04b5697a9c6497968229cc9416c4c"
+    },
+    "single-voice/slammy.mp3": {
+      "text": "Slammy",
+      "spokenText": "Slammy",
+      "reference": false,
+      "source": "slammy.aiff",
+      "sha256": "ab70bf2766e0151cd49f7dddb6e51dde2c0e45f65e80ce83228562493e127b38"
+    },
+    "single-voice/vampire.mp3": {
+      "text": "Vampire",
+      "spokenText": "Vampire",
+      "reference": false,
+      "source": "vampire.aiff",
+      "sha256": "e649fb2a56e95fe142f45980ba7e0b3a0b4c5992ad0700a8834c07de03ded482"
+    },
+    "single-voice/turret.mp3": {
+      "text": "Turret",
+      "spokenText": "Turret",
+      "reference": false,
+      "source": "turret.aiff",
+      "sha256": "f8b3506b3f36ffda29c24fa746f0cc1ff056fff72d5d4c29815a831e63c70f19"
+    },
+    "single-voice/flash.mp3": {
+      "text": "Flash",
+      "spokenText": "Flash",
+      "reference": false,
+      "source": "flash.aiff",
+      "sha256": "d1899093188f775b9bf10e25eb28a1c82a521b20e12bf318ced45c2ea56b0f52"
+    },
+    "single-voice/reactor.mp3": {
+      "text": "Reactor",
+      "spokenText": "Reactor",
+      "reference": false,
+      "source": "reactor.aiff",
+      "sha256": "d2cda1b0fcf8ba9a53794fe2433d437ce0e8aadd1df6c1074d774d40cdd4ff57"
+    },
+    "single-voice/sniper.mp3": {
+      "text": "Sniper",
+      "spokenText": "Sniper",
+      "reference": false,
+      "source": "sniper.aiff",
+      "sha256": "9abf2b8f20edd261bb8c5698b3431ea9875af6be3faf88fcf383b1e7d2e27c57"
+    },
+    "single-voice/draftmaster.mp3": {
+      "text": "Draftmaster",
+      "spokenText": "Draftmaster",
+      "reference": false,
+      "source": "draftmaster.aiff",
+      "sha256": "f20ac7224c9d62bca79ba8a088d8f1a5e81e2fe4df4e66aacf08bc47943eced0"
+    },
+    "single-voice/blue-sun.mp3": {
+      "text": "Blue Sun",
+      "spokenText": "Blue Sun",
+      "reference": false,
+      "source": "blue-sun.aiff",
+      "sha256": "43128ebdd4d5e0958df77b984168e781a212522fa9d79ad31e472fa785b529a5"
+    },
+    "single-voice/black-hole.mp3": {
+      "text": "Black Hole",
+      "spokenText": "Black Hole",
+      "reference": false,
+      "source": "black-hole.aiff",
+      "sha256": "f3c4a5029d10940712e8d9c3c0a449a6832663d4a899fff975a8b8df82daefc7"
+    },
+    "single-voice/hydrogen-bomb.mp3": {
+      "text": "Hydrogen Bomb",
+      "spokenText": "Hydrogen Bomb",
+      "reference": false,
+      "source": "hydrogen-bomb.aiff",
+      "sha256": "03d54f6e5d0477fe1f08e216cc07f4d857f89e57de3d7897f8d70f32a5f5bc41"
+    },
+    "single-voice/poison.mp3": {
+      "text": "Poison",
+      "spokenText": "Poison",
+      "reference": false,
+      "source": "poison.aiff",
+      "sha256": "87e72e2ed5f19b9b374bf377f2e9040583b721900a6ae2a486e5275f07502f05"
+    },
+    "single-voice/snake.mp3": {
+      "text": "Snake",
+      "spokenText": "Snake",
+      "reference": false,
+      "source": "snake.aiff",
+      "sha256": "4860a1c10ffd9c6efdd9ad80d58dd7223f7168f19e870ecb9ce57e6ade1b7753"
+    },
+    "single-voice/shrapnel.mp3": {
+      "text": "Shrapnel",
+      "spokenText": "Shrapnel",
+      "reference": false,
+      "source": "shrapnel.aiff",
+      "sha256": "260a9cb35e5346b9dac91bbd9481833d4bdcaea71e4a2c92f8b84cf8b944f80f"
+    },
+    "single-voice/absorber.mp3": {
+      "text": "Absorber",
+      "spokenText": "Absorber",
+      "reference": false,
+      "source": "absorber.aiff",
+      "sha256": "9bbcf8227b7f24494077818663e37533b75fb9f873609a7b963608c4270aaf54"
+    },
+    "single-voice/batman.mp3": {
+      "text": "Batman",
+      "spokenText": "Batman",
+      "reference": false,
+      "source": "batman.aiff",
+      "sha256": "18c6a3dd63c190007a6b463645dd3367ca634cd7787c4be036e5e716d9df86b2"
+    },
+    "single-voice/ying-yang.mp3": {
+      "text": "Ying Yang",
+      "spokenText": "Ying Yang",
+      "reference": false,
+      "source": "ying-yang.aiff",
+      "sha256": "b3870c3873129c9d98638ea03a144b9cfe857094ca6109341677689ff43f764a"
+    },
+    "single-voice/lazer.mp3": {
+      "text": "Lazer",
+      "spokenText": "Lazer",
+      "reference": false,
+      "source": "lazer.aiff",
+      "sha256": "e03af08204c0a7f0cddffca76a44f93c47289acfff7e83412be5ca770e0b4822"
+    },
+    "single-voice/charger.mp3": {
+      "text": "Charger",
+      "spokenText": "Charger",
+      "reference": false,
+      "source": "charger.aiff",
+      "sha256": "05cbbe5e90b8f45f08e6cec0c3f4ec7cd936d8b22937e818548a313158f7d99a"
+    },
+    "single-voice/parasites.mp3": {
+      "text": "Parasites",
+      "spokenText": "Parasites",
+      "reference": false,
+      "source": "parasites.aiff",
+      "sha256": "eb4f300109cf0cc01fd280700a94c31eec4c151a1d73f1807abdad9af66b33cf"
+    },
+    "single-voice/grappler.mp3": {
+      "text": "Grappler",
+      "spokenText": "Grappler",
+      "reference": false,
+      "source": "grappler.aiff",
+      "sha256": "1c2a153be54c5d878e224cf7da4b1094b0982baa540d1387db9839a569cbaf77"
+    },
+    "single-voice/jackpot.mp3": {
+      "text": "Jackpot",
+      "spokenText": "Jackpot",
+      "reference": false,
+      "source": "jackpot.aiff",
+      "sha256": "529913472e4f266d5cc98f9e24f2ccfc1358a567946314354ff825b607c5b5b2"
+    },
+    "single-voice/artist.mp3": {
+      "text": "Artist",
+      "spokenText": "Artist",
+      "reference": false,
+      "source": "artist.aiff",
+      "sha256": "75b40a3d2b9af1c56027377e201aecb13f7337986221d22d1d0a5fc8b769f7b7"
+    },
+    "single-voice/commander.mp3": {
+      "text": "Commander",
+      "spokenText": "Commander",
+      "reference": false,
+      "source": "commander.aiff",
+      "sha256": "1722dd5e4d4b7b2df2461107b58e0c314ceec75704a94c0e455ff251ceab614a"
+    },
+    "single-voice/sawball.mp3": {
+      "text": "Sawball",
+      "spokenText": "Sawball",
+      "reference": false,
+      "source": "sawball.aiff",
+      "sha256": "ea47a3e4e407e69c6d23ff1800eafaf969986a71781b7b42c114c09723c0254c"
+    },
+    "single-voice/snowball.mp3": {
+      "text": "Snowball",
+      "spokenText": "Snowball",
+      "reference": false,
+      "source": "snowball.aiff",
+      "sha256": "335253d7ef9a7d0858626319adb4fb590f96a348d201829e5d490f1ed77f97c1"
+    },
+    "single-voice/tripwire.mp3": {
+      "text": "Tripwire",
+      "spokenText": "Tripwire",
+      "reference": false,
+      "source": "tripwire.aiff",
+      "sha256": "6f759423cf1d630ff2daad439f1ff9fd1fd85687724f76df23e411564e08dc9e"
+    },
+    "single-voice/necromancer.mp3": {
+      "text": "Necromancer",
+      "spokenText": "Necromancer",
+      "reference": false,
+      "source": "necromancer.aiff",
+      "sha256": "1186d3eb6b117cf4fb2fb614c6fec18fd603aa957eacc5a73e7a4bc68a8b36a8"
+    },
+    "single-voice/spikey.mp3": {
+      "text": "Spikey",
+      "spokenText": "Spikey",
+      "reference": false,
+      "source": "spikey.aiff",
+      "sha256": "771b75860cdb8b7588b83fa7800a308a24f45ce66a5044db559267a581dad0d2"
+    },
+    "single-voice/virus.mp3": {
+      "text": "Virus",
+      "spokenText": "Virus",
+      "reference": false,
+      "source": "virus.aiff",
+      "sha256": "863f5e9411a360018fdcef85d51e0b1ca6118d22f53b47629d48edcf5a292664"
+    },
+    "single-voice/cobwebs.mp3": {
+      "text": "Cobwebs",
+      "spokenText": "Cobwebs",
+      "reference": false,
+      "source": "cobwebs.aiff",
+      "sha256": "28199ee3902bf0ccbbf24ca9e2791257497a9c0b94bba19eee0dc5b1b2478307"
+    },
+    "single-voice/apple.mp3": {
+      "text": "Apple",
+      "spokenText": "Apple",
+      "reference": false,
+      "source": "apple.aiff",
+      "sha256": "8da032c0609d7ca17eb78c582df7408babce51cbf7f3f2de23113d4c278b4fbc"
+    },
+    "single-voice/cowboy.mp3": {
+      "text": "Cowboy",
+      "spokenText": "Cowboy",
+      "reference": false,
+      "source": "cowboy.aiff",
+      "sha256": "a704ad785c4d4713245afd3c70a3ec5c244c3c9f3aadeb32d1cfe5f21091e880"
+    },
+    "single-voice/hive-ball.mp3": {
+      "text": "Hive Ball",
+      "spokenText": "Hive Ball",
+      "reference": false,
+      "source": "hive-ball.aiff",
+      "sha256": "5ac67480640f22bac3d223a89de98d0206d73c328f8564bdf7404464bcacd9ce"
+    },
+    "single-voice/zeus.mp3": {
+      "text": "Zeus",
+      "spokenText": "Zeus",
+      "reference": false,
+      "source": "zeus.aiff",
+      "sha256": "45b3e2d4456554fde229b85b8139850f345d5d3779043f68d8ffb509d1137cd1"
+    },
+    "single-voice/glass-ball.mp3": {
+      "text": "Glass Ball",
+      "spokenText": "Glass Ball",
+      "reference": false,
+      "source": "glass-ball.aiff",
+      "sha256": "7de924308f3b5cffe25abd05c4849d195968357a2abbe9af61b5ccb740704b3a"
+    },
+    "single-voice/pistol.mp3": {
+      "text": "Pistol",
+      "spokenText": "Pistol",
+      "reference": false,
+      "source": "pistol.aiff",
+      "sha256": "09fb099dbf4d024f53a7ddaa9329affb5dda984122dd23e9e158d9074be06c96"
+    },
+    "single-voice/shotgun.mp3": {
+      "text": "Shotgun",
+      "spokenText": "Shotgun",
+      "reference": false,
+      "source": "shotgun.aiff",
+      "sha256": "8539d82fd4cf84db09754bdf643d1395f5fb57c53c72e69490fdfb83e3555600"
+    },
+    "single-voice/rifle.mp3": {
+      "text": "Rifle",
+      "spokenText": "Rifle",
+      "reference": false,
+      "source": "rifle.aiff",
+      "sha256": "06e827a2583067785bcb230d757649c578fb7e041eceeb351788ff48561628ce"
+    },
+    "single-voice/cutter.mp3": {
+      "text": "Cutter",
+      "spokenText": "Cutter",
+      "reference": false,
+      "source": "cutter.aiff",
+      "sha256": "0bc0bb32fa18e987be0d1a01706c23e0a478e1da551566dc8b07d550b9cc0ffa"
+    },
+    "single-voice/trident.mp3": {
+      "text": "Trident",
+      "spokenText": "Trident",
+      "reference": false,
+      "source": "trident.aiff",
+      "sha256": "60c5c518d3b50543ce91156881c4301d8572f3dd9d55315f18a2dd1adb5b72f9"
+    },
+    "single-voice/train.mp3": {
+      "text": "Train",
+      "spokenText": "Train",
+      "reference": false,
+      "source": "train.aiff",
+      "sha256": "c39108d2e76ccbb6de5e0c7615a4c57931ec8a9d0447be7178251d94402d3160"
+    },
+    "single-voice/boxer.mp3": {
+      "text": "Boxer",
+      "spokenText": "Boxer",
+      "reference": false,
+      "source": "boxer.aiff",
+      "sha256": "f67b87983bac9b80ad03938123898c9e8f486f23b2aed34e4593d9d0d59a4a4b"
+    },
+    "single-voice/monster.mp3": {
+      "text": "Monster",
+      "spokenText": "Monster",
+      "reference": false,
+      "source": "monster.aiff",
+      "sha256": "7c1d2e5f0b70eb69ffa1e993d3fd016f6050cd7de7238772a766ab1e67e520ec"
+    },
+    "single-voice/fairy.mp3": {
+      "text": "Fairy",
+      "spokenText": "Fairy",
+      "reference": false,
+      "source": "fairy.aiff",
+      "sha256": "680d86d0a27f4c2dec7955688409aa6c74545b3caa3fc42ca04c491e2dc03e3d"
+    },
+    "single-voice/wdc.mp3": {
+      "text": "WDC",
+      "spokenText": "W D C",
+      "reference": false,
+      "source": "wdc.aiff",
+      "sha256": "4c3dd590123c31afb7a7e98fb8dd8cdb05c05951efa97b4df943e15756c8d5bf"
+    },
+    "single-voice/one-punch-man.mp3": {
+      "text": "One Punch Man",
+      "spokenText": "One Punch Man",
+      "reference": false,
+      "source": "one-punch-man.aiff",
+      "sha256": "21b9c6ac670b8e2dad43317f0c810c02e4ef227e05b2e10b5937c08900b93475"
+    },
+    "single-voice/gojo.mp3": {
+      "text": "Gojo",
+      "spokenText": "Gojo",
+      "reference": false,
+      "source": "gojo.aiff",
+      "sha256": "641033b06531bf9a5d87b6915639da3a8179461ba3304a0a8ff426d494fe0b73"
+    },
+    "single-voice/john-rod.mp3": {
+      "text": "John Rod",
+      "spokenText": "John Rod",
+      "reference": false,
+      "source": "john-rod.aiff",
+      "sha256": "91b31c0e24690856d0ebefa68e871f3813a3fdf5214abc40a953065df5dd6858"
+    },
+    "single-voice/one-above-all.mp3": {
+      "text": "One Above All",
+      "spokenText": "One Above All",
+      "reference": false,
+      "source": "one-above-all.aiff",
+      "sha256": "87a95de087dbdc9645ca6e5062eb862cbac83f982c0acb73be7e78326be1c18e"
+    },
+    "single-voice/knight.mp3": {
+      "text": "Knight",
+      "spokenText": "Knight",
+      "reference": false,
+      "source": "knight.aiff",
+      "sha256": "979ce11bda072a4342a5e8ed59c99390b80006e8f6c129a2536897abd627a8e3"
+    },
+    "single-voice/ben-10.mp3": {
+      "text": "Ben 10",
+      "spokenText": "Ben 10",
+      "reference": false,
+      "source": "ben-10.aiff",
+      "sha256": "bbaddf3f0021026b7e03199ead942c807a0f92831418b226fa40746984f32bc6"
+    },
+    "single-voice/darth-vader.mp3": {
+      "text": "Darth Vader",
+      "spokenText": "Darth Vader",
+      "reference": false,
+      "source": "darth-vader.aiff",
+      "sha256": "3526f7eedc3f3b2bef6d66797eaaa37ae4e1ac674c1301dfab9257ae3f546d0a"
+    },
+    "classic-local/luke-skywalker.mp3": {
+      "text": "Luke Skywalker",
+      "spokenText": "Luke Skywalker",
+      "reference": true,
+      "sha256": "ff8bfeb08218636320dac383c2556f3fb21379110740e5973da3e60f5c7e230b"
+    },
+    "single-voice/magneto.mp3": {
+      "text": "Magneto",
+      "spokenText": "Magneto",
+      "reference": false,
+      "source": "magneto.aiff",
+      "sha256": "a2ebe70fb0f62e48e8171e4e714f04e3a26fc1b7afa77e7361ae7ef4ac3f318c"
+    },
+    "single-voice/kratos.mp3": {
+      "text": "Kratos",
+      "spokenText": "Kratos",
+      "reference": false,
+      "source": "kratos.aiff",
+      "sha256": "57e624dd80eafec680538aa786fcb01dbfc17284156efea1441b93da3e7f6666"
+    },
+    "single-voice/doctor-strange.mp3": {
+      "text": "Doctor Strange",
+      "spokenText": "Doctor Strange",
+      "reference": false,
+      "source": "doctor-strange.aiff",
+      "sha256": "d6cfbbfbc53f54fadd1a5404fa7f092e454905a597ac54541578172844f3804d"
+    },
+    "single-voice/gambit.mp3": {
+      "text": "Gambit",
+      "spokenText": "Gambit",
+      "reference": false,
+      "source": "gambit.aiff",
+      "sha256": "e62fac8d5207bdb239efc5e4e3293d9e7c8770aa9399e7ef727d19ebbd54e93e"
+    },
+    "single-voice/rubber.mp3": {
+      "text": "Rubber",
+      "spokenText": "Rubber",
+      "reference": false,
+      "source": "rubber.aiff",
+      "sha256": "7302dc3cdb5d58b64c4eb5257d47eb3b5979370b5db6a23f02a356dd1b80666b"
+    },
+    "single-voice/pinball.mp3": {
+      "text": "Pinball",
+      "spokenText": "Pinball",
+      "reference": false,
+      "source": "pinball.aiff",
+      "sha256": "32da19d8b8f3e4d6d5b5ac62b5124a986007a6458f4a4a2d0130c0619704f24d"
+    },
+    "single-voice/origami.mp3": {
+      "text": "Origami",
+      "spokenText": "Origami",
+      "reference": false,
+      "source": "origami.aiff",
+      "sha256": "24a9f34c84fe14dce7f1bff887ffc4e386002bb5c9c572e7bf20eccd6f163b18"
+    },
+    "single-voice/sand-pharaoh.mp3": {
+      "text": "Sand Pharaoh",
+      "spokenText": "Sand Pharaoh",
+      "reference": false,
+      "source": "sand-pharaoh.aiff",
+      "sha256": "bd3ea20e6a58356682bbdb98f8d3080e36c49ff880569df213eb99c74b07379e"
+    },
+    "single-voice/france.mp3": {
+      "text": "France",
+      "spokenText": "France",
+      "reference": false,
+      "source": "france.aiff",
+      "sha256": "c9119d682d6176e4de824b11afb0a8c6411b68815e76903316a7e95a55d9ae5c"
+    },
+    "single-voice/argentina.mp3": {
+      "text": "Argentina",
+      "spokenText": "Argentina",
+      "reference": false,
+      "source": "argentina.aiff",
+      "sha256": "b384207d616b3127605ff2ff902432a0f5d15d1d4e5faca96953044bb09c9228"
+    },
+    "single-voice/australia.mp3": {
+      "text": "Australia",
+      "spokenText": "Australia",
+      "reference": false,
+      "source": "australia.aiff",
+      "sha256": "94c7fccf6135be3ac6a0fcab212749623ca42af652a93f4bce5b294569af4aa1"
+    },
+    "single-voice/brazil.mp3": {
+      "text": "Brazil",
+      "spokenText": "Brazil",
+      "reference": false,
+      "source": "brazil.aiff",
+      "sha256": "d99f4fc0e56f462c79cb4eb38599c578f7283b51cd51d8c1784d988cb0188413"
+    },
+    "single-voice/canada.mp3": {
+      "text": "Canada",
+      "spokenText": "Canada",
+      "reference": false,
+      "source": "canada.aiff",
+      "sha256": "78e0a449011d809db4d0302eb177e8ae4e1d134a0869bc495a007b0362308769"
+    },
+    "single-voice/cabo-verde.mp3": {
+      "text": "Cabo Verde",
+      "spokenText": "Cabo Verde",
+      "reference": false,
+      "source": "cabo-verde.aiff",
+      "sha256": "3b8debb681c1a5ef76025a28f40baad9e818115ab56349d39248f0cee0663826"
+    },
+    "single-voice/usa.mp3": {
+      "text": "USA",
+      "spokenText": "USA",
+      "reference": false,
+      "source": "usa.aiff",
+      "sha256": "8f7668b9fcddbeb5633e53a0d1c38940195bdf8a69ffb71e9f3a054e120413ba"
+    },
+    "single-voice/colombia.mp3": {
+      "text": "Colombia",
+      "spokenText": "Colombia",
+      "reference": false,
+      "source": "colombia.aiff",
+      "sha256": "857948fd5129635e252edacda575becf1d0cc5e7bd9a5edd83a84ce7ba3f73fa"
+    },
+    "single-voice/congo.mp3": {
+      "text": "Congo",
+      "spokenText": "Congo",
+      "reference": false,
+      "source": "congo.aiff",
+      "sha256": "ebe04827115f393ac16e8b6705b4414f4f8d70a3072e04229e9c3205c7f27a98"
+    },
+    "single-voice/egypt.mp3": {
+      "text": "Egypt",
+      "spokenText": "Egypt",
+      "reference": false,
+      "source": "egypt.aiff",
+      "sha256": "313b98a5d98eb27c9e8f3cd46ee01fadf7e5dad03736dd95a1745a7392a27193"
+    },
+    "single-voice/england.mp3": {
+      "text": "England",
+      "spokenText": "England",
+      "reference": false,
+      "source": "england.aiff",
+      "sha256": "cf00ea5172b475a8a0c561611b573eadaf2cb18922d88b84293ebbe957fa9699"
+    },
+    "single-voice/ghana.mp3": {
+      "text": "Ghana",
+      "spokenText": "Ghana",
+      "reference": false,
+      "source": "ghana.aiff",
+      "sha256": "6654003f174f5d1b67d08d9a5f26b3ab71b9edef6a456981a63c0485749506ff"
+    },
+    "single-voice/mexico.mp3": {
+      "text": "Mexico",
+      "spokenText": "Mexico",
+      "reference": false,
+      "source": "mexico.aiff",
+      "sha256": "878d9e06621e9005f81e19439918d17c352bfa1ceb98b4142685b6ca27877f1e"
+    },
+    "single-voice/morocco.mp3": {
+      "text": "Morocco",
+      "spokenText": "Morocco",
+      "reference": false,
+      "source": "morocco.aiff",
+      "sha256": "01a82e0b2946874e10f63fc441049abb64d2a794fbd131707cf1f39abc16f3bc"
+    },
+    "single-voice/sweden.mp3": {
+      "text": "Sweden",
+      "spokenText": "Sweden",
+      "reference": false,
+      "source": "sweden.aiff",
+      "sha256": "606930ee742a47095273a942a0f81961f6ce7f54cfe697a45bed8ce61fc42aa8"
+    },
+    "single-voice/bosnia.mp3": {
+      "text": "Bosnia",
+      "spokenText": "Bosnia",
+      "reference": false,
+      "source": "bosnia.aiff",
+      "sha256": "18b50275a4032bfad76405f28254b8eb18f6d4fc39ac32aed4ddf731426c3a39"
+    },
+    "single-voice/japan.mp3": {
+      "text": "Japan",
+      "spokenText": "Japan",
+      "reference": false,
+      "source": "japan.aiff",
+      "sha256": "9d69534bd5c67aefd663e15da45294ca6bcec6a6cfaad9e0d148bd764d979b4e"
+    },
+    "single-voice/paraguay.mp3": {
+      "text": "Paraguay",
+      "spokenText": "Paraguay",
+      "reference": false,
+      "source": "paraguay.aiff",
+      "sha256": "499e306563128d6eb9c6b0ba34f2663db5ce194411f9c91b29dfe6189f03ecf5"
+    },
+    "single-voice/germany.mp3": {
+      "text": "Germany",
+      "spokenText": "Germany",
+      "reference": false,
+      "source": "germany.aiff",
+      "sha256": "542c7456412ce70260c863f7cd450d360ddcc4585fe7738058dfecd18de76bd4"
+    },
+    "single-voice/portugal.mp3": {
+      "text": "Portugal",
+      "spokenText": "Portugal",
+      "reference": false,
+      "source": "portugal.aiff",
+      "sha256": "7d95e7b6f84aa85a804ddcf4cf8a2db0ca717525c01b39a00308271c72fa09f0"
+    },
+    "single-voice/croatia.mp3": {
+      "text": "Croatia",
+      "spokenText": "Croatia",
+      "reference": false,
+      "source": "croatia.aiff",
+      "sha256": "5dca2d0ba398642c88d8dc98adec1d64500d4d9b97f8e64ed3a665a51f63931f"
+    },
+    "single-voice/ivory-coast.mp3": {
+      "text": "Ivory Coast",
+      "spokenText": "Ivory Coast",
+      "reference": false,
+      "source": "ivory-coast.aiff",
+      "sha256": "c076a3f90d374161847d7628e1bf2e6969e6f0709dfc7cd18303b1b32cbf3e58"
+    },
+    "single-voice/norway.mp3": {
+      "text": "Norway",
+      "spokenText": "Norway",
+      "reference": false,
+      "source": "norway.aiff",
+      "sha256": "534d9e5ee35a7779413c5592b1e843d0cb509581dfb00309a66bbf6fce077e99"
+    },
+    "single-voice/belgium.mp3": {
+      "text": "Belgium",
+      "spokenText": "Belgium",
+      "reference": false,
+      "source": "belgium.aiff",
+      "sha256": "b5cf592423444b70417b99dd99768b10c58460ef83958377fafc833ba80a16d2"
+    },
+    "single-voice/senegal.mp3": {
+      "text": "Senegal",
+      "spokenText": "Senegal",
+      "reference": false,
+      "source": "senegal.aiff",
+      "sha256": "38c7b315a234fe3c39d1eee2490151dea774a954967375ba18d540359833e686"
+    },
+    "single-voice/austria.mp3": {
+      "text": "Austria",
+      "spokenText": "Austria",
+      "reference": false,
+      "source": "austria.aiff",
+      "sha256": "29befd766e3dc3d4a5d28261d4cf4a2661056e0b76510525d4b0d42eacdc519f"
+    },
+    "single-voice/spain.mp3": {
+      "text": "Spain",
+      "spokenText": "Spain",
+      "reference": false,
+      "source": "spain.aiff",
+      "sha256": "9561ebcdf7fb8d00bf1be03747ff15b7bc4e21caa410df5c9f84f04e87c78312"
+    },
+    "single-voice/algeria.mp3": {
+      "text": "Algeria",
+      "spokenText": "Algeria",
+      "reference": false,
+      "source": "algeria.aiff",
+      "sha256": "10fb9f0a51c16cf4c495ce9198d034aaa9afd412a90cbb0875fe41035e8a1543"
+    },
+    "single-voice/switzerland.mp3": {
+      "text": "Switzerland",
+      "spokenText": "Switzerland",
+      "reference": false,
+      "source": "switzerland.aiff",
+      "sha256": "24447acf3a0cd138255bdc6c9610435c5202125dc4e01f7664c4f26603c66faa"
+    },
+    "single-voice/speedster.mp3": {
+      "text": "Speedster",
+      "spokenText": "Speedster",
+      "reference": false,
+      "source": "speedster.aiff",
+      "sha256": "e70df765387ed002caf4c55c0ebfa2c2f6fff312450a70e852339dea4fea1db2"
+    },
+    "single-voice/drill.mp3": {
+      "text": "Drill",
+      "spokenText": "Drill",
+      "reference": false,
+      "source": "drill.aiff",
+      "sha256": "f1138536ebcdd5a2cc76376c53ff94dd3121a55cd2b436c196772bd0fc45f22a"
+    },
+    "single-voice/fibonacci.mp3": {
+      "text": "Fibonacci",
+      "spokenText": "Fee buh naa chee",
+      "reference": false,
+      "source": "fibonacci.aiff",
+      "sha256": "380584c7c075ba0aeabbb6ca2890f63130c217d0b8d884856b2ce88880e42249"
+    },
+    "single-voice/x-squared.mp3": {
+      "text": "X Squared",
+      "spokenText": "X Squared",
+      "reference": false,
+      "source": "x-squared.aiff",
+      "sha256": "fa670436c1a3b7c1903e59c621b6da68b5e7058cf8ca0f2f08c70c2a1a79b574"
+    },
+    "single-voice/golden-ratio.mp3": {
+      "text": "Golden Ratio",
+      "spokenText": "Golden Ratio",
+      "reference": false,
+      "source": "golden-ratio.aiff",
+      "sha256": "c98c124aa5096e2fae3516f51b39ce46c96d50a144c101823f2ca0d143c6a19d"
+    },
+    "single-voice/sticky.mp3": {
+      "text": "Sticky",
+      "spokenText": "Sticky",
+      "reference": false,
+      "source": "sticky.aiff",
+      "sha256": "9a298d5a9797db91460f4c160cb31212b85b0f45c728eb614a2c30d58222b633"
+    },
+    "single-voice/grower.mp3": {
+      "text": "Grower",
+      "spokenText": "Grower",
+      "reference": false,
+      "source": "grower.aiff",
+      "sha256": "8ef479abdb06ada35949a64c492cd50c83c949612996e209c87dcbe4f030a036"
+    },
+    "single-voice/super-slammy.mp3": {
+      "text": "Super Slammy",
+      "spokenText": "Super Slammy",
+      "reference": false,
+      "source": "super-slammy.aiff",
+      "sha256": "1660523b9fb20885be7d72d2fffb9a8d29aa6ac51e58c96d0489acce4e79f2e4"
+    },
+    "single-voice/piercer.mp3": {
+      "text": "Piercer",
+      "spokenText": "Piercer",
+      "reference": false,
+      "source": "piercer.aiff",
+      "sha256": "f327b7f982b722be3665a91378c6ab828990d61d68bc6876185c49d87c0ce563"
+    },
+    "single-voice/antimatter-bomb.mp3": {
+      "text": "Antimatter Bomb",
+      "spokenText": "Antimatter Bomb",
+      "reference": false,
+      "source": "antimatter-bomb.aiff",
+      "sha256": "fbcf2b41d4ad824e796c0054ae6941266e60d212cb42b380125000197d925a8f"
+    },
+    "single-voice/time-bomb.mp3": {
+      "text": "Time Bomb",
+      "spokenText": "Time Bomb",
+      "reference": false,
+      "source": "time-bomb.aiff",
+      "sha256": "2a6a7079bc2bd0096739632dbefcc046fa2038507781c20f0ea8c29f15055795"
+    },
+    "single-voice/reality-bomb.mp3": {
+      "text": "Reality Bomb",
+      "spokenText": "Reality Bomb",
+      "reference": false,
+      "source": "reality-bomb.aiff",
+      "sha256": "a016953465ae31c4e7b1efcd77e59fb9a614aaa714d9cda809f252e77873ed06"
+    },
+    "single-voice/tsar-bomb.mp3": {
+      "text": "Tsar Bomb",
+      "spokenText": "Tsar Bomb",
+      "reference": false,
+      "source": "tsar-bomb.aiff",
+      "sha256": "6227a3aa09af55c25af9aa31d1bf57d676b898b65093df7cc558d25c5d682a62"
+    },
+    "single-voice/all-in-one.mp3": {
+      "text": "All In One",
+      "spokenText": "All In One",
+      "reference": false,
+      "source": "all-in-one.aiff",
+      "sha256": "c70dfd66c027834afb557242d66573e9266e13fe5c8a7fe79cd873d1dd28bebf"
+    },
+    "single-voice/breaker.mp3": {
+      "text": "Breaker",
+      "spokenText": "Breaker",
+      "reference": false,
+      "source": "breaker.aiff",
+      "sha256": "0f7312427b56ad038a92286c77179094947ce05dbf623c865511722bb6e48c23"
+    },
+    "single-voice/square-root.mp3": {
+      "text": "Square Root",
+      "spokenText": "Square Root",
+      "reference": false,
+      "source": "square-root.aiff",
+      "sha256": "b8ad6de6f288d280800b4472f0434507a5aac1543f3d447bfc40056c9e53ddf6"
+    },
+    "single-voice/progressive.mp3": {
+      "text": "Progressive",
+      "spokenText": "Progressive",
+      "reference": false,
+      "source": "progressive.aiff",
+      "sha256": "48c5982a1958192d8ef6684791057e7a7ff81ce0a689d992258034dd49d2becf"
+    },
+    "single-voice/random.mp3": {
+      "text": "Random",
+      "spokenText": "Random",
+      "reference": false,
+      "source": "random.aiff",
+      "sha256": "cba0cd5cd099bba19b37713f00dea2712fca4c37ef0fba2847c739e0d0b1b78b"
+    },
+    "single-voice/twins.mp3": {
+      "text": "Twins",
+      "spokenText": "Twins",
+      "reference": false,
+      "source": "twins.aiff",
+      "sha256": "78fb3699b67577806123985765cd2a18103fe402ccc99f1d1f31f723ae2f6c04"
+    },
+    "single-voice/scissor.mp3": {
+      "text": "Scissor",
+      "spokenText": "Scissor",
+      "reference": false,
+      "source": "scissor.aiff",
+      "sha256": "9b56e07efec7bf8a980a98f1d72b36888935c97eaf15b75b40c0e5691d496cbb"
+    },
+    "single-voice/lag.mp3": {
+      "text": "Lag",
+      "spokenText": "Lag",
+      "reference": false,
+      "source": "lag.aiff",
+      "sha256": "aa1d07123193165af9f759e39b9701bedf725efe2f80790b15294b626dacca3a"
+    },
+    "single-voice/whirlwind.mp3": {
+      "text": "Whirlwind",
+      "spokenText": "Whirlwind",
+      "reference": false,
+      "source": "whirlwind.aiff",
+      "sha256": "dcc9e6cce033c46b26dfb04b8eb597e8429f5e6fc9c6c14d4fbecc9713cbb6f3"
+    },
+    "single-voice/r-g-b.mp3": {
+      "text": "R G B",
+      "spokenText": "R G B",
+      "reference": false,
+      "source": "r-g-b.aiff",
+      "sha256": "7a9918d4239689eafb2ecf326ee98a08f534ce850446b3c38b12fbd4c48ce974"
+    },
+    "single-voice/x-to-the-x.mp3": {
+      "text": "X to the X",
+      "spokenText": "X to the X",
+      "reference": false,
+      "source": "x-to-the-x.aiff",
+      "sha256": "1739c14d282dad7418969bdde1670c0ce516d5ebfa9d0454f55e66170e30c889"
+    },
+    "single-voice/super-x-to-the-x.mp3": {
+      "text": "Super X to the X",
+      "spokenText": "Super X to the X",
+      "reference": false,
+      "source": "super-x-to-the-x.aiff",
+      "sha256": "1e215b66e335ebf67fefdab549b6a6ea697fa60671322bb6ef4edc57f5fc0e90"
+    },
+    "single-voice/lucas-sequence.mp3": {
+      "text": "Lucas Sequence",
+      "spokenText": "Lucas Sequence",
+      "reference": false,
+      "source": "lucas-sequence.aiff",
+      "sha256": "03492c63da05ea3c4721f258510e91b89b90abf3a6741e4ad6e09ff33ab84ed2"
+    },
+    "single-voice/professor.mp3": {
+      "text": "Professor",
+      "spokenText": "Professor",
+      "reference": false,
+      "source": "professor.aiff",
+      "sha256": "3e21a66dcb1fc05c4ddb60dec3c17827f4700785f71fefa2458f3bd16ef03775"
+    },
+    "single-voice/gravity.mp3": {
+      "text": "Gravity",
+      "spokenText": "Gravity",
+      "reference": false,
+      "source": "gravity.aiff",
+      "sha256": "a8c0b62a1bd31d8ac0a511ddda501a8b3cdc6d4a78aefb2e5412c36977f10572"
+    },
+    "single-voice/boomerang.mp3": {
+      "text": "Boomerang",
+      "spokenText": "Boomerang",
+      "reference": false,
+      "source": "boomerang.aiff",
+      "sha256": "e850d24044130e4b3ed906162eaacabb00dc74283d49acd20e0151c6966efd91"
+    },
+    "single-voice/splodey.mp3": {
+      "text": "Splodey",
+      "spokenText": "Splodee",
+      "reference": false,
+      "source": "splodey.aiff",
+      "sha256": "97801dc4638cdcc0c859e1394ecf77859f302f211ea1319a024986c267346fe8"
+    },
+    "single-voice/magnet.mp3": {
+      "text": "Magnet",
+      "spokenText": "Magnet",
+      "reference": false,
+      "source": "magnet.aiff",
+      "sha256": "eac603972abb2bf288b7ecdfc3afae2f0b8567ee60ac8e8f380b951d6ae5bb0d"
+    },
+    "single-voice/factorial.mp3": {
+      "text": "Factorial",
+      "spokenText": "Factorial",
+      "reference": false,
+      "source": "factorial.aiff",
+      "sha256": "ac4cb9ee4b16ba93b17af08a9057995abc0237ae465e87dbe8a508389a15c902"
+    },
+    "single-voice/prime.mp3": {
+      "text": "Prime",
+      "spokenText": "Prime",
+      "reference": false,
+      "source": "prime.aiff",
+      "sha256": "419298685b43932e0036b4ee963185e3ac880af4c15cd63d585d05d3dcac82ea"
+    },
+    "single-voice/integral.mp3": {
+      "text": "Integral",
+      "spokenText": "Integral",
+      "reference": false,
+      "source": "integral.aiff",
+      "sha256": "11fd57bc79b961e9ce8e4784a5d3892e3ffcd563f73527a463d634040ea32a76"
+    },
+    "single-voice/quadratic.mp3": {
+      "text": "Quadratic",
+      "spokenText": "Quadratic",
+      "reference": false,
+      "source": "quadratic.aiff",
+      "sha256": "aac89d9f72f7c59d8014ecc3df3699a799e0973d9a86129865a0766afff9b770"
+    },
+    "single-voice/pi.mp3": {
+      "text": "Pi",
+      "spokenText": "Pi",
+      "reference": false,
+      "source": "pi.aiff",
+      "sha256": "30cb717456a6a534142d65765ee0a07b13c26f3c1c882e3666b120103f97368e"
+    },
+    "single-voice/ricochet-cannon.mp3": {
+      "text": "Ricochet Cannon",
+      "spokenText": "Ricochet Cannon",
+      "reference": false,
+      "source": "ricochet-cannon.aiff",
+      "sha256": "21badf07c656c2202641ce54ab1f80a150b8454ad8e1b843179ac0857581995f"
+    },
+    "single-voice/sawblade.mp3": {
+      "text": "Sawblade",
+      "spokenText": "Sawblade",
+      "reference": false,
+      "source": "sawblade.aiff",
+      "sha256": "cada76b98d33b9fb2b6bb1901c1821c7bffa4b4474a14e6f130c97cf2e9cf998"
+    },
+    "single-voice/meteor.mp3": {
+      "text": "Meteor",
+      "spokenText": "Meteor",
+      "reference": false,
+      "source": "meteor.aiff",
+      "sha256": "3e782dc388ee92828b2fcaae36260c8545dc7b33d87911be0c8d794092f43fef"
+    },
+    "single-voice/godzilla.mp3": {
+      "text": "Godzilla",
+      "spokenText": "Godzilla",
+      "reference": false,
+      "source": "godzilla.aiff",
+      "sha256": "d37e3f8b609da32fa678840a61554d21209cb72f6f5fbf7d16007154d8960b54"
+    },
+    "single-voice/slow.mp3": {
+      "text": "Slow",
+      "spokenText": "Slow",
+      "reference": false,
+      "source": "slow.aiff",
+      "sha256": "d41edb7bd5f1dc0657e04ae16a322b029b9cb4267d84c490af901fe0d05a69fa"
+    },
+    "single-voice/centy.mp3": {
+      "text": "Centy",
+      "spokenText": "Centy",
+      "reference": false,
+      "source": "centy.aiff",
+      "sha256": "51ca99d6562a2a3225c42ddc0a6a74c1d6de3f4d05bc7594aec6e91b59c2c9ee"
+    },
+    "single-voice/infinity.mp3": {
+      "text": "Infinity",
+      "spokenText": "Infinity",
+      "reference": false,
+      "source": "infinity.aiff",
+      "sha256": "a663827a899808746d9f4c9bb03bb945639dc44a8b66cab09a5f2552c823edd1"
+    },
+    "single-voice/bouncer.mp3": {
+      "text": "Bouncer",
+      "spokenText": "Bouncer",
+      "reference": false,
+      "source": "bouncer.aiff",
+      "sha256": "14502a2088f0a7c86972528cdc1c167d0d346753ddf14fa2aaa9a5b9045b98d9"
+    },
+    "single-voice/purple-sun.mp3": {
+      "text": "Purple Sun",
+      "spokenText": "Purple Sun",
+      "reference": false,
+      "source": "purple-sun.aiff",
+      "sha256": "a8a05b2497e2c103d1a2355acff53086d9d51460b223ed4aff41f111cee7bb81"
+    },
+    "single-voice/the-sun.mp3": {
+      "text": "The Sun",
+      "spokenText": "The Sun",
+      "reference": false,
+      "source": "the-sun.aiff",
+      "sha256": "2737d45bc2d74d371847e14cfc9b26aba574730b1f6691c185bcfc9d64137df8"
+    },
+    "single-voice/phase-two-sun.mp3": {
+      "text": "Phase Two Sun",
+      "spokenText": "Phase Two Sun",
+      "reference": false,
+      "source": "phase-two-sun.aiff",
+      "sha256": "19dec6fcf995c02f223d0dbf7d3c6c7c6699ec76f162021e79416283fb3df717"
+    },
+    "single-voice/trifecta.mp3": {
+      "text": "Trifecta",
+      "spokenText": "Trifecta",
+      "reference": false,
+      "source": "trifecta.aiff",
+      "sha256": "84f3e3a7688d5b000cb932b9b1526642261c6fbaff37de2687f82c7e3bca2755"
+    },
+    "single-voice/gravitator.mp3": {
+      "text": "Gravitator",
+      "spokenText": "Gravitator",
+      "reference": false,
+      "source": "gravitator.aiff",
+      "sha256": "0639559347dd423fed060ad2299fe95456c4b25441c6a31c5c60f79798ed9f10"
+    },
+    "single-voice/cubed.mp3": {
+      "text": "Cubed",
+      "spokenText": "Cubed",
+      "reference": false,
+      "source": "cubed.aiff",
+      "sha256": "c128cdfdb683f6728cb2b751585ac460c90463a77fe6c67a05f085bf393e656f"
+    },
+    "single-voice/double.mp3": {
+      "text": "Double",
+      "spokenText": "Double",
+      "reference": false,
+      "source": "double.aiff",
+      "sha256": "2a5d1a0b6ed74dd1f120aa252e25677b6096b489f72d4bc6b8d1dd328aa85729"
+    },
+    "single-voice/tripler.mp3": {
+      "text": "Tripler",
+      "spokenText": "Tripler",
+      "reference": false,
+      "source": "tripler.aiff",
+      "sha256": "92f7c8a3b4cb3b8986c355417752d143a37f6392e1c4ea0c7d1433c359640ac9"
+    },
+    "single-voice/leech.mp3": {
+      "text": "Leech",
+      "spokenText": "Leech",
+      "reference": false,
+      "source": "leech.aiff",
+      "sha256": "83d06ff12d87874494fa26da414076b91f6c3c3a09fc2845f7c2a7ce458c7dba"
+    },
+    "single-voice/crusher.mp3": {
+      "text": "Crusher",
+      "spokenText": "Crusher",
+      "reference": false,
+      "source": "crusher.aiff",
+      "sha256": "01eb63c65d130f49fc730ad376c01ecc5ec3a5cd0198462a3a531958e7faf430"
+    },
+    "single-voice/berserker.mp3": {
+      "text": "Berserker",
+      "spokenText": "Berserker",
+      "reference": false,
+      "source": "berserker.aiff",
+      "sha256": "c7a6b4e235161f203efd4b7a14156261b3703ee18f15c46821fc015e86391c71"
+    },
+    "single-voice/parasite.mp3": {
+      "text": "Parasite",
+      "spokenText": "Parasite",
+      "reference": false,
+      "source": "parasite.aiff",
+      "sha256": "b9c2eb776c2254551589d5029e0a41d596439cea6d259f4f4e9d5e32497b8ab2"
+    },
+    "single-voice/needle.mp3": {
+      "text": "Needle",
+      "spokenText": "Needle",
+      "reference": false,
+      "source": "needle.aiff",
+      "sha256": "d5eff61e5507b22b6f9a783e7f331bac4a89a10dee8dacc8e6f8d843e3647d60"
+    },
+    "single-voice/multiplier.mp3": {
+      "text": "Multiplier",
+      "spokenText": "Multiplier",
+      "reference": false,
+      "source": "multiplier.aiff",
+      "sha256": "bde70e6f8ed1b570cc013836333d90db3b541209af8cbeb0fe4a921f3be9f7ce"
+    },
+    "single-voice/countdown.mp3": {
+      "text": "Countdown",
+      "spokenText": "Countdown",
+      "reference": false,
+      "source": "countdown.aiff",
+      "sha256": "8e7da82946576897eb86273039221b071827d97fbda1fec110235e26bed82d88"
+    },
+    "single-voice/copycat.mp3": {
+      "text": "Copycat",
+      "spokenText": "Copycat",
+      "reference": false,
+      "source": "copycat.aiff",
+      "sha256": "47e692cb5c73117bdede5877c79d3eefcc4b159a6673fc420dd11d4f13cc29e4"
+    },
+    "single-voice/critical.mp3": {
+      "text": "Critical",
+      "spokenText": "Critical",
+      "reference": false,
+      "source": "critical.aiff",
+      "sha256": "34bf2d524f870355618ed5dcd69f6bd7b7f82298396c09d4e19b42f704486fa3"
+    },
+    "single-voice/architect.mp3": {
+      "text": "Architect",
+      "spokenText": "Architect",
+      "reference": false,
+      "source": "architect.aiff",
+      "sha256": "c0f9d800168d1cc867bbb5ddbd80c4a6171b62fcfb99deadc5e973a038b52b1a"
+    },
+    "single-voice/100x.mp3": {
+      "text": "100X",
+      "spokenText": "100X",
+      "reference": false,
+      "source": "100x.aiff",
+      "sha256": "84b641edb0b52a67e45e233f4ffa912c5c831cea867c48beaecc91127b923dfe"
+    },
+    "single-voice/pancake.mp3": {
+      "text": "Pancake",
+      "spokenText": "Pancake",
+      "reference": false,
+      "source": "pancake.aiff",
+      "sha256": "dc9863ce4a1375e1b29438330f50e7a7dcd3fdc1d8b8f2468b7a63890949c2c9"
+    },
+    "single-voice/tree.mp3": {
+      "text": "Tree",
+      "spokenText": "Tree",
+      "reference": false,
+      "source": "tree.aiff",
+      "sha256": "67b5dc181eab8bc8e1889ec98888bbd0a05db2909337464f008d2653347cb9fd"
+    },
+    "single-voice/sylvester.mp3": {
+      "text": "Sylvester",
+      "spokenText": "Sylvester",
+      "reference": false,
+      "source": "sylvester.aiff",
+      "sha256": "ef9b588aa5d33c243bc69c2714c42222a44847050b77848fccd068954ce476d8"
+    },
+    "single-voice/tetration.mp3": {
+      "text": "Tetration",
+      "spokenText": "Tetration",
+      "reference": false,
+      "source": "tetration.aiff",
+      "sha256": "a3f9e9d0d90dd41371fffc933f6566fba44b13b0784dfd86fea403135d16f7fb"
+    },
+    "single-voice/rain.mp3": {
+      "text": "Rain",
+      "spokenText": "Rain",
+      "reference": false,
+      "source": "rain.aiff",
+      "sha256": "5f7f0215c80e2a898351ab57b05d0fad5454d458393b5fe858d83a48bee925d8"
+    },
+    "single-voice/hacker.mp3": {
+      "text": "Hacker",
+      "spokenText": "Hacker",
+      "reference": false,
+      "source": "hacker.aiff",
+      "sha256": "eb227ea57e045a41b9f15a3443775585eb7e2eea7dcdaa091f203d2c8091fecb"
+    },
+    "single-voice/miner.mp3": {
+      "text": "Miner",
+      "spokenText": "Miner",
+      "reference": false,
+      "source": "miner.aiff",
+      "sha256": "ccfd5a8104a85bd8d04ebe8bcd60113c797689dd452a821a77ba77025f569aaf"
+    },
+    "single-voice/math-orbs.mp3": {
+      "text": "Math Orbs",
+      "spokenText": "Math Orbs",
+      "reference": false,
+      "source": "math-orbs.aiff",
+      "sha256": "2c7a23fdb3e80814ebe61be262d420a09bf0aff9cdacbf3b59b9b64ca6c70a7f"
+    },
+    "single-voice/superhero-orbs.mp3": {
+      "text": "Superhero Orbs",
+      "spokenText": "Superhero Orbs",
+      "reference": false,
+      "source": "superhero-orbs.aiff",
+      "sha256": "3970de137b71ba22845c22a447f0eab174259140131920fe0db776baf7d21b82"
+    },
+    "single-voice/weapon-orbs.mp3": {
+      "text": "Weapon Orbs",
+      "spokenText": "Weapon Orbs",
+      "reference": false,
+      "source": "weapon-orbs.aiff",
+      "sha256": "90b6a40be7c251627c552f8066f0e0bfc94d7a6d1deba9538b4ff5f3875349ef"
+    },
+    "single-voice/growth-orbs.mp3": {
+      "text": "Growth Orbs",
+      "spokenText": "Growth Orbs",
+      "reference": false,
+      "source": "growth-orbs.aiff",
+      "sha256": "7ec7c42eaef16a6d57c34d09519b51bdb019485604970a9befb16729b006eca9"
+    },
+    "single-voice/motion-orbs.mp3": {
+      "text": "Motion Orbs",
+      "spokenText": "Motion Orbs",
+      "reference": false,
+      "source": "motion-orbs.aiff",
+      "sha256": "fba126608c5338acd39df9a5c84466f457d042e2260d309cb363ff76fb88984f"
+    },
+    "single-voice/very-powerful-math-orbs.mp3": {
+      "text": "Very Powerful Math Orbs",
+      "spokenText": "Very Powerful Math Orbs",
+      "reference": false,
+      "source": "very-powerful-math-orbs.aiff",
+      "sha256": "b6466fe4f87ec4db752555136f88c8f3f712db6bce1a2db660091ceac216be73"
+    },
+    "single-voice/bombs.mp3": {
+      "text": "Bombs",
+      "spokenText": "Bombs",
+      "reference": false,
+      "source": "bombs.aiff",
+      "sha256": "98041a33595f6c17fb1b9330f5f6c5a9f84a10758c5ad13cfff9b729f6a0c2bc"
+    },
+    "single-voice/sun-orbs.mp3": {
+      "text": "Sun Orbs",
+      "spokenText": "Sun Orbs",
+      "reference": false,
+      "source": "sun-orbs.aiff",
+      "sha256": "0611ea025e1caa8201a6bb8db5cb01ac4568b518ece4aaba3933beadb07e6ae9"
+    },
+    "single-voice/speedavity.mp3": {
+      "text": "SPEEDAVITY",
+      "spokenText": "SPEEDAVITY",
+      "reference": false,
+      "source": "speedavity.aiff",
+      "sha256": "6931d4b1874471ac74639650cb2ea7bc25364093a68b3cf70152a08c26c7e8db"
+    },
+    "single-voice/speedynacci.mp3": {
+      "text": "SPEEDYNACCI",
+      "spokenText": "SPEEDYNACCI",
+      "reference": false,
+      "source": "speedynacci.aiff",
+      "sha256": "f8db579f191594e7be468e82a934f1e864c2346bb8b484f9f39fe52bc8eae431"
+    },
+    "single-voice/speedlazer.mp3": {
+      "text": "SPEEDLAZER",
+      "spokenText": "SPEEDLAZER",
+      "reference": false,
+      "source": "speedlazer.aiff",
+      "sha256": "cb6d4fd2ff2e96bb83511b7404596e305c14e09ae087cc35f4affb346e90b354"
+    },
+    "single-voice/speedplodey.mp3": {
+      "text": "SPEEDPLODEY",
+      "spokenText": "SPEEDPLODEY",
+      "reference": false,
+      "source": "speedplodey.aiff",
+      "sha256": "bca7eb4a8729d8fa6a81d5634bde9461fd77a8f4aae42d59bb246635fd9ddd1c"
+    },
+    "single-voice/speedgrower.mp3": {
+      "text": "SPEEDGROWER",
+      "spokenText": "SPEEDGROWER",
+      "reference": false,
+      "source": "speedgrower.aiff",
+      "sha256": "c1929a201af3fcfed0953b853b871d89c0e668555cf25c5854db823948f1def5"
+    },
+    "single-voice/speedstick.mp3": {
+      "text": "SPEEDSTICK",
+      "spokenText": "SPEEDSTICK",
+      "reference": false,
+      "source": "speedstick.aiff",
+      "sha256": "bb9d338958eae13409f163e7516ceac23506ea5338b60f420c38821e2fde0f51"
+    },
+    "single-voice/gravibonacci.mp3": {
+      "text": "GRAVIBONACCI",
+      "spokenText": "GRAVIBONACCI",
+      "reference": false,
+      "source": "gravibonacci.aiff",
+      "sha256": "b9a5b63f5bed739b5e3fa08acdecb2ee1bea09b03220740ce3a01da2394c19b1"
+    },
+    "single-voice/gravilazer.mp3": {
+      "text": "GRAVILAZER",
+      "spokenText": "GRAVILAZER",
+      "reference": false,
+      "source": "gravilazer.aiff",
+      "sha256": "2f1644e9348e61c3b1207b681837af33091a6bf1499792cd5ee8965801dbdd93"
+    },
+    "single-voice/gravplodey.mp3": {
+      "text": "GRAVPLODEY",
+      "spokenText": "GRAVPLODEY",
+      "reference": false,
+      "source": "gravplodey.aiff",
+      "sha256": "5591c9dc2a49addb6f97108da4bc7cfcb787663d91d971d1336c61d8fd9b60ef"
+    },
+    "single-voice/gravgrower.mp3": {
+      "text": "GRAVGROWER",
+      "spokenText": "GRAVGROWER",
+      "reference": false,
+      "source": "gravgrower.aiff",
+      "sha256": "d7f2fa1ef303d55003d4e14562113ad1108c52c7ea18e0fdd76abc6f4ca8450b"
+    },
+    "single-voice/gravisticky.mp3": {
+      "text": "GRAVISTICKY",
+      "spokenText": "GRAVISTICKY",
+      "reference": false,
+      "source": "gravisticky.aiff",
+      "sha256": "39d71907fba1ae2399b7746901a4269d1066b586825ad208f7fce2c80c9cc026"
+    },
+    "single-voice/fibolazer.mp3": {
+      "text": "FIBOLAZER",
+      "spokenText": "FIBOLAZER",
+      "reference": false,
+      "source": "fibolazer.aiff",
+      "sha256": "5d756f538057aa589466313a13402402ca850c9095a39b7586606f25686aee0e"
+    },
+    "single-voice/fibplodey.mp3": {
+      "text": "FIBPLODEY",
+      "spokenText": "FIBPLODEY",
+      "reference": false,
+      "source": "fibplodey.aiff",
+      "sha256": "236d2e0c33ffba47dd3d33476bdbc1a9f88b139640f4afa4c36e1b15ef0b9606"
+    },
+    "single-voice/fibogrower.mp3": {
+      "text": "FIBOGROWER",
+      "spokenText": "FIBOGROWER",
+      "reference": false,
+      "source": "fibogrower.aiff",
+      "sha256": "b92ca028247b8554d7b6d0ec0c3234fbc494ab9cd848e02872186fe0121a21a5"
+    },
+    "single-voice/stickonacci.mp3": {
+      "text": "STICKONACCI",
+      "spokenText": "STICKONACCI",
+      "reference": false,
+      "source": "stickonacci.aiff",
+      "sha256": "b1724c93a195bf8be9c82899a067d06bbf335a7ca9c9816d46ddd6866ab62f45"
+    },
+    "single-voice/lazplodey.mp3": {
+      "text": "LAZPLODEY",
+      "spokenText": "LAZPLODEY",
+      "reference": false,
+      "source": "lazplodey.aiff",
+      "sha256": "c0eb3d06eb0aff3ac5d171709458cb9eecbdb89d558dfb58e588866bbd1d8aa1"
+    },
+    "single-voice/lazergrower.mp3": {
+      "text": "LAZERGROWER",
+      "spokenText": "LAZERGROWER",
+      "reference": false,
+      "source": "lazergrower.aiff",
+      "sha256": "eae96e95563886270f2a0894596e2aa638225b53728d8bd1d3e82195f836ad28"
+    },
+    "single-voice/lazerstick.mp3": {
+      "text": "LAZERSTICK",
+      "spokenText": "LAZERSTICK",
+      "reference": false,
+      "source": "lazerstick.aiff",
+      "sha256": "9e4e72cc5f2302a1e792491c979e2003d0f482fca8a52815d60168c651000ab5"
+    },
+    "single-voice/growplodey.mp3": {
+      "text": "GROWPLODEY",
+      "spokenText": "GROWPLODEY",
+      "reference": false,
+      "source": "growplodey.aiff",
+      "sha256": "d5976a6a3c86beedc68fdb496c125a78f42d74f726ccd503feaf1603d25fcf55"
+    },
+    "single-voice/stickplodey.mp3": {
+      "text": "STICKPLODEY",
+      "spokenText": "STICKPLODEY",
+      "reference": false,
+      "source": "stickplodey.aiff",
+      "sha256": "be573ddf1a437f76c7a453f7235bc67646939e2aac94e51645f3885f1fcdb846"
+    },
+    "single-voice/growsticky.mp3": {
+      "text": "GROWSTICKY",
+      "spokenText": "GROWSTICKY",
+      "reference": false,
+      "source": "growsticky.aiff",
+      "sha256": "96f101fe6616aa468b1070ee990a1d3059070ea46730394fa0d661a0124744b3"
+    },
+    "single-voice/speedslammy.mp3": {
+      "text": "SPEEDSLAMMY",
+      "spokenText": "SPEEDSLAMMY",
+      "reference": false,
+      "source": "speedslammy.aiff",
+      "sha256": "3efb5c74289b40105c06f042a889faf6c28446582ce24f1bbf13f1799032ddd7"
+    },
+    "single-voice/gravslammy.mp3": {
+      "text": "GRAVSLAMMY",
+      "spokenText": "GRAVSLAMMY",
+      "reference": false,
+      "source": "gravslammy.aiff",
+      "sha256": "56f2b2f1f40aec9ec4f1cad7d9a06d665c8dcf4134d6805ee1c6dfc389f092e9"
+    },
+    "single-voice/fibslammy.mp3": {
+      "text": "FIBSLAMMY",
+      "spokenText": "FIBSLAMMY",
+      "reference": false,
+      "source": "fibslammy.aiff",
+      "sha256": "735979e572aba7901e5480dd20b44135938b11ee00396ae8c7a60df23fbf3e82"
+    },
+    "single-voice/lazslammy.mp3": {
+      "text": "LAZSLAMMY",
+      "spokenText": "LAZSLAMMY",
+      "reference": false,
+      "source": "lazslammy.aiff",
+      "sha256": "f14348de81eccd36ba8243adae6369c534f74792e1a940ef262c9e7b6f9ec1d4"
+    },
+    "single-voice/slamplodey.mp3": {
+      "text": "SLAMPLODEY",
+      "spokenText": "SLAMPLODEY",
+      "reference": false,
+      "source": "slamplodey.aiff",
+      "sha256": "c006db30b6bfa14e5fde200ac669197eb956044c16e163fe6458af0a8aa78e9d"
+    },
+    "single-voice/growslammy.mp3": {
+      "text": "GROWSLAMMY",
+      "spokenText": "GROWSLAMMY",
+      "reference": false,
+      "source": "growslammy.aiff",
+      "sha256": "d0f402a4710e7954acb91f3c8d0ab8a837035bf8df234b57766461e95b463c80"
+    },
+    "single-voice/stickslammy.mp3": {
+      "text": "STICKSLAMMY",
+      "spokenText": "STICKSLAMMY",
+      "reference": false,
+      "source": "stickslammy.aiff",
+      "sha256": "770948b08dfd65d7874372157203be5af68ac6de41ee4c4f04623a860e8272ea"
+    },
+    "single-voice/speedpoison.mp3": {
+      "text": "SPEEDPOISON",
+      "spokenText": "SPEEDPOISON",
+      "reference": false,
+      "source": "speedpoison.aiff",
+      "sha256": "90071e92e11f5609e8c3950980ec26890b9fc040ad47f99da9689bba6bb6f586"
+    },
+    "single-voice/gravpoison.mp3": {
+      "text": "GRAVPOISON",
+      "spokenText": "GRAVPOISON",
+      "reference": false,
+      "source": "gravpoison.aiff",
+      "sha256": "6672b9ba0dab087273849f8f22b89cc32890c56e7f0e023731aa3e1b709c21d5"
+    },
+    "single-voice/poisonacci.mp3": {
+      "text": "POISONACCI",
+      "spokenText": "POISONACCI",
+      "reference": false,
+      "source": "poisonacci.aiff",
+      "sha256": "c761115153f55bfeeeb646f4dec0c24332406020d64fc6fb5810738b8b863414"
+    },
+    "single-voice/lazerpoison.mp3": {
+      "text": "LAZERPOISON",
+      "spokenText": "LAZERPOISON",
+      "reference": false,
+      "source": "lazerpoison.aiff",
+      "sha256": "34bde195d8c0d7339d7b2b9b8603e08a4ba557ce4d635fc4dd4ef1a82d8bbabc"
+    },
+    "single-voice/poisonplodey.mp3": {
+      "text": "POISONPLODEY",
+      "spokenText": "POISONPLODEY",
+      "reference": false,
+      "source": "poisonplodey.aiff",
+      "sha256": "effb7e43ccab423df4b6e47758d7f74f45c66d61c98fab545bdf17bd02dc1255"
+    },
+    "single-voice/growpoison.mp3": {
+      "text": "GROWPOISON",
+      "spokenText": "GROWPOISON",
+      "reference": false,
+      "source": "growpoison.aiff",
+      "sha256": "28857490a7cf3aaa31f6b3d5bf190b48e7ce860804a5e644eb13ea8ac63b7af7"
+    },
+    "single-voice/stickpoison.mp3": {
+      "text": "STICKPOISON",
+      "spokenText": "STICKPOISON",
+      "reference": false,
+      "source": "stickpoison.aiff",
+      "sha256": "c061ddfe50e4e2cdc18717ea691e27719cdeac0fb0f4587dea6a9b2bee251bed"
+    },
+    "single-voice/slampoison.mp3": {
+      "text": "SLAMPOISON",
+      "spokenText": "SLAMPOISON",
+      "reference": false,
+      "source": "slampoison.aiff",
+      "sha256": "94b351fe87a20b6506eae6b4b7f57cc2b961d81859918d56f74ea665a1a3b736"
+    },
+    "single-voice/speeddrill.mp3": {
+      "text": "SPEEDDRILL",
+      "spokenText": "SPEEDDRILL",
+      "reference": false,
+      "source": "speeddrill.aiff",
+      "sha256": "fe16cc5fad528ddd446085a431f13257af401abcf89852cb8ec7f4bdc625fdb2"
+    },
+    "single-voice/gravdrill.mp3": {
+      "text": "GRAVDRILL",
+      "spokenText": "GRAVDRILL",
+      "reference": false,
+      "source": "gravdrill.aiff",
+      "sha256": "4c18cace26dc768aad200993713196254b04a8b28cdadba9890512491a4963f1"
+    },
+    "single-voice/fibodrill.mp3": {
+      "text": "FIBODRILL",
+      "spokenText": "FIBODRILL",
+      "reference": false,
+      "source": "fibodrill.aiff",
+      "sha256": "9a4d75634c2f21aaf4a8d4873fca4ae6aa4e8486b0d9fe2c52a689b4536fc2a9"
+    },
+    "single-voice/lazerdrill.mp3": {
+      "text": "LAZERDRILL",
+      "spokenText": "LAZERDRILL",
+      "reference": false,
+      "source": "lazerdrill.aiff",
+      "sha256": "5b077ae3ad55b02a1b2963d1e1f99c19cb28a4db5bdf35d0ec1ce92bd8f58f0c"
+    },
+    "single-voice/drillplodey.mp3": {
+      "text": "DRILLPLODEY",
+      "spokenText": "DRILLPLODEY",
+      "reference": false,
+      "source": "drillplodey.aiff",
+      "sha256": "c8c45d103f3bf3b2fe644fca7b19eb56a95013b4ee49b12cc3a187be71436d6d"
+    },
+    "single-voice/growdrill.mp3": {
+      "text": "GROWDRILL",
+      "spokenText": "GROWDRILL",
+      "reference": false,
+      "source": "growdrill.aiff",
+      "sha256": "641b512315e3172a9a86cc56d6137b576a772b0f7b34b011718f5ba53a8d1b0e"
+    },
+    "single-voice/stickdrill.mp3": {
+      "text": "STICKDRILL",
+      "spokenText": "STICKDRILL",
+      "reference": false,
+      "source": "stickdrill.aiff",
+      "sha256": "74a00bbfad143dbc1213a61e2633865c022a77e3a3d5162963992542afcc608f"
+    },
+    "single-voice/slamdrill.mp3": {
+      "text": "SLAMDRILL",
+      "spokenText": "SLAMDRILL",
+      "reference": false,
+      "source": "slamdrill.aiff",
+      "sha256": "f4e2c95fd502b1cc0f24b200cd212ec9d420ae16cb42a38fb5d861943fe08a13"
+    },
+    "single-voice/poisondrill.mp3": {
+      "text": "POISONDRILL",
+      "spokenText": "POISONDRILL",
+      "reference": false,
+      "source": "poisondrill.aiff",
+      "sha256": "486bc5dea7c68e5a459cf730f8a8bbde013aff0f029333a9bddfcb90c2596b81"
+    },
+    "single-voice/fibotripler.mp3": {
+      "text": "FIBOTRIPLER",
+      "spokenText": "FIBOTRIPLER",
+      "reference": false,
+      "source": "fibotripler.aiff",
+      "sha256": "09c9cf3cfee4eb9523bb717ce7a3a8134afc696c21d3b87d3921af799a5cc4bd"
+    },
+    "single-voice/speedorbital.mp3": {
+      "text": "SPEEDORBITAL",
+      "spokenText": "SPEEDORBITAL",
+      "reference": false,
+      "source": "speedorbital.aiff",
+      "sha256": "31a30176d911130562b1e9041f70f275fe47bed10df4a0cce94cedf6aebf5349"
+    },
+    "single-voice/gravorbital.mp3": {
+      "text": "GRAVORBITAL",
+      "spokenText": "GRAVORBITAL",
+      "reference": false,
+      "source": "gravorbital.aiff",
+      "sha256": "afe93bf8e88e972c33f51299a143e82a45364feb01c52d12c848968a93486157"
+    },
+    "single-voice/fiborbital.mp3": {
+      "text": "FIBORBITAL",
+      "spokenText": "FIBORBITAL",
+      "reference": false,
+      "source": "fiborbital.aiff",
+      "sha256": "1602c7b126ad506dca66ae1afe625586f160adccdcf46815a8341ed4518f7a37"
+    },
+    "single-voice/lazerorbital.mp3": {
+      "text": "LAZERORBITAL",
+      "spokenText": "LAZERORBITAL",
+      "reference": false,
+      "source": "lazerorbital.aiff",
+      "sha256": "ebb2c49ddbefb95f4a631897bc1430de3e9531896f03023a831f0f6f538dafe9"
+    },
+    "single-voice/splodeyorbital.mp3": {
+      "text": "SPLODEYORBITAL",
+      "spokenText": "SPLODEYORBITAL",
+      "reference": false,
+      "source": "splodeyorbital.aiff",
+      "sha256": "faea77f291cf0a8a63f015cf806cfcd1ac6d5ebeaed942bcfc52cc180984cd45"
+    },
+    "single-voice/groworbital.mp3": {
+      "text": "GROWORBITAL",
+      "spokenText": "GROWORBITAL",
+      "reference": false,
+      "source": "groworbital.aiff",
+      "sha256": "a3213db951117ed9a948da1c959e252d1d6f6cfcef3f0bd34154f20917dc7dc0"
+    },
+    "single-voice/stickorbital.mp3": {
+      "text": "STICKORBITAL",
+      "spokenText": "STICKORBITAL",
+      "reference": false,
+      "source": "stickorbital.aiff",
+      "sha256": "a86ade809fc3aa0d3d31134c68d3dd10feaf943be6bd34339f4175d94df140b0"
+    },
+    "single-voice/slamorbital.mp3": {
+      "text": "SLAMORBITAL",
+      "spokenText": "SLAMORBITAL",
+      "reference": false,
+      "source": "slamorbital.aiff",
+      "sha256": "e5b018527510be2fb38ecade290b63b22a99b6665ad926331eb3fc29d97c1835"
+    },
+    "single-voice/poisonorbital.mp3": {
+      "text": "POISONORBITAL",
+      "spokenText": "POISONORBITAL",
+      "reference": false,
+      "source": "poisonorbital.aiff",
+      "sha256": "0291c03da5514641d89c1eda118b787cd1cc16380d2ba99d0f466d3b78b38d33"
+    },
+    "single-voice/drillorbital.mp3": {
+      "text": "DRILLORBITAL",
+      "spokenText": "DRILLORBITAL",
+      "reference": false,
+      "source": "drillorbital.aiff",
+      "sha256": "d231093f23b5ea4784a01eddebbb866e94e90dcc6ee4a9adaed9a43ffca87324"
+    },
+    "single-voice/triporbital.mp3": {
+      "text": "TRIPORBITAL",
+      "spokenText": "TRIPORBITAL",
+      "reference": false,
+      "source": "triporbital.aiff",
+      "sha256": "c3c2aaee377ba7ca53d68b3619294f1787d3323a5f0ae28b432a11b7d94e5002"
+    },
+    "single-voice/everyone.mp3": {
+      "text": "Everyone",
+      "spokenText": "Everyone",
+      "reference": false,
+      "source": "everyone.aiff",
+      "sha256": "435193b0de32f8eaddaf9747a5dbcec2ce04d64aec151dfc20b5789a7dca334c"
+    },
+    "single-voice/four.mp3": {
+      "text": "Four",
+      "spokenText": "Four",
+      "reference": false,
+      "source": "four.aiff",
+      "sha256": "f2b8e53165d72d00b766a91562a0b3adbb9951b715aabca0b7e56380c34f2dc6"
+    },
+    "single-voice/five.mp3": {
+      "text": "Five",
+      "spokenText": "Five",
+      "reference": false,
+      "source": "five.aiff",
+      "sha256": "c7abe16744948ef0d2c58039d1700364625835ae697f234632d6f55a782ba97f"
+    },
+    "single-voice/six.mp3": {
+      "text": "Six",
+      "spokenText": "Six",
+      "reference": false,
+      "source": "six.aiff",
+      "sha256": "ebd65408c68ea823c6a55dc2a9e5b7e47a38dccab221a3d6e2e0efb5852c2fbb"
+    },
+    "single-voice/seven.mp3": {
+      "text": "Seven",
+      "spokenText": "Seven",
+      "reference": false,
+      "source": "seven.aiff",
+      "sha256": "69c036e7d4aa5f30f988699e4ad999e508633603d0b0ec0fdd7578a71c8312d0"
+    },
+    "single-voice/eight.mp3": {
+      "text": "Eight",
+      "spokenText": "Eight",
+      "reference": false,
+      "source": "eight.aiff",
+      "sha256": "04966f595885cb28ff97ae542944f2170b596a1f6dc1f1e51fb53d03b607a246"
+    },
+    "single-voice/nine.mp3": {
+      "text": "Nine",
+      "spokenText": "Nine",
+      "reference": false,
+      "source": "nine.aiff",
+      "sha256": "0e46b557d00710c245c573faf9d3e50ac40ff2e308deb5c86cffda8bdc6fe2be"
+    },
+    "single-voice/ten.mp3": {
+      "text": "Ten",
+      "spokenText": "Ten",
+      "reference": false,
+      "source": "ten.aiff",
+      "sha256": "5bbe513d0d5b5589548eb4efeca33cc6d535bad24bea59a5ffa7fe548cee67b7"
+    },
+    "single-voice/fifteen.mp3": {
+      "text": "Fifteen",
+      "spokenText": "Fifteen",
+      "reference": false,
+      "source": "fifteen.aiff",
+      "sha256": "249ca4d5c457b07983ed9c6bcc389b9a0ac5c055c0f0722db5a762b1edfd1974"
+    },
+    "single-voice/twenty.mp3": {
+      "text": "Twenty",
+      "spokenText": "Twenty",
+      "reference": false,
+      "source": "twenty.aiff",
+      "sha256": "70885af6416c0f6bf55199ab9790cdb21e5c3977d7796663118bacf866a2153f"
+    },
+    "single-voice/twenty-five.mp3": {
+      "text": "Twenty Five",
+      "spokenText": "Twenty Five",
+      "reference": false,
+      "source": "twenty-five.aiff",
+      "sha256": "bd0e36a83daa93e89d8003512e47054f11240ffca29c192c332a4cd361164ce5"
+    },
+    "single-voice/thirty.mp3": {
+      "text": "Thirty",
+      "spokenText": "Thirty",
+      "reference": false,
+      "source": "thirty.aiff",
+      "sha256": "f6db16bab3899a974cf3e5512afe3b2581c1d1a3f8eb7ebee8e3084097ef729b"
+    },
+    "single-voice/thirty-five.mp3": {
+      "text": "Thirty Five",
+      "spokenText": "Thirty Five",
+      "reference": false,
+      "source": "thirty-five.aiff",
+      "sha256": "51f659e215d3e81192667508a4db797561344f1c9ecdf1802a4bc6285eed8c1e"
+    },
+    "single-voice/forty.mp3": {
+      "text": "Forty",
+      "spokenText": "Forty",
+      "reference": false,
+      "source": "forty.aiff",
+      "sha256": "7e2163d173a806dad464104830f744503ab6830aa8d8b41529017bea337b4e3d"
+    },
+    "single-voice/forty-five.mp3": {
+      "text": "Forty Five",
+      "spokenText": "Forty Five",
+      "reference": false,
+      "source": "forty-five.aiff",
+      "sha256": "8c5e7138021b328d4ae1b36a2ced8e944913156efda4af6effe2856301cffa91"
+    },
+    "single-voice/fifty.mp3": {
+      "text": "Fifty",
+      "spokenText": "Fifty",
+      "reference": false,
+      "source": "fifty.aiff",
+      "sha256": "12adf590aaa948db404c91999f7e976bfb8051fea8df6e65b162e8e0b9c1a36b"
+    },
+    "single-voice/sixty.mp3": {
+      "text": "Sixty",
+      "spokenText": "Sixty",
+      "reference": false,
+      "source": "sixty.aiff",
+      "sha256": "37cb61900c981a625670881b839349a7379722e2f28c06e57ea998ff0e206488"
+    },
+    "single-voice/seventy.mp3": {
+      "text": "Seventy",
+      "spokenText": "Seventy",
+      "reference": false,
+      "source": "seventy.aiff",
+      "sha256": "1b185743281ce877d77f63a4f7c2e7af350f03053d0414a9a9662a596c41bc66"
+    },
+    "single-voice/eighty.mp3": {
+      "text": "Eighty",
+      "spokenText": "Eighty",
+      "reference": false,
+      "source": "eighty.aiff",
+      "sha256": "496003838466cdb9cd0965146cc87941598886dc37486c1997fcd471f09b6d0c"
+    },
+    "single-voice/ninety.mp3": {
+      "text": "Ninety",
+      "spokenText": "Ninety",
+      "reference": false,
+      "source": "ninety.aiff",
+      "sha256": "9ac0652b284435f4b2f8ddf5f55f1e5925829be517c24f6bef1d74c4ed750eb3"
+    },
+    "single-voice/one-hundred.mp3": {
+      "text": "One Hundred",
+      "spokenText": "One Hundred",
+      "reference": false,
+      "source": "one-hundred.aiff",
+      "sha256": "4d061bd605cc5d104e8d510afeca75d044c0070bb98f4aeb297f657c5a3156c0"
+    },
+    "single-voice/plus.mp3": {
+      "text": "Plus",
+      "spokenText": "Plus",
+      "reference": false,
+      "source": "plus.aiff",
+      "sha256": "3c7e9a966daa28b2229a399b17ab28dbe73d5dff2956e2e2c45248ef499cc073"
+    },
+    "single-voice/buffed.mp3": {
+      "text": "Buffed",
+      "spokenText": "Buffed",
+      "reference": false,
+      "source": "buffed.aiff",
+      "sha256": "aee2f4c59bba871f1a4752f8b6bee53dbe998221dc0e8593c3cf139873d3caca"
+    },
+    "single-voice/boss.mp3": {
+      "text": "Boss",
+      "spokenText": "Boss",
+      "reference": false,
+      "source": "boss.aiff",
+      "sha256": "f675b2fe989caeb90802391d0fe03a4dafe9bedccb8e09ff5ed3d2cb4c27a584"
+    },
+    "single-voice/first-to-ten-thousand.mp3": {
+      "text": "First to ten thousand",
+      "spokenText": "First to ten thousand",
+      "reference": false,
+      "source": "first-to-ten-thousand.aiff",
+      "sha256": "c6c11fee0f6221b3bdc7b1d597895c52c96cd6a7b21aad5151bc1746a632459d"
+    },
+    "single-voice/first-to-one-hundred-thousand.mp3": {
+      "text": "First to one hundred thousand",
+      "spokenText": "First to one hundred thousand",
+      "reference": false,
+      "source": "first-to-one-hundred-thousand.aiff",
+      "sha256": "89d0d6a7d773752ec93cd1c8890e1781eb962f39517fbc50306c9ba20e7d0663"
+    },
+    "single-voice/first-to-five-hundred-thousand.mp3": {
+      "text": "First to five hundred thousand",
+      "spokenText": "First to five hundred thousand",
+      "reference": false,
+      "source": "first-to-five-hundred-thousand.aiff",
+      "sha256": "16246d1a5352698166d7fa19031e587cce7383fd96ff3fa92c04d99e917bc3fd"
+    },
+    "single-voice/first-to-one-million.mp3": {
+      "text": "First to one million",
+      "spokenText": "First to one million",
+      "reference": false,
+      "source": "first-to-one-million.aiff",
+      "sha256": "f0c5f532306c0dcaedf65ecbef938e2fbc77eac9a7c34788ff204712cdcd082d"
+    },
+    "single-voice/first-to-ten-million.mp3": {
+      "text": "First to ten million",
+      "spokenText": "First to ten million",
+      "reference": false,
+      "source": "first-to-ten-million.aiff",
+      "sha256": "5c68eb42d9deeb8c281a23e7b85a4d54ace250594bbe1b8a9127ec949cb3d1e0"
+    },
+    "single-voice/first-to-five-hundred-million.mp3": {
+      "text": "First to five hundred million",
+      "spokenText": "First to five hundred million",
+      "reference": false,
+      "source": "first-to-five-hundred-million.aiff",
+      "sha256": "a953d8fb3fd95516822de53dee0f7d696c70676f43a45f89434337517879ecde"
+    },
+    "single-voice/first-to-one-billion.mp3": {
+      "text": "First to one billion",
+      "spokenText": "First to one billion",
+      "reference": false,
+      "source": "first-to-one-billion.aiff",
+      "sha256": "fbf24c941d9c853f12d8b4e5e1d9621a62c037a907a0da62f933cd8cbebca027"
+    },
+    "single-voice/first-to-one-quintillion.mp3": {
+      "text": "First to one quintillion",
+      "spokenText": "First to one quintillion",
+      "reference": false,
+      "source": "first-to-one-quintillion.aiff",
+      "sha256": "5dea23740fedcc63023e712bbd2f19ece8f8cb7fcc51b900c1eea26480068b93"
+    },
+    "single-voice/cinder.mp3": {
+      "text": "Cinder",
+      "spokenText": "Cinder",
+      "reference": false,
+      "source": "cinder.aiff",
+      "sha256": "8a3e19126de36d888b4d27150e2c960a0949da8f902f622d456993a985a69d3f"
+    },
+    "single-voice/frost.mp3": {
+      "text": "Frost",
+      "spokenText": "Frost",
+      "reference": false,
+      "source": "frost.aiff",
+      "sha256": "05b6cf1c61a0a9e3ffac2cabbc71c2cc492cfed32c9319b03bbac731aad22882"
+    },
+    "single-voice/hex.mp3": {
+      "text": "Hex",
+      "spokenText": "Hex",
+      "reference": false,
+      "source": "hex.aiff",
+      "sha256": "3f874bbe8df9edb7f7b36cf99b5f64cce16d84138892fd0f837fafe9b5d084f5"
+    },
+    "single-voice/chrono.mp3": {
+      "text": "Chrono",
+      "spokenText": "Chrono",
+      "reference": false,
+      "source": "chrono.aiff",
+      "sha256": "2603426942838e75913365bc31b9ea999cc347afafe643f5b9548bbd33015948"
+    },
+    "single-voice/volta.mp3": {
+      "text": "Volta",
+      "spokenText": "Volta",
+      "reference": false,
+      "source": "volta.aiff",
+      "sha256": "f889d97f28550c7062ed45a6223b503451bd9d4d090d77160826f9ee4f4cfd32"
+    },
+    "single-voice/venom.mp3": {
+      "text": "Venom",
+      "spokenText": "Venom",
+      "reference": false,
+      "source": "venom.aiff",
+      "sha256": "7cd73ec6e72187b04326a72e1a4eda9ee4023572d05c6d36fc5d7d704d97b4e0"
+    },
+    "single-voice/gravis.mp3": {
+      "text": "Gravis",
+      "spokenText": "Gravis",
+      "reference": false,
+      "source": "gravis.aiff",
+      "sha256": "2f2269f08c3c226d87cd9ed96cfbf67c15931f0c3e7c259dc30eb6da7dca7cd9"
+    },
+    "single-voice/aegon.mp3": {
+      "text": "Aegon",
+      "spokenText": "Aegon",
+      "reference": false,
+      "source": "aegon.aiff",
+      "sha256": "1de183d9e62bb826059fced741f958e9745c1c51541f861630a3a530f3f37bba"
+    }
+  },
+  "cues": {
+    "three": "single-voice/three.mp3",
+    "two": "single-voice/two.mp3",
+    "one": "single-voice/one.mp3",
+    "fight": "single-voice/fight.mp3",
+    "versus": "single-voice/versus.mp3",
+    "pick-your-winner": "single-voice/pick-your-winner.mp3",
+    "overtime": "single-voice/overtime.mp3",
+    "intro-sword": "single-voice/sword.mp3",
+    "intro-duplicator": "single-voice/duplicator.mp3",
+    "intro-orbital": "single-voice/orbital.mp3",
+    "intro-unarmed": "single-voice/unarmed.mp3",
+    "intro-slammy": "single-voice/slammy.mp3",
+    "intro-vampire": "single-voice/vampire.mp3",
+    "intro-turret": "single-voice/turret.mp3",
+    "intro-flash": "single-voice/flash.mp3",
+    "intro-reactor": "single-voice/reactor.mp3",
+    "intro-sniper": "single-voice/sniper.mp3",
+    "intro-draftmaster": "single-voice/draftmaster.mp3",
+    "intro-blue-sun": "single-voice/blue-sun.mp3",
+    "intro-black-hole": "single-voice/black-hole.mp3",
+    "intro-hydrogen-bomb": "single-voice/hydrogen-bomb.mp3",
+    "intro-poison": "single-voice/poison.mp3",
+    "intro-snake": "single-voice/snake.mp3",
+    "intro-shrapnel": "single-voice/shrapnel.mp3",
+    "intro-absorber": "single-voice/absorber.mp3",
+    "intro-batman": "single-voice/batman.mp3",
+    "intro-ying-yang": "single-voice/ying-yang.mp3",
+    "intro-lazer": "single-voice/lazer.mp3",
+    "intro-charger": "single-voice/charger.mp3",
+    "intro-parasites": "single-voice/parasites.mp3",
+    "intro-grappler": "single-voice/grappler.mp3",
+    "intro-jackpot": "single-voice/jackpot.mp3",
+    "intro-artist": "single-voice/artist.mp3",
+    "intro-commander": "single-voice/commander.mp3",
+    "intro-sawball": "single-voice/sawball.mp3",
+    "intro-frost-ball": "single-voice/snowball.mp3",
+    "intro-tripwire": "single-voice/tripwire.mp3",
+    "intro-necromancer": "single-voice/necromancer.mp3",
+    "intro-spikey": "single-voice/spikey.mp3",
+    "intro-virus": "single-voice/virus.mp3",
+    "intro-cobwebs": "single-voice/cobwebs.mp3",
+    "intro-apple": "single-voice/apple.mp3",
+    "intro-trapper": "single-voice/cowboy.mp3",
+    "intro-hive-ball": "single-voice/hive-ball.mp3",
+    "intro-zeus": "single-voice/zeus.mp3",
+    "intro-glass-ball": "single-voice/glass-ball.mp3",
+    "intro-pistol": "single-voice/pistol.mp3",
+    "intro-shotgun": "single-voice/shotgun.mp3",
+    "intro-rifle": "single-voice/rifle.mp3",
+    "intro-cutter": "single-voice/cutter.mp3",
+    "intro-trident": "single-voice/trident.mp3",
+    "intro-train": "single-voice/train.mp3",
+    "intro-boxer": "single-voice/boxer.mp3",
+    "intro-monster": "single-voice/monster.mp3",
+    "intro-fairy": "single-voice/fairy.mp3",
+    "intro-wdc": "single-voice/wdc.mp3",
+    "intro-one-punch-man": "single-voice/one-punch-man.mp3",
+    "intro-gojo": "single-voice/gojo.mp3",
+    "intro-john-rod": "single-voice/john-rod.mp3",
+    "intro-one-above-all": "single-voice/one-above-all.mp3",
+    "intro-knight": "single-voice/knight.mp3",
+    "intro-ben-10": "single-voice/ben-10.mp3",
+    "intro-darth-vader": "single-voice/darth-vader.mp3",
+    "intro-luke-skywalker": "classic-local/luke-skywalker.mp3",
+    "intro-magneto": "single-voice/magneto.mp3",
+    "intro-kratos": "single-voice/kratos.mp3",
+    "intro-doctor-strange": "single-voice/doctor-strange.mp3",
+    "intro-gambit": "single-voice/gambit.mp3",
+    "intro-rubber": "single-voice/rubber.mp3",
+    "intro-pinball": "single-voice/pinball.mp3",
+    "intro-origami": "single-voice/origami.mp3",
+    "intro-sand-pharaoh": "single-voice/sand-pharaoh.mp3",
+    "intro-country-france": "single-voice/france.mp3",
+    "intro-country-argentina": "single-voice/argentina.mp3",
+    "intro-country-australia": "single-voice/australia.mp3",
+    "intro-country-brazil": "single-voice/brazil.mp3",
+    "intro-country-canada": "single-voice/canada.mp3",
+    "intro-country-cabo-verde": "single-voice/cabo-verde.mp3",
+    "intro-country-usa": "single-voice/usa.mp3",
+    "intro-country-colombia": "single-voice/colombia.mp3",
+    "intro-country-congo-dr": "single-voice/congo.mp3",
+    "intro-country-egypt": "single-voice/egypt.mp3",
+    "intro-country-england": "single-voice/england.mp3",
+    "intro-country-ghana": "single-voice/ghana.mp3",
+    "intro-country-mexico": "single-voice/mexico.mp3",
+    "intro-country-morocco": "single-voice/morocco.mp3",
+    "intro-country-sweden": "single-voice/sweden.mp3",
+    "intro-country-bosnia": "single-voice/bosnia.mp3",
+    "intro-country-japan": "single-voice/japan.mp3",
+    "intro-country-paraguay": "single-voice/paraguay.mp3",
+    "intro-country-germany": "single-voice/germany.mp3",
+    "intro-country-portugal": "single-voice/portugal.mp3",
+    "intro-country-croatia": "single-voice/croatia.mp3",
+    "intro-country-ivory-coast": "single-voice/ivory-coast.mp3",
+    "intro-country-norway": "single-voice/norway.mp3",
+    "intro-country-belgium": "single-voice/belgium.mp3",
+    "intro-country-senegal": "single-voice/senegal.mp3",
+    "intro-country-austria": "single-voice/austria.mp3",
+    "intro-country-spain": "single-voice/spain.mp3",
+    "intro-country-algeria": "single-voice/algeria.mp3",
+    "intro-country-switzerland": "single-voice/switzerland.mp3",
+    "intro-race-duplicator": "single-voice/duplicator.mp3",
+    "intro-race-speed": "single-voice/speedster.mp3",
+    "intro-race-orbital": "single-voice/orbital.mp3",
+    "intro-race-drill": "single-voice/drill.mp3",
+    "intro-race-fibonacci": "single-voice/fibonacci.mp3",
+    "intro-race-x-squared": "single-voice/x-squared.mp3",
+    "intro-race-flash": "single-voice/flash.mp3",
+    "intro-race-batman": "single-voice/batman.mp3",
+    "intro-race-lazer": "single-voice/lazer.mp3",
+    "intro-race-phi": "single-voice/golden-ratio.mp3",
+    "intro-race-sticky": "single-voice/sticky.mp3",
+    "intro-race-grower": "single-voice/grower.mp3",
+    "intro-race-unarmed": "single-voice/unarmed.mp3",
+    "intro-race-slammy": "single-voice/slammy.mp3",
+    "intro-race-super-slammy": "single-voice/super-slammy.mp3",
+    "intro-race-piercer": "single-voice/piercer.mp3",
+    "intro-race-ying-yang": "single-voice/ying-yang.mp3",
+    "intro-race-poison": "single-voice/poison.mp3",
+    "intro-race-hydrogen-bomb": "single-voice/hydrogen-bomb.mp3",
+    "intro-race-antimatter-bomb": "single-voice/antimatter-bomb.mp3",
+    "intro-race-time-bomb": "single-voice/time-bomb.mp3",
+    "intro-race-reality-bomb": "single-voice/reality-bomb.mp3",
+    "intro-race-tsar-bomb": "single-voice/tsar-bomb.mp3",
+    "intro-race-all-in-one": "single-voice/all-in-one.mp3",
+    "intro-race-breaker": "single-voice/breaker.mp3",
+    "intro-race-square-root": "single-voice/square-root.mp3",
+    "intro-race-progressive": "single-voice/progressive.mp3",
+    "intro-race-random": "single-voice/random.mp3",
+    "intro-race-twins": "single-voice/twins.mp3",
+    "intro-race-scissor": "single-voice/scissor.mp3",
+    "intro-race-lag": "single-voice/lag.mp3",
+    "intro-race-whirlwind": "single-voice/whirlwind.mp3",
+    "intro-race-rgb": "single-voice/r-g-b.mp3",
+    "intro-race-x-power": "single-voice/x-to-the-x.mp3",
+    "intro-race-super-x-power": "single-voice/super-x-to-the-x.mp3",
+    "intro-race-lucas": "single-voice/lucas-sequence.mp3",
+    "intro-race-professor": "single-voice/professor.mp3",
+    "intro-race-gravity": "single-voice/gravity.mp3",
+    "intro-race-jackpot": "single-voice/jackpot.mp3",
+    "intro-race-boomerang": "single-voice/boomerang.mp3",
+    "intro-race-mines": "single-voice/splodey.mp3",
+    "intro-race-magnet": "single-voice/magnet.mp3",
+    "intro-race-factorial": "single-voice/factorial.mp3",
+    "intro-race-prime": "single-voice/prime.mp3",
+    "intro-race-integral": "single-voice/integral.mp3",
+    "intro-race-quadratic": "single-voice/quadratic.mp3",
+    "intro-race-pi": "single-voice/pi.mp3",
+    "intro-race-ricochet": "single-voice/ricochet-cannon.mp3",
+    "intro-race-sawblade": "single-voice/sawblade.mp3",
+    "intro-race-meteor": "single-voice/meteor.mp3",
+    "intro-race-black-hole": "single-voice/black-hole.mp3",
+    "intro-race-godzilla": "single-voice/godzilla.mp3",
+    "intro-race-speed-impact": "single-voice/slow.mp3",
+    "intro-race-centy": "single-voice/centy.mp3",
+    "intro-race-infinity": "single-voice/infinity.mp3",
+    "intro-race-charger": "single-voice/charger.mp3",
+    "intro-race-bouncer": "single-voice/bouncer.mp3",
+    "intro-race-blue-sun": "single-voice/blue-sun.mp3",
+    "intro-race-purple-sun": "single-voice/purple-sun.mp3",
+    "intro-race-phase-three-sun": "single-voice/the-sun.mp3",
+    "intro-race-phase-two-sun": "single-voice/phase-two-sun.mp3",
+    "intro-race-trifecta": "single-voice/trifecta.mp3",
+    "intro-race-gravitator": "single-voice/gravitator.mp3",
+    "intro-race-snake": "single-voice/snake.mp3",
+    "intro-race-vampire": "single-voice/vampire.mp3",
+    "intro-race-cubed": "single-voice/cubed.mp3",
+    "intro-race-double": "single-voice/double.mp3",
+    "intro-race-tripler": "single-voice/tripler.mp3",
+    "intro-race-turret": "single-voice/turret.mp3",
+    "intro-race-leech": "single-voice/leech.mp3",
+    "intro-race-crusher": "single-voice/crusher.mp3",
+    "intro-race-berserker": "single-voice/berserker.mp3",
+    "intro-race-reactor": "single-voice/reactor.mp3",
+    "intro-race-parasite": "single-voice/parasite.mp3",
+    "intro-race-draftmaster": "single-voice/draftmaster.mp3",
+    "intro-race-needle": "single-voice/needle.mp3",
+    "intro-race-multiplier": "single-voice/multiplier.mp3",
+    "intro-race-sniper": "single-voice/sniper.mp3",
+    "intro-race-snowball": "single-voice/snowball.mp3",
+    "intro-race-countdown": "single-voice/countdown.mp3",
+    "intro-race-copycat": "single-voice/copycat.mp3",
+    "intro-race-critical": "single-voice/critical.mp3",
+    "intro-race-commander": "single-voice/commander.mp3",
+    "intro-race-shrapnel": "single-voice/shrapnel.mp3",
+    "intro-race-roulette": "single-voice/absorber.mp3",
+    "intro-race-architect": "single-voice/architect.mp3",
+    "intro-race-100x": "single-voice/100x.mp3",
+    "intro-race-grappler": "single-voice/grappler.mp3",
+    "intro-race-artists": "single-voice/artist.mp3",
+    "intro-race-pancake": "single-voice/pancake.mp3",
+    "intro-race-tree": "single-voice/tree.mp3",
+    "intro-race-sylvester": "single-voice/sylvester.mp3",
+    "intro-race-tetration": "single-voice/tetration.mp3",
+    "intro-race-rain": "single-voice/rain.mp3",
+    "intro-race-hacker": "single-voice/hacker.mp3",
+    "intro-race-miner": "single-voice/miner.mp3",
+    "intro-race-group-math": "single-voice/math-orbs.mp3",
+    "intro-race-group-superhero": "single-voice/superhero-orbs.mp3",
+    "intro-race-group-weapon": "single-voice/weapon-orbs.mp3",
+    "intro-race-group-growth": "single-voice/growth-orbs.mp3",
+    "intro-race-group-motion": "single-voice/motion-orbs.mp3",
+    "intro-race-group-power-math": "single-voice/very-powerful-math-orbs.mp3",
+    "intro-race-group-bombs": "single-voice/bombs.mp3",
+    "intro-race-group-suns": "single-voice/sun-orbs.mp3",
+    "intro-race-combo-speed-gravity": "single-voice/speedavity.mp3",
+    "intro-race-combo-speed-fibonacci": "single-voice/speedynacci.mp3",
+    "intro-race-combo-speed-lazer": "single-voice/speedlazer.mp3",
+    "intro-race-combo-speed-mines": "single-voice/speedplodey.mp3",
+    "intro-race-combo-speed-grower": "single-voice/speedgrower.mp3",
+    "intro-race-combo-speed-sticky": "single-voice/speedstick.mp3",
+    "intro-race-combo-gravity-fibonacci": "single-voice/gravibonacci.mp3",
+    "intro-race-combo-gravity-lazer": "single-voice/gravilazer.mp3",
+    "intro-race-combo-gravity-mines": "single-voice/gravplodey.mp3",
+    "intro-race-combo-gravity-grower": "single-voice/gravgrower.mp3",
+    "intro-race-combo-gravity-sticky": "single-voice/gravisticky.mp3",
+    "intro-race-combo-fibonacci-lazer": "single-voice/fibolazer.mp3",
+    "intro-race-combo-fibonacci-mines": "single-voice/fibplodey.mp3",
+    "intro-race-combo-fibonacci-grower": "single-voice/fibogrower.mp3",
+    "intro-race-combo-fibonacci-sticky": "single-voice/stickonacci.mp3",
+    "intro-race-combo-lazer-mines": "single-voice/lazplodey.mp3",
+    "intro-race-combo-lazer-grower": "single-voice/lazergrower.mp3",
+    "intro-race-combo-lazer-sticky": "single-voice/lazerstick.mp3",
+    "intro-race-combo-mines-grower": "single-voice/growplodey.mp3",
+    "intro-race-combo-mines-sticky": "single-voice/stickplodey.mp3",
+    "intro-race-combo-grower-sticky": "single-voice/growsticky.mp3",
+    "intro-race-combo-speed-slammy": "single-voice/speedslammy.mp3",
+    "intro-race-combo-gravity-slammy": "single-voice/gravslammy.mp3",
+    "intro-race-combo-fibonacci-slammy": "single-voice/fibslammy.mp3",
+    "intro-race-combo-lazer-slammy": "single-voice/lazslammy.mp3",
+    "intro-race-combo-mines-slammy": "single-voice/slamplodey.mp3",
+    "intro-race-combo-grower-slammy": "single-voice/growslammy.mp3",
+    "intro-race-combo-sticky-slammy": "single-voice/stickslammy.mp3",
+    "intro-race-combo-speed-poison": "single-voice/speedpoison.mp3",
+    "intro-race-combo-gravity-poison": "single-voice/gravpoison.mp3",
+    "intro-race-combo-fibonacci-poison": "single-voice/poisonacci.mp3",
+    "intro-race-combo-lazer-poison": "single-voice/lazerpoison.mp3",
+    "intro-race-combo-mines-poison": "single-voice/poisonplodey.mp3",
+    "intro-race-combo-grower-poison": "single-voice/growpoison.mp3",
+    "intro-race-combo-sticky-poison": "single-voice/stickpoison.mp3",
+    "intro-race-combo-slammy-poison": "single-voice/slampoison.mp3",
+    "intro-race-combo-speed-drill": "single-voice/speeddrill.mp3",
+    "intro-race-combo-gravity-drill": "single-voice/gravdrill.mp3",
+    "intro-race-combo-fibonacci-drill": "single-voice/fibodrill.mp3",
+    "intro-race-combo-lazer-drill": "single-voice/lazerdrill.mp3",
+    "intro-race-combo-mines-drill": "single-voice/drillplodey.mp3",
+    "intro-race-combo-grower-drill": "single-voice/growdrill.mp3",
+    "intro-race-combo-sticky-drill": "single-voice/stickdrill.mp3",
+    "intro-race-combo-slammy-drill": "single-voice/slamdrill.mp3",
+    "intro-race-combo-poison-drill": "single-voice/poisondrill.mp3",
+    "intro-race-combo-fibonacci-tripler": "single-voice/fibotripler.mp3",
+    "intro-race-combo-speed-orbital": "single-voice/speedorbital.mp3",
+    "intro-race-combo-gravity-orbital": "single-voice/gravorbital.mp3",
+    "intro-race-combo-fibonacci-orbital": "single-voice/fiborbital.mp3",
+    "intro-race-combo-lazer-orbital": "single-voice/lazerorbital.mp3",
+    "intro-race-combo-mines-orbital": "single-voice/splodeyorbital.mp3",
+    "intro-race-combo-grower-orbital": "single-voice/groworbital.mp3",
+    "intro-race-combo-sticky-orbital": "single-voice/stickorbital.mp3",
+    "intro-race-combo-slammy-orbital": "single-voice/slamorbital.mp3",
+    "intro-race-combo-poison-orbital": "single-voice/poisonorbital.mp3",
+    "intro-race-combo-drill-orbital": "single-voice/drillorbital.mp3",
+    "intro-race-combo-orbital-tripler": "single-voice/triporbital.mp3",
+    "intro-race-everyone": "single-voice/everyone.mp3",
+    "race-count-1": "single-voice/one.mp3",
+    "race-count-2": "single-voice/two.mp3",
+    "race-count-3": "single-voice/three.mp3",
+    "race-count-4": "single-voice/four.mp3",
+    "race-count-5": "single-voice/five.mp3",
+    "race-count-6": "single-voice/six.mp3",
+    "race-count-7": "single-voice/seven.mp3",
+    "race-count-8": "single-voice/eight.mp3",
+    "race-count-9": "single-voice/nine.mp3",
+    "race-count-10": "single-voice/ten.mp3",
+    "race-count-15": "single-voice/fifteen.mp3",
+    "race-count-20": "single-voice/twenty.mp3",
+    "race-count-25": "single-voice/twenty-five.mp3",
+    "race-count-30": "single-voice/thirty.mp3",
+    "race-count-35": "single-voice/thirty-five.mp3",
+    "race-count-40": "single-voice/forty.mp3",
+    "race-count-45": "single-voice/forty-five.mp3",
+    "race-count-50": "single-voice/fifty.mp3",
+    "race-count-60": "single-voice/sixty.mp3",
+    "race-count-70": "single-voice/seventy.mp3",
+    "race-count-80": "single-voice/eighty.mp3",
+    "race-count-90": "single-voice/ninety.mp3",
+    "race-count-100": "single-voice/one-hundred.mp3",
+    "race-plus": "single-voice/plus.mp3",
+    "race-versus": "single-voice/versus.mp3",
+    "race-pick-your-winner": "single-voice/pick-your-winner.mp3",
+    "race-buffed": "single-voice/buffed.mp3",
+    "race-boss": "single-voice/boss.mp3",
+    "race-target-10000": "single-voice/first-to-ten-thousand.mp3",
+    "race-target-100000": "single-voice/first-to-one-hundred-thousand.mp3",
+    "race-target-500000": "single-voice/first-to-five-hundred-thousand.mp3",
+    "race-target-1000000": "single-voice/first-to-one-million.mp3",
+    "race-target-10000000": "single-voice/first-to-ten-million.mp3",
+    "race-target-500000000": "single-voice/first-to-five-hundred-million.mp3",
+    "race-target-1000000000": "single-voice/first-to-one-billion.mp3",
+    "race-target-1000000000000000000": "single-voice/first-to-one-quintillion.mp3",
+    "world-cup-pick-your-winner": "single-voice/pick-your-winner.mp3",
+    "legacy-three": "single-voice/three.mp3",
+    "legacy-two": "single-voice/two.mp3",
+    "legacy-one": "single-voice/one.mp3",
+    "legacy-fight": "single-voice/fight.mp3",
+    "legacy-overtime": "single-voice/overtime.mp3",
+    "legacy-versus": "single-voice/versus.mp3",
+    "legacy-fire": "single-voice/cinder.mp3",
+    "legacy-ice": "single-voice/frost.mp3",
+    "legacy-wizard": "single-voice/hex.mp3",
+    "legacy-time": "single-voice/chrono.mp3",
+    "legacy-volta": "single-voice/volta.mp3",
+    "legacy-venom": "single-voice/venom.mp3",
+    "legacy-gravis": "single-voice/gravis.mp3",
+    "legacy-aegis": "single-voice/aegon.mp3"
+  }
+}

@@ -63,10 +63,10 @@ import {
   normalizeClassicSpeedMode,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261110-shared-lunge2";
-import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261110-shared-lunge2";
+} from "./classic-orbs.js?v=20261112-battle-lab-engine4";
+import { classicSignatureEffectFor } from "./classic-signatures.js?v=20261112-battle-lab-engine4";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-shared-lunge2";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261112-battle-lab-engine4";
 import {
   advanceOrbRaceTournamentPresentation,
   completeOrbRaceTournamentMatch as recordOrbRaceTournamentResult,
@@ -1380,6 +1380,20 @@ const CLASSIC_DASH_SECONDS = 0.18;
 const CLASSIC_LUNGE_SECONDS = 0.28;
 const CLASSIC_LUNGE_SCALE = 2.75;
 const CLASSIC_SHOWCASE_CONTACT_EPSILON = 1e-6;
+const simulationEventObservers = new WeakMap();
+
+// Observers live outside simulation state, so checkpoints stay cloneable.
+// Consumers receive the event stream before the presentation buffer is trimmed.
+export function observeSimulationEvents(sim, observer) {
+  if (typeof observer !== "function") throw new TypeError("An event observer must be a function.");
+  const observers = simulationEventObservers.get(sim) || new Set();
+  observers.add(observer);
+  simulationEventObservers.set(sim, observers);
+  return () => {
+    observers.delete(observer);
+    if (!observers.size) simulationEventObservers.delete(sim);
+  };
+}
 
 export class SeededRandom {
   constructor(seed = 1) {
@@ -17210,6 +17224,7 @@ function emitEvent(sim, type, detail = {}) {
     if (signature) sim.effects.push(signature);
   }
   sim.events.push(event);
+  for (const observer of simulationEventObservers.get(sim) || []) observer(event);
   sim.nextEventId += 1;
   if (sim.events.length > 120) sim.events.splice(0, sim.events.length - 120);
   return event;

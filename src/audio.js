@@ -1,3 +1,5 @@
+import { ANNOUNCER_VOICE, createAnnouncerVoiceCatalog } from "./announcer-voice.js?v=20261112-single-voice1";
+import { ORIGINAL_SAMPLE_ASSETS, ORIGINAL_SFX_VERSION, originalEventSound } from "./original-sfx.js?v=20261112-original2";
 import {
   ORB_RACE_COMBO_NAMES,
   raceAbilityIdsFor,
@@ -6,10 +8,10 @@ import {
 } from "./orb-race.js?v=20261108-arena-cut1";
 import {
   classicTeamDisplayParts,
-} from "./classic-orbs.js?v=20261110-shared-lunge2";
-import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261110-shared-lunge2";
+} from "./classic-orbs.js?v=20261112-battle-lab-engine4";
+import { classicSignatureSoundFor, classicSignatureSuppressesGenericSample } from "./classic-signatures.js?v=20261112-battle-lab-engine4";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261110-shared-lunge2";
+import { classicShowcaseSoundFor } from "./classic-showcase-audio.js?v=20261112-battle-lab-engine4";
 
 export const ANNOUNCER_NAMES = Object.freeze({
   sword: "Sword",
@@ -323,9 +325,9 @@ export const RACE_GENERATED_ANNOUNCER_ASSETS = Object.freeze({
   "race-target-1000000000000000000": generatedRaceAnnouncement("target-1000000000000000000"),
 });
 
-export const ANNOUNCER_ASSET_VERSION = "20261110-shared-lunge2";
+export const ANNOUNCER_ASSET_VERSION = ANNOUNCER_VOICE.version;
 export const ANNOUNCER_PLAYBACK_GAIN = 1.15;
-export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 3.4;
+export const VERSUS_ANNOUNCER_PLAYBACK_GAIN = 1.15;
 export const ANNOUNCER_DUCK_GAINS = Object.freeze({
   effects: 0.18,
   ambience: 0.1,
@@ -479,7 +481,7 @@ export const LEGACY_ANNOUNCER_ASSETS = Object.freeze({
   "legacy-aegis": "aegis.wav",
 });
 
-export const ANNOUNCER_ASSETS = Object.freeze({
+export const ARCHIVED_ANNOUNCER_ASSETS = Object.freeze({
   three: "wise/three.wav",
   two: "wise/two.wav",
   one: "wise/one.wav",
@@ -502,6 +504,16 @@ export const ANNOUNCER_ASSETS = Object.freeze({
   "world-cup-pick-your-winner": "wise/world-cup-pick-your-winner.mp3",
   ...LEGACY_ANNOUNCER_ASSETS,
 });
+
+// Historic palettes remain exported for legacy tools. The runtime has one
+// canonical manifest and never switches speakers between modes or cue types.
+export const ANNOUNCER_VOICE_CATALOG = createAnnouncerVoiceCatalog({
+    cues: Object.keys(ARCHIVED_ANNOUNCER_ASSETS), classicNames: ANNOUNCER_NAMES,
+    raceNames: RACE_ANNOUNCER_NAMES, countryNames: WORLD_CUP_ANNOUNCER_NAMES,
+    groupNames: RACE_GROUP_ANNOUNCER_NAMES, countNames: RACE_ANNOUNCER_COUNT_NAMES,
+    combos: ORB_RACE_COMBO_NAMES,
+});
+export const ANNOUNCER_ASSETS = ANNOUNCER_VOICE_CATALOG.manifest;
 
 export const ANNOUNCER_FALLBACKS = Object.freeze({
   three: "legacy-three",
@@ -544,74 +556,11 @@ export const ANNOUNCER_FALLBACKS = Object.freeze({
   "world-cup-pick-your-winner": "pick-your-winner",
 });
 
-export const SAMPLE_ASSETS = Object.freeze({
-  "classic-luke-swing": "classic-luke-swing.mp3",
-  "classic-luke-reverse": "classic-luke-reverse.mp3",
-  "classic-luke-vault": "classic-luke-vault.mp3",
-  "classic-luke-lunge": "classic-luke-lunge.mp3",
-  "classic-luke-evade": "classic-luke-evade.mp3",
-  "classic-vader-swing": "classic-vader-swing.mp3",
-  "classic-vader-throw": "classic-vader-throw.mp3",
-  "classic-vader-return": "classic-vader-return.mp3",
-  "classic-omnitrix-dial": "classic-omnitrix-dial.mp3",
-  "classic-omnitrix-transform": "classic-omnitrix-transform.mp3",
-  "match-finale": "match-finale.wav",
-  "chrono-time-stop": "chrono-time-stop.wav",
-  "weapon-hit": "fantasy-sword-hit.mp3",
-  "weapon-clash": "sword-clash-241729.mp3",
-  "orb-collision": "orb-collision-pop.mp3",
-  "race-math-bounce": "race-math-bounce.mp3",
-  "race-math-power": "race-math-power.mp3",
-  "race-vampire-bounce": "race-vampire-bounce.mp3",
-  "race-pancake-impact": "race-pancake-impact.mp3",
-  "race-monster-growl": "race-monster-growl.mp3",
-  "race-fairy-sparkle": "race-fairy-sparkle.mp3",
-  "race-thunder": "race-thunder.mp3",
-  "race-monster-footsteps": "race-monster-footsteps.mp3",
-  "race-godzilla-tail-smack": "race-godzilla-tail-smack.wav",
-  "race-godzilla-beam-charge": "race-godzilla-beam-charge.wav",
-  "race-draft-rifle-fire": "race-draft-rifle-fire.mp3",
-  "race-draft-shotgun-fire": "race-draft-shotgun-fire.mp3",
-  "race-draft-pistol-fire": "race-draft-pistol-fire.mp3",
-  "race-layer-break": "race-layer-break.mp3",
-  "race-drill": "race-drill.mp3",
-  "hydrogen-bomb-siren": "hydrogen-bomb-siren.mp3",
-  "hydrogen-bomb-explosion": "hydrogen-bomb-explosion.mp3",
-  "hydrogen-bomb-ear-ringing": "hydrogen-bomb-ear-ringing.mp3",
-  "classic-trident-throw": "classic-trident-throw.mp3",
-  "classic-trident-recall": "classic-trident-recall.mp3",
-  "classic-boxer-punch": "classic-boxer-punch.mp3",
-  "classic-vampire-hiss": "classic-vampire-hiss.mp3",
-  "classic-necromancer-summon": "classic-necromancer-summon.mp3",
-  "classic-trapper-throw": "classic-trapper-throw.mp3",
-  "classic-trapper-caught": "classic-trapper-caught.mp3",
-  "classic-snowball-freeze": "classic-snowball-freeze.mp3",
-  "jackpot-slot-spinning": "jackpot-slot-spinning.mp3",
-  "jackpot-slot-lever": "jackpot-slot-lever.mp3",
-  "forge-item-pickup": "forge-item-pickup.mp3",
-  "france-world-cup-pickup": "france-world-cup-pickup.wav",
-  "norway-world-cup-action": "norway-world-cup-action.wav",
-  "usa-world-cup-action": "usa-world-cup-action.wav",
-  "england-world-cup-action": "england-world-cup-action.wav",
-  "argentina-world-cup-action": "argentina-world-cup-action.wav",
-  "portugal-world-cup-pickup": "portugal-world-cup-pickup.wav",
-  "spain-world-cup-action": "spain-world-cup-action.wav",
-  "world-cup-ko": "world-cup-ko.wav",
-  "world-cup-card-use": "world-cup-card-use.mp3",
-  "cinder-burn-tick": "cinder-burn-tick.wav",
-  "critical-hit": "critical-hit.wav",
-  "hex-magic-burst": "hex-magic-burst.mp3",
-  "aegis-rush": "aegis-surge.mp3",
-  "meteor-horn": "meteor-horn.mp3",
-  "meteor-strike": "meteor-strike.mp3",
-  "black-hole-impact": "black-hole-impact.mp3",
-  "black-hole-teleport": "black-hole-teleport.mp3",
-  "race-lag-glitch": "race-lag-glitch.mp3",
-});
+export const SAMPLE_ASSETS = ORIGINAL_SAMPLE_ASSETS;
 
 export const MATCH_FINALE_DURATION_SECONDS = 3.47;
 export const MATCH_FINALE_RECORDING_TAIL_MS = 1_200;
-export const SAMPLE_ASSET_VERSION = "20261108-classic-sabers1";
+export const SAMPLE_ASSET_VERSION = ORIGINAL_SFX_VERSION;
 
 const METAL_FOUNDATION = Object.freeze({
   layers: [
@@ -1742,7 +1691,7 @@ export function samplePlanForEvent(event = {}) {
     playbackRate: (minRate + rateMix * (maxRate - minRate)) * progressPitch,
     maxDuration: base.maxDuration || 0,
     loop: base.loop === true,
-    offset: event.type === "race-ying-yang-switch"
+    offset: base.sample === "classic-trapper-throw" ? 0 : event.type === "race-ying-yang-switch"
       ? (event.mode === "speed" ? 0 : 0.5)
       : base.offset || 0,
     rateLimit: base.rateLimit || 0,
@@ -2481,7 +2430,7 @@ export class CombatAudio {
     if (!this.context || this.context.state !== "running") return false;
     const samplePlan = samplePlanForEvent(event);
     if (samplePlan && this.sampleBuffers.has(samplePlan.sample)) return this.playSample(samplePlan, event);
-    const plan = soundPlanForEvent(event);
+    const plan = originalEventSound(soundPlanForEvent(event), event);
     if (!plan || !this.categoriesEnabled[plan.category]) return false;
     const now = this.context.currentTime;
     const raceVoiceId = event.fighterId || event.sourceId || event.orbId;

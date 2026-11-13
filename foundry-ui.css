@@ -1,0 +1,88 @@
+/* Orb Foundry's own visual layer. Quiet glass tools, warm Foundry copper,
+   cool Racer green, and real game motion instead of decorative UI machinery. */
+:root {
+    --apple-bg: #f5f4f1;
+    --apple-text: #242321;
+    --apple-secondary: #706d68;
+    --apple-blue: #b84724;
+    --apple-blue-hover: #a13d1e;
+    --apple-action: #b84724;
+    --apple-selected: #f5e8df;
+    --apple-line: #e1ded7;
+    --apple-inset: #ebe8e2;
+    --apple-panel: #f7f6f3;
+    --apple-graph: #d9b8a6;
+    --apple-glass: rgb(255 255 255 / .72);
+    --foundry-action-ink: #fff;
+    --foundry-copper: #b84724;
+    --racer-green: #087b60;
+}
+:root[data-appearance=dark] {
+    --apple-bg: #131414;
+    --apple-surface: #212222;
+    --apple-panel: #1b1d1d;
+    --apple-text: #f3f2ee;
+    --apple-secondary: #adadaa;
+    --apple-tertiary: #969893;
+    --apple-blue: #f2a386;
+    --apple-blue-hover: #ffad87;
+    --apple-action: #ed916b;
+    --apple-selected: #3b2d27;
+    --apple-line: #343836;
+    --apple-inset: #292c2a;
+    --apple-hover: #303431;
+    --apple-elevated: #3a3f3b;
+    --apple-glass: rgb(34 38 35 / .80);
+    --apple-graph: #665043;
+    --foundry-action-ink: #28170f;
+    --foundry-copper: #ed916b;
+    --racer-green: #8dd8bd;
+}
+.apple-shell .apple-button, .apple-shell .menu-play-button, .apple-shell a.menu-play-button, .apple-shell .menu-record-button { border-radius: 11px; }
+.apple-shell :is(.apple-button.primary,.pixel-button.primary,#launchButton) { color: var(--foundry-action-ink); }
+.apple-shell :is(.apple-button.primary,.pixel-button.primary,#launchButton):hover { color: var(--foundry-action-ink); }
+.apple-shell .apple-button.primary:hover { box-shadow: 0 4px 17px color-mix(in srgb,var(--apple-action),transparent 80%); }
+.apple-shell .lab-header, .apple-shell .site-header { border-bottom: 1px solid var(--apple-hairline); }
+.apple-shell .lab-workbench, .apple-shell .study-workbench { border-radius: 18px; border-color: var(--apple-hairline); box-shadow: 0 18px 55px -40px rgb(0 0 0 / .35); }
+.apple-shell .lab-workbench { background: var(--apple-glass); backdrop-filter: blur(24px); }
+.lab-inspector { background: color-mix(in srgb,var(--apple-panel),transparent 12%); }
+.workspace-heading h1, .study-heading h1 { font-weight: 650; letter-spacing: -.045em; }
+.apple-shell .menu-header h1 { font-size: clamp(54px,6vw,88px); font-weight: 650; letter-spacing: -.065em; }
+.apple-shell .menu-header p { max-width: 360px; color: var(--apple-secondary); }
+.home-mode-switch { width: 280px; border-radius: 13px; border-color: var(--apple-line); background: var(--apple-field); }
+.home-mode-switch button, .home-mode-indicator { border-radius: 9px; }
+.home-mode-switch button[aria-selected=true] { color: var(--apple-text); }
+.home-hero { --mode-accent: var(--foundry-copper); --mode-ink: var(--foundry-action-ink); }
+.home-hero[data-mode=orb-race] { --mode-accent: var(--racer-green); --mode-ink: var(--foundry-action-ink); }
+.apple-shell .home-hero .menu-play-button { color: var(--mode-ink); font-size: 14px; min-height: 49px; min-width: 195px; padding-inline: 26px; }
+.apple-shell .menu-record-button { min-height: 43px; background: transparent; }
+.home-preview { border-radius: 24px; border: 1px solid rgb(255 255 255 / .1); transform: perspective(1400px) rotateX(var(--preview-x,0deg)) rotateY(var(--preview-y,0deg)); transition: transform 280ms cubic-bezier(.2,.7,.2,1),box-shadow 280ms; }
+.home-preview::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 1px solid rgb(255 255 255 / .06); pointer-events: none; }
+.home-preview:hover { box-shadow: 0 32px 70px -36px rgb(0 0 0 / .48); }
+.home-preview figcaption { font-size: 10px; letter-spacing: .01em; }
+.fighter-choice:hover { border-color: var(--apple-blue); }
+.view-toolbar button[aria-pressed=true] { color: var(--apple-blue); }
+.study-tabs button[aria-selected=true] { border-color: var(--apple-blue); }
+.apple-shell .setup-dialog { border-radius: 20px; }
+.apple-shell .profile-toolbar { border-radius: 14px; }
+.apple-shell .profile-copy, .apple-shell .profile-data section { border-radius: 16px; }
+@media (max-width:760px) {
+    .home-mode-switch { width: 264px; }
+    .apple-shell .menu-header h1 { font-size: clamp(42px,11.8vw,65px); }
+    .apple-shell .home-hero .menu-play-button { font-size: 12px; min-width: 0; min-height: 43px; padding: 12px 20px; }
+    .home-preview { border-radius: 20px; }
+    .apple-shell .menu-record-button { min-height: 40px; }
+}
+@media (prefers-reduced-motion:reduce), (hover:none) {
+    .home-preview { transform: none; }
+}
+@media (prefers-reduced-transparency:reduce) {
+    .lab-workbench, .study-workbench, .lab-inspector { backdrop-filter: none; background: var(--apple-surface); }
+}
+@media (prefers-contrast:more) {
+    .apple-shell { --apple-line: #96928a; --apple-secondary: #55514a; }
+    :root[data-appearance=dark] .apple-shell { --apple-line: #888d86; --apple-secondary: #e2e2db; }
+}
+/* Runtime setup sheets release native modal hit-testing immediately on close.
+   Their entrances still settle softly; playback controls are never held inert. */
+.apple-shell .setup-dialog { transition: opacity 180ms ease, transform 180ms cubic-bezier(.2,.7,.2,1); }

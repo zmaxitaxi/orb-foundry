@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Create a reproducible orb battle. Inspect every collision, ability, and frame in the Orb Foundry Battle Lab.">
+    <meta name="theme-color" content="#f5f5f7">
+    <script src="./src/apple-theme.js?v=20261112-battle-lab4"></script>
+    <link rel="icon" href="./assets/lab-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./apple-ui.css?v=20261112-battle-lab4">
+    <link rel="stylesheet" href="./battle-lab.css?v=20261112-battle-lab4">
+    <title>Battle Lab — Orb Foundry</title>
+    <link rel="stylesheet" href="./foundry-ui.css?v=20261112-foundry1">
+    <link rel="stylesheet" href="./site-effects.css?v=20261112-atmosphere1">
+</head>
+<body class="apple-shell lab-page">
+    <a class="skip-link" href="#labWorkspace">Skip to the Battle Lab</a>
+    <svg class="icon-definitions" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none"/></symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="4"/></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 5v14m14-14L8 12l11 7Z"/></symbol>
+        <symbol id="i-next" viewBox="0 0 24 24"><path d="M19 5v14M5 5l11 7L5 19Z"/></symbol>
+        <symbol id="i-restart" viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7"/></symbol>
+        <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8h14v-8"/></symbol>
+        <symbol id="i-save" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4Z"/></symbol>
+        <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="m17 3 4 4-4 4M3 7h3c5 0 7 10 12 10h3m-4-4 4 4-4 4M3 17h3c2 0 3-2 4-4m3-2c1-2 3-4 5-4h3"/></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+        <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+        <symbol id="i-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v6m0 8v6M2 12h6m8 0h6"/></symbol>
+        <symbol id="i-vector" viewBox="0 0 24 24"><path d="m5 19 14-14m-8 0h8v8"/><circle cx="5" cy="19" r="2"/></symbol>
+        <symbol id="i-effects" viewBox="0 0 24 24"><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z"/></symbol>
+        <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 4 5 9H2v6h3l6 5Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+        <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+        <symbol id="i-code" viewBox="0 0 24 24"><path d="m7 6-6 6 6 6m10-12 6 6-6 6M14 3l-4 18"/></symbol>
+        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+    </svg>
+    <header class="lab-header">
+        <a class="lab-brand" href="./index.html"><span class="foundry-symbol" aria-hidden="true"></span>Orb Foundry</a>
+        <nav class="lab-navigation" aria-label="Main navigation">
+            <a href="./lab.html" aria-current="page">Battle Lab</a>
+            <a href="./index.html?record=1">Recorder</a>
+        </nav>
+        <div class="header-utilities"><button type="button" data-theme-toggle class="theme-switch" aria-label="Switch to dark mode" aria-pressed="false"></button><details class="utility-menu"><summary aria-label="More lab options" title="More">···</summary><div><button id="saveButton" type="button" disabled>Save challenge</button><button id="libraryButton" type="button">Saved challenges</button><button id="importMenuButton" type="button">Import JSON</button><button id="footerEngineeringButton" type="button">Quick overview</button><a id="recordChallengeLink" href="./index.html">Record this match ↗</a></div></details></div>
+    </header>
+
+    <main class="lab-main" id="labWorkspace">
+        <div class="workspace-heading" data-reveal>
+            <div><h1>Battle Lab<span>.</span></h1></div>
+            <div class="workspace-actions">
+                <button id="shareButton" class="apple-button primary" type="button" disabled><svg class="icon"><use href="#i-share"/></svg>Share</button>
+            </div>
+        </div>
+        <div id="labNotice" class="lab-notice" role="alert" hidden></div>
+        <div class="lab-workbench" data-reveal>
+            <section class="battle-workspace" aria-label="Battle and replay">
+                <header class="battle-heading">
+                    <div><span class="live-dot" id="statusDot"></span><strong id="battleTitle">Pinball vs Rubber</strong><span class="battle-mode" id="arenaShapeLabel">Square</span></div>
+                </header>
+                <div class="arena-wrap">
+                    <div class="arena-status" id="arenaStatus">Preparing replay…</div>
+                    <canvas id="labCanvas" width="960" height="960" aria-label="Complete Classic battle arena, with space for wall impacts and outside movement"></canvas>
+                    <canvas id="labOverlay" width="960" height="960" aria-hidden="true"></canvas>
+                    <div id="arenaResult" class="arena-result" hidden><span id="resultEyebrow">Result</span><strong id="resultTitle"></strong></div>
+                </div>
+                <div class="fighter-dock" id="fighterDock" aria-label="Fighter status"></div>
+                <div class="view-toolbar" aria-label="Inspection overlays">
+                    <details class="view-menu"><summary>View <span>⌄</span></summary><div>
+                    <button id="hitboxButton" aria-pressed="false" type="button"><svg class="icon"><use href="#i-crosshair"/></svg>Hitboxes</button>
+                    <button id="vectorButton" aria-pressed="false" type="button"><svg class="icon"><use href="#i-vector"/></svg>Velocity</button>
+                    <button id="effectsButton" aria-pressed="true" type="button"><svg class="icon"><use href="#i-effects"/></svg>Effects</button>
+                    </div></details><button id="audioButton" aria-pressed="false" type="button" aria-label="Enable battle sound" title="Sound"><svg class="icon"><use href="#i-sound"/></svg>Sound</button>
+                    <span class="toolbar-spacer"></span><span class="step-display" id="stepLabel" data-replay-only hidden>Step 0</span>
+                </div>
+                <section class="replay-transport" aria-label="Replay controls">
+                    <div class="transport-top">
+                        <div class="transport-buttons">
+                            <button id="restartButton" class="icon-button" aria-label="Restart replay" title="Restart" type="button"><svg class="icon"><use href="#i-restart"/></svg></button>
+                            <button id="previousFrameButton" data-replay-only class="icon-button" aria-label="Previous simulation step" title="Previous step · ←" type="button" hidden><svg class="icon"><use href="#i-back"/></svg></button>
+                            <button id="playButton" class="transport-play" aria-label="Play replay" type="button" disabled><svg class="icon"><use href="#i-play"/></svg></button>
+                            <button id="nextFrameButton" data-replay-only class="icon-button" aria-label="Next simulation step" title="Next step · →" type="button" hidden><svg class="icon"><use href="#i-next"/></svg></button>
+                            <label class="speed-control"><span class="sr-only">Playback speed</span><select id="playbackSpeed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+                        </div>
+                        <div class="time-display"><output id="playheadTime">00:00.00</output><span>/</span><span id="durationTime">—</span></div>
+                    </div>
+                    <div class="timeline" id="timeline">
+                        <svg id="activityGraph" viewBox="0 0 600 30" preserveAspectRatio="none" aria-hidden="true"></svg>
+                        <input type="range" id="replayScrubber" min="0" max="1" step="1" value="0" aria-label="Replay playhead" disabled>
+                    </div>
+                    <div class="timeline-labels"><span>0:00</span><span id="timelineEnd">Finish</span></div>
+                </section>
+            </section>
+
+            <aside class="lab-inspector" aria-label="Challenge and replay inspector">
+                <div class="inspector-tabs" role="tablist" aria-label="Lab tools">
+                    <span class="tab-indicator" id="tabIndicator"></span>
+                    <button id="challengeTab" role="tab" aria-selected="true" aria-controls="challengePanel" tabindex="0" type="button">Setup</button>
+                    <button id="inspectTab" role="tab" aria-selected="false" aria-controls="inspectPanel" tabindex="-1" type="button">Replay</button>
+                </div>
+                <section id="challengePanel" role="tabpanel" aria-labelledby="challengeTab">
+                    <form id="challengeForm">
+                        <div class="fighter-choices">
+                            <span class="field-caption">Fighters</span>
+                            <button id="leftFighterButton" class="fighter-choice" type="button" aria-label="Choose first fighter"><span id="leftFighterAvatar" class="fighter-avatar"></span><span><small>Fighter one</small><strong id="leftFighterName">Pinball</strong></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+                            <span class="versus-label">vs</span>
+                            <button id="rightFighterButton" class="fighter-choice" type="button" aria-label="Choose second fighter"><span id="rightFighterAvatar" class="fighter-avatar"></span><span><small>Fighter two</small><strong id="rightFighterName">Rubber</strong></span><svg class="icon"><use href="#i-chevron"/></svg></button>
+                        </div>
+                        <div class="seed-row"><label class="field-label">Seed<input id="challengeSeed" name="seed" type="number" inputmode="numeric" min="1" max="4294967295" step="1" required></label><button id="randomSeedButton" class="icon-button" type="button" aria-label="Generate another seed" title="Another seed"><svg class="icon"><use href="#i-shuffle"/></svg></button></div>
+                        <fieldset class="arena-picker"><legend>Arena</legend><div class="segmented-control"><label><input type="radio" name="arenaShape" value="square" checked><span><i class="shape-square"></i>Square</span></label><label><input type="radio" name="arenaShape" value="circle"><span><i class="shape-circle"></i>Circle</span></label></div></fieldset>
+                        <details class="health-options"><summary>Advanced</summary><label class="field-label advanced-title">Name<input id="challengeTitle" name="title" maxlength="80" autocomplete="off" placeholder="Name your matchup"></label><div><label class="field-label">First fighter HP<input id="leftHealth" type="number" min="1" max="2000" step="1" required></label><label class="field-label">Second fighter HP<input id="rightHealth" type="number" min="1" max="2000" step="1" required></label></div></details>
+                        <p id="formError" class="form-error" role="alert" hidden></p>
+                        <button id="runChallengeButton" class="apple-button primary run-button" type="submit">Run</button>
+                        <p class="form-note" id="formNote" hidden>Unapplied changes</p>
+                    </form>
+                    <label class="field-label sample-challenges">Presets<select id="sampleList" aria-label="Load a preset matchup"></select></label>
+                </section>
+                <section id="inspectPanel" role="tabpanel" aria-labelledby="inspectTab" hidden>
+                    <div class="inspection-stats" id="inspectionStats"></div>
+                    <div class="event-heading"><h3>Events</h3><span id="eventCount">0 events</span></div>
+                    <div class="event-filter" role="group" aria-label="Filter replay events"><button type="button" data-filter="all" aria-pressed="true">All</button><button type="button" data-filter="damage" aria-pressed="false">Hits</button><button type="button" data-filter="moves" aria-pressed="false">Moves</button></div>
+                    <div class="event-list" id="eventList" aria-label="Replay events"></div>
+                    <div class="selected-event" id="selectedEvent" hidden><p id="eventExplanation"></p><details><summary>Event data</summary><pre id="eventData"></pre></details></div>
+                    <div class="replay-proof"><div><span id="proofDot" class="proof-dot"></span><strong id="proofStatus">Not verified</strong><button id="verifyButton" class="apple-button secondary" type="button" disabled>Verify</button></div><details><summary>Details</summary><p id="proofDetail">Run again and compare state and events.</p><code id="proofHash"></code></details></div>
+                </section>
+            </aside>
+        </div>
+        <footer class="lab-footer"><a href="./study.html">Course Study</a><a href="./about.html">About</a><a href="https://github.com/zmaxitaxi/orb-foundry" target="_blank" rel="noopener noreferrer">GitHub ↗</a></footer>
+    </main>
+    <div id="labToast" class="lab-toast" role="status" aria-live="polite" hidden></div>
+
+    <dialog id="fighterDialog" class="apple-dialog fighter-dialog" aria-labelledby="fighterDialogTitle"><div class="dialog-heading"><div><h2 id="fighterDialogTitle">Fighters</h2></div><button type="button" data-close class="icon-button" aria-label="Close fighter picker"><svg class="icon"><use href="#i-close"/></svg></button></div><label class="search-field"><span class="sr-only">Search fighters</span><input id="fighterSearch" type="search" placeholder="Search fighters…" autocomplete="off"></label><div id="fighterGrid" class="fighter-grid"></div><p class="dialog-note" id="fighterSearchCount">All Classic fighters</p></dialog>
+    <dialog id="shareDialog" class="apple-dialog share-dialog" aria-labelledby="shareDialogTitle"><div class="dialog-heading"><div><h2 id="shareDialogTitle">Share challenge</h2></div><button type="button" data-close class="icon-button" aria-label="Close share challenge"><svg class="icon"><use href="#i-close"/></svg></button></div><p class="dialog-description">Anyone with this link can replay the matchup.</p><label class="field-label">Link<input id="shareUrlInput" readonly></label><button id="copyChallengeButton" class="apple-button primary" type="button"><svg class="icon"><use href="#i-share"/></svg>Copy link</button><details class="share-export"><summary>Export files</summary><div class="download-actions"><button id="downloadChallengeButton" type="button"><svg class="icon"><use href="#i-download"/></svg>Challenge JSON</button><button id="downloadReplayButton" type="button"><svg class="icon"><use href="#i-download"/></svg>Replay + events</button></div></details><p class="dialog-note" id="shareFeedback"></p></dialog>
+    <dialog id="libraryDialog" class="apple-dialog library-dialog" aria-labelledby="libraryTitle"><div class="dialog-heading"><div><p class="eyebrow">ON THIS DEVICE</p><h2 id="libraryTitle">Saved</h2></div><button type="button" data-close class="icon-button" aria-label="Close saved challenges"><svg class="icon"><use href="#i-close"/></svg></button></div><div id="libraryList"></div><label class="apple-button secondary import-label"><svg class="icon"><use href="#i-download"/></svg>Import JSON<input id="importChallengeInput" type="file" accept=".json,application/json" hidden></label><p class="dialog-note">Stored on this device.</p></dialog>
+    <dialog id="engineeringDialog" class="apple-dialog engineering-dialog" aria-labelledby="engineeringTitle"><div class="dialog-heading"><div><h2 id="engineeringTitle">About Orb Foundry</h2></div><button type="button" data-close class="icon-button" aria-label="Close engineering overview"><svg class="icon"><use href="#i-close"/></svg></button></div><p class="dialog-description">A deterministic simulation and video production system. The lab makes its decisions visible.</p><div class="architecture-flow"><span>Seeded inputs</span><b>→</b><span>120 Hz simulation</span><b>→</b><span>Replay + inspection</span></div><div class="engineering-notes"><section><h3>One source of truth.</h3><p>The lab and recorder share one 120 Hz simulation. Playback and overlays change only the presentation.</p></section><section><h3>Scrub without starting over.</h3><p>A worker stores checkpoints every four seconds. Seeking restores the state and RNG, then advances to the exact step.</p></section><section><h3>Proof you can reproduce.</h3><p>Verification compares a fresh run’s state and events in this engine. Fingerprints are diagnostic, not cryptographic or guaranteed across browser engines.</p></section><section><h3>A real regression, made testable.</h3><p>A lunge once delayed ability timers. Regressions now check countdowns and deployments during movement.</p></section></div><div id="sessionFacts" class="session-facts"></div><div class="engineering-links"><a class="apple-button primary" href="https://github.com/zmaxitaxi/orb-foundry" target="_blank" rel="noopener noreferrer">Explore the source ↗</a><a href="https://github.com/zmaxitaxi/orb-foundry/blob/main/docs/BATTLE_LAB.md" target="_blank" rel="noopener noreferrer">Architecture notes ↗</a></div></dialog>
+    <script type="module" src="./src/site-motion.js?v=20261112-polish4"></script>
+    <script type="module" src="./src/battle-lab.js?v=20261112-battle-lab4"></script>
+    <script type="module" src="./src/site-effects.js?v=20261112-atmosphere1"></script>
+</body>
+</html>

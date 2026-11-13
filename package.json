@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "study:sync": "node scripts/sync-course-study.mjs",
+    "audio:generate-announcer": "node scripts/generate-unified-announcer.mjs",
+    "audio:generate-original": "node scripts/generate-original-sfx.mjs",
     "audio:generate-combos": "node scripts/generate-race-combo-announcements.mjs",
     "audio:generate-drill-combos": "node scripts/generate-race-combo-announcements.mjs --drill-only",
     "audio:generate-orbital-combos": "node scripts/generate-race-combo-announcements.mjs --orbital-only",
@@ -24,7 +27,9 @@
     "youtube:publish": "node scripts/youtube-publish.mjs",
     "youtube:oauth": "node scripts/youtube-oauth.mjs",
     "qa:browser-smoke": "node scripts/ci-browser-smoke.mjs",
-    "qa:classic-showcase": "node scripts/qa-classic-showcase.mjs"
+    "qa:classic-showcase": "node scripts/qa-classic-showcase.mjs",
+    "qa:site": "node scripts/qa-site.mjs",
+    "qa:battle-lab": "node scripts/qa-battle-lab.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0"

@@ -1712,7 +1712,7 @@ assert.equal(ORB_RACERS.mines.name, "SPLODEY", "the stable mines ID should displ
   assert.match(socialRendererSource, /this\.canvas\.dataset\.tournament\s*=\s*sim\.gameplayMode\s*===\s*ORB_RACE_MODE/, "the outer-frame override must be scoped to tournament Orb Race renders");
   assert.match(socialRendererSource, /tournamentCameraTransform\(/, "bracket zoom should use one continuous camera transform");
   assert.match(socialRendererSource, /orb-race-tournament-intro-clock4-64focus1/, "the renderer presentation import should invalidate the 64-entry focus camera fix");
-  assert.match(mainSource, /social-renderer\.js\?v=20261110-shared-lunge2/, "main must invalidate the current renderer graph");
+  assert.match(mainSource, /social-renderer\.js\?v=20261112-battle-lab-engine4/, "main must invalidate the current renderer graph");
   assert.doesNotMatch(
     mainSource,
     /function socialSimulationRate\(now\)\s*\{\s*if \(!socialPresentation\.started\) return 0/,
@@ -4268,7 +4268,7 @@ function run(sim, seconds = 120) {
 
 {
   assert.ok(ANNOUNCER_PLAYBACK_GAIN > 1 && ANNOUNCER_PLAYBACK_GAIN <= 1.25);
-  assert.equal(VERSUS_ANNOUNCER_PLAYBACK_GAIN, 3.4);
+  assert.equal(VERSUS_ANNOUNCER_PLAYBACK_GAIN, ANNOUNCER_PLAYBACK_GAIN);
   assert.deepEqual(ANNOUNCER_DUCK_GAINS, { effects: 0.18, ambience: 0.1, music: 0.2 });
   assert.equal(ANNOUNCER_DUCK_RELEASE_SECONDS, 0.18);
   assert.equal(announcerPlaybackGainForCue("versus"), VERSUS_ANNOUNCER_PLAYBACK_GAIN);
@@ -4289,16 +4289,16 @@ function run(sim, seconds = 120) {
     "intro-trapper",
     "race-pick-your-winner",
   ]);
-  assert.equal(ANNOUNCER_ASSETS.versus, "wise/versus.wav");
-  assert.equal(ANNOUNCER_ASSETS["pick-your-winner"], "wise/pick-your-winner.wav");
+  assert.equal(ANNOUNCER_ASSETS.versus, "single-voice/versus.mp3");
+  assert.equal(ANNOUNCER_ASSETS["pick-your-winner"], "single-voice/pick-your-winner.mp3");
   assert.equal(ANNOUNCER_ASSETS.ko, undefined);
   assert.equal(ANNOUNCER_ASSETS["fire-wins"], undefined);
-  assert.equal(ANNOUNCER_ASSETS["legacy-ice"], "frost.wav");
+  assert.equal(ANNOUNCER_ASSETS["legacy-ice"], "single-voice/frost.mp3");
   assert.equal(ANNOUNCER_ASSETS["legacy-ko"], undefined);
-  assert.equal(ANNOUNCER_ASSETS["legacy-volta"], "volta.wav");
-  assert.equal(ANNOUNCER_ASSETS["legacy-venom"], "venom.wav");
-  assert.equal(ANNOUNCER_ASSETS["legacy-gravis"], "gravis.wav");
-  assert.equal(ANNOUNCER_ASSETS["legacy-aegis"], "aegis.wav");
+  assert.equal(ANNOUNCER_ASSETS["legacy-volta"], "single-voice/volta.mp3");
+  assert.equal(ANNOUNCER_ASSETS["legacy-venom"], "single-voice/venom.mp3");
+  assert.equal(ANNOUNCER_ASSETS["legacy-gravis"], "single-voice/gravis.mp3");
+  assert.equal(ANNOUNCER_ASSETS["legacy-aegis"], "single-voice/aegon.mp3");
   assert.equal(announcerIntroSequence("fire", "fire"), null);
   const announcerManifest = JSON.parse(readFileSync(new URL("../assets/audio/announcer/wise/manifest.json", import.meta.url), "utf8"));
   assert.equal(announcerManifest.lines["versus.wav"], "Versus.");
@@ -4833,28 +4833,28 @@ function run(sim, seconds = 120) {
   assert.equal(raceAnnouncerCountCueFor(100), "race-count-100");
   assert.equal(raceAnnouncerCountCueFor(51), null, "unconfigured counts should remain unnumbered");
   assert.equal(raceAnnouncerCountCueFor(999), null, "clamped counts above the configured range should remain unnumbered");
-  assert.equal(ANNOUNCER_ASSETS["race-count-3"], RACE_COUNT_ANNOUNCER_ASSETS["race-count-3"]);
-  assert.equal(ANNOUNCER_ASSETS["race-count-25"], RACE_COUNT_ANNOUNCER_ASSETS["race-count-25"]);
-  assert.equal(ANNOUNCER_ASSETS["race-count-100"], RACE_COUNT_ANNOUNCER_ASSETS["race-count-100"]);
+  assert.equal(ANNOUNCER_ASSETS["race-count-3"], ANNOUNCER_ASSETS.three);
+  assert.equal(ANNOUNCER_ASSETS["race-count-25"], "single-voice/twenty-five.mp3");
+  assert.equal(ANNOUNCER_ASSETS["race-count-100"], "single-voice/one-hundred.mp3");
   assert.deepEqual(RACE_INTRO_ANNOUNCER_ASSETS, Object.fromEntries(
     Object.entries(RACE_GENERATED_ANNOUNCER_ASSETS)
       .filter(([cue]) => cue.startsWith("intro-race-")),
   ));
-  assert.equal(ANNOUNCER_ASSETS["race-plus"], RACE_GENERATED_ANNOUNCER_ASSETS["race-plus"]);
-  assert.equal(ANNOUNCER_ASSETS["race-versus"], RACE_GENERATED_ANNOUNCER_ASSETS["race-versus"]);
+  assert.equal(ANNOUNCER_ASSETS["race-plus"], "single-voice/plus.mp3");
+  assert.equal(ANNOUNCER_ASSETS["race-versus"], "single-voice/versus.mp3");
   assert.equal(RACE_GENERATED_ANNOUNCER_ASSETS["race-buffed"], "generated-race/race-buffed.wav");
-  assert.equal(ANNOUNCER_ASSETS["race-buffed"], RACE_GENERATED_ANNOUNCER_ASSETS["race-buffed"]);
-  assert.equal(ANNOUNCER_ASSETS["race-boss"], RACE_GENERATED_ANNOUNCER_ASSETS["race-boss"]);
+  assert.equal(ANNOUNCER_ASSETS["race-buffed"], "single-voice/buffed.mp3");
+  assert.equal(ANNOUNCER_ASSETS["race-boss"], "single-voice/boss.mp3");
   assert.equal(
     ANNOUNCER_ASSETS["race-pick-your-winner"],
-    RACE_GENERATED_ANNOUNCER_ASSETS["race-pick-your-winner"],
+    "single-voice/pick-your-winner.mp3",
   );
   assert.equal(
     ANNOUNCER_ASSETS["intro-race-artists"],
-    RACE_GENERATED_ANNOUNCER_ASSETS["intro-race-artists"],
+    "single-voice/artist.mp3",
     "Artist announcer should be available with the new-orb announcement set",
   );
-  assert.equal(ANNOUNCER_ASSETS["intro-race-everyone"], RACE_GENERATED_ANNOUNCER_ASSETS["intro-race-everyone"]);
+  assert.equal(ANNOUNCER_ASSETS["intro-race-everyone"], "single-voice/everyone.mp3");
   for (const [cue, filename] of Object.entries(RACE_GENERATED_ANNOUNCER_ASSETS)) {
     const liveAsset = new URL(`../assets/audio/announcer/${filename}`, import.meta.url);
     assert.ok(existsSync(liveAsset), `${cue} should have a generated race announcement`);
@@ -4865,7 +4865,7 @@ function run(sim, seconds = 120) {
   assert.equal(Object.keys(RACE_COMBO_ANNOUNCER_ASSETS).length, 57, "every named two-ability combo should have one generated announcer");
   assert.equal(
     ANNOUNCER_ASSETS["intro-race-combo-speed-fibonacci"],
-    RACE_COMBO_ANNOUNCER_ASSETS["intro-race-combo-speed-fibonacci"],
+    "single-voice/speedynacci.mp3",
     "combo announcers should be available through the shared announcer manifest",
   );
   assert.deepEqual(raceAnnouncerIntroSequence("duplicator", "speed"), [
@@ -5656,7 +5656,7 @@ function run(sim, seconds = 120) {
     "race-layer-break",
     "layer destruction should use the supplied metallic break sample",
   );
-  assert.equal(SAMPLE_ASSETS["race-vampire-bounce"], "race-vampire-bounce.mp3");
+  assert.equal(SAMPLE_ASSETS["race-vampire-bounce"], "original-v1/race-vampire-bounce.wav");
   assert.equal(
     samplePlanForEvent({ type: "race-bounce", raceOrbId: "vampire", surface: "number-line", id: 912 }).sample,
     "race-vampire-bounce",
@@ -5762,9 +5762,9 @@ function run(sim, seconds = 120) {
     "Parasite damage ticks should use the regular damage sample",
   );
   assert.equal(samplePlanForEvent({ type: "race-draft-upgrade", id: 922 }).sample, "forge-item-pickup");
-  assert.equal(SAMPLE_ASSETS["race-draft-rifle-fire"], "race-draft-rifle-fire.mp3");
-  assert.equal(SAMPLE_ASSETS["race-draft-shotgun-fire"], "race-draft-shotgun-fire.mp3");
-  assert.equal(SAMPLE_ASSETS["race-draft-pistol-fire"], "race-draft-pistol-fire.mp3");
+  assert.equal(SAMPLE_ASSETS["race-draft-rifle-fire"], "original-v1/race-draft-rifle-fire.wav");
+  assert.equal(SAMPLE_ASSETS["race-draft-shotgun-fire"], "original-v1/race-draft-shotgun-fire.wav");
+  assert.equal(SAMPLE_ASSETS["race-draft-pistol-fire"], "original-v1/race-draft-pistol-fire.wav");
   assert.equal(
     samplePlanForEvent({ type: "race-draft-fire", gunTier: 1, id: 923 }).sample,
     "race-draft-rifle-fire",
@@ -6099,11 +6099,11 @@ function run(sim, seconds = 120) {
     decode: async (data) => ({ duration: data.byteLength }),
   });
   assert.deepEqual(fetched.sort(), [
-    `/audio/aegis-surge.mp3?v=${SAMPLE_ASSET_VERSION}`,
-    `/audio/fantasy-sword-hit.mp3?v=${SAMPLE_ASSET_VERSION}`,
-    `/audio/forge-item-pickup.mp3?v=${SAMPLE_ASSET_VERSION}`,
-    `/audio/orb-collision-pop.mp3?v=${SAMPLE_ASSET_VERSION}`,
-    `/audio/world-cup-ko.wav?v=${SAMPLE_ASSET_VERSION}`,
+    `/audio/original-v1/aegis-rush.wav?v=${SAMPLE_ASSET_VERSION}`,
+    `/audio/original-v1/forge-item-pickup.wav?v=${SAMPLE_ASSET_VERSION}`,
+    `/audio/original-v1/orb-collision.wav?v=${SAMPLE_ASSET_VERSION}`,
+    `/audio/original-v1/weapon-hit.wav?v=${SAMPLE_ASSET_VERSION}`,
+    `/audio/original-v1/world-cup-ko.wav?v=${SAMPLE_ASSET_VERSION}`,
   ]);
   assert.equal(loaded.buffers.size, 5);
   assert.deepEqual(loaded.failures, []);
@@ -6203,7 +6203,7 @@ function run(sim, seconds = 120) {
     },
     decode: async (data) => ({ duration: data.byteLength }),
   });
-  assert.deepEqual(fetched, ["/announcer/wise/pick-your-winner.wav?v=fresh-voice"]);
+  assert.deepEqual(fetched, ["/announcer/single-voice/pick-your-winner.mp3?v=fresh-voice"]);
   assert.equal(loaded.buffers.size, 1);
 }
 

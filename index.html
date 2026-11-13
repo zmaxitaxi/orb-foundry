@@ -7,39 +7,60 @@
       name="description"
       content="Orb Foundry is a deterministic Social Battle recorder."
     />
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="./assets/lab-mark.svg" type="image/svg+xml" />
+    <script src="./src/apple-theme.js?v=20261112-battle-lab4"></script>
     <title>Orb Foundry</title>
-  <link rel="stylesheet" href="./styles.css?v=20261110-shared-lunge2" />
+  <link rel="stylesheet" href="./styles.css?v=20261112-battle-lab-engine4" />
+  <link rel="stylesheet" href="./apple-ui.css?v=20261112-battle-lab4" />
+  <link rel="stylesheet" href="./site.css?v=20261112-polish4" />
+    <link rel="stylesheet" href="./foundry-ui.css?v=20261112-foundry1">
+    <link rel="stylesheet" href="./site-effects.css?v=20261112-atmosphere1">
   </head>
-  <body>
+  <body class="apple-shell">
     <section id="menuScreen" class="menu-screen" aria-labelledby="menuTitle">
-      <div class="menu-ornament menu-ornament-left" aria-hidden="true"></div>
-      <div class="menu-ornament menu-ornament-right" aria-hidden="true"></div>
-      <header class="menu-header">
-        <span>CHAMBER 07 · SOCIAL COMBAT ARCHIVE</span>
-        <h1 id="menuTitle">ORB FOUNDRY</h1>
-        <p>RECORD A DETERMINISTIC SOCIAL BATTLE</p>
+      <header class="site-header">
+        <a class="site-brand" href="./index.html"><span class="foundry-symbol" aria-hidden="true"></span>Orb Foundry</a>
+        <nav aria-label="Main navigation"><a href="./lab.html">Battle Lab</a><a href="./study.html">Course Study</a></nav>
+        <button type="button" data-theme-toggle class="theme-switch" aria-label="Switch to dark mode" aria-pressed="false"></button>
       </header>
-      <div id="orbMenu" class="orb-menu" aria-label="Fighter profiles"></div>
-      <div class="menu-actions">
-        <button id="menuPlayButton" class="menu-play-button">RECORD FIGHT</button>
-        <nav class="menu-shortcuts" aria-label="Game tools">
-          <button id="menuBalanceButton">BALANCE LAB</button>
-          <button id="menuDeveloperButton">DEVELOPER MODE</button>
-        </nav>
-        <label class="theme-picker">
-          <span>ARENA BACKGROUND</span>
-          <select id="menuThemeSelect" aria-label="Arena background"></select>
-        </label>
-        <small>Backgrounds are cosmetic and do not affect gameplay.</small>
+      <div class="home-hero"><div class="home-copy" data-reveal>
+      <div class="home-mode-switch" role="tablist" aria-label="Choose a game">
+        <span id="homeModeIndicator" class="home-mode-indicator" aria-hidden="true"></span>
+        <button id="homeFoundryTab" type="button" role="tab" aria-selected="true" aria-controls="homeDemo" data-home-mode="classic">Orb Foundry</button>
+        <button id="homeRacerTab" type="button" role="tab" aria-selected="false" aria-controls="homeDemo" tabindex="-1" data-home-mode="orb-race">Orb Racer</button>
       </div>
+      <header class="menu-header">
+        <h1 id="menuTitle">Orb Foundry.</h1>
+        <p id="homeModeDescription">Head-to-head fights. Every move has a counter.</p>
+      </header>
+      <div class="menu-actions">
+        <a id="menuBattleLabLink" class="menu-play-button" href="./lab.html">Open Battle Lab</a>
+        <button id="menuPlayButton" class="menu-record-button">Record a fight</button>
+        <nav class="menu-shortcuts" aria-label="Game tools">
+          <details class="home-tools"><summary>Tools</summary><div>
+          <button id="menuBalanceButton">Balance</button>
+          <button id="menuDeveloperButton">Developer tools</button>
+        <details class="home-appearance"><summary>Arena appearance</summary><label class="theme-picker">
+          <span>Arena background</span>
+          <select id="menuThemeSelect" aria-label="Arena background"></select>
+        </label><small>Cosmetic only.</small></details>
+          </div></details>
+        </nav>
+
+      </div>
+      </div><figure id="homeDemo" class="home-preview" role="tabpanel" aria-labelledby="homeFoundryTab" data-reveal data-mode="classic">
+        <canvas id="homePreview" width="1080" height="1080" aria-label="Live muted Classic battle between Luke Skywalker and Darth Vader"></canvas>
+        <figcaption><span class="preview-live" id="homeDemoMatchup">Luke vs Vader</span><span id="homeDemoCaption">Classic duel · Seed 4</span></figcaption>
+      </figure></div>
+      <details class="home-roster" id="homeRoster"><summary>Classic fighters</summary><div id="orbMenu" class="orb-menu" aria-label="Fighter profiles"></div></details>
+      <footer class="home-footer"><a id="homeRacerRosterLink" href="./study.html?tab=roster" hidden>Racer roster</a><a href="./about.html">About this project</a><a href="https://github.com/zmaxitaxi/orb-foundry" target="_blank" rel="noopener noreferrer">GitHub ↗</a></footer>
     </section>
 
     <section id="profileScreen" class="profile-screen" hidden aria-labelledby="profileName">
       <header class="profile-toolbar">
-        <button id="profileBackButton" class="quiet-button">← ALL FIGHTERS</button>
-        <span>FOUNDRY ARCHIVE · CLASS PROFILE</span>
-        <button id="profilePlayButton" class="quiet-button">RECORD WITH THIS ORB</button>
+        <button id="profileBackButton" class="quiet-button">← Fighters</button>
+        <span>Fighter profile</span>
+        <button id="profilePlayButton" class="quiet-button">Record</button>
       </header>
       <div class="profile-layout">
         <div class="profile-hero">
@@ -53,33 +74,30 @@
         </div>
         <article class="profile-copy">
           <section>
-            <span class="section-kicker">ABILITY / PASSIVE</span>
+            <span class="section-kicker">Ability</span>
             <p id="profileAbility" class="profile-ability"></p>
           </section>
-          <section>
-            <span class="section-kicker">FOUNDRY RECORD</span>
-            <p id="profileBackstory"></p>
-          </section>
+          <details class="profile-story"><summary>Backstory</summary><p id="profileBackstory"></p></details>
           <div class="profile-columns">
-            <section><span class="section-kicker">STRENGTHS</span><ul id="profileStrengths"></ul></section>
-            <section><span class="section-kicker">WEAKNESSES</span><ul id="profileWeaknesses"></ul></section>
+            <section><span class="section-kicker">Strengths</span><ul id="profileStrengths"></ul></section>
+            <section><span class="section-kicker">Weaknesses</span><ul id="profileWeaknesses"></ul></section>
           </div>
         </article>
         <aside class="profile-data">
           <section>
-            <span class="section-kicker">COMBAT SPECIFICATION</span>
+            <span class="section-kicker">Stats</span>
             <div id="profileStats" class="profile-stats"></div>
           </section>
           <section>
-            <span class="section-kicker">SOCIAL BATTLE RATING</span>
+            <span class="section-kicker">Match rating</span>
             <div id="profileModes" class="profile-modes"></div>
           </section>
         </aside>
       </div>
       <footer class="profile-pagination">
-        <button id="profilePreviousButton" aria-label="Previous fighter">← PREVIOUS</button>
+        <button id="profilePreviousButton" aria-label="Previous fighter">← Previous</button>
         <div id="profileDots" aria-label="Fighter position"></div>
-        <button id="profileNextButton" aria-label="Next fighter">NEXT →</button>
+        <button id="profileNextButton" aria-label="Next fighter">Next →</button>
       </footer>
     </section>
 
@@ -101,10 +119,14 @@
         </div>
 
         <div class="top-actions" aria-label="Social Battle controls">
-          <button id="homeButton" class="pixel-button utility-button">HOME</button>
-          <button id="copyLinkButton" class="pixel-button utility-button">LINK</button>
-          <button id="balanceButton" class="pixel-button utility-button">LAB</button>
-          <button id="developerButton" class="pixel-button utility-button">DEV</button>
+          <a class="pixel-button utility-button" href="./lab.html">Battle Lab</a>
+          <button type="button" data-theme-toggle class="pixel-button"><span data-theme-label>Dark mode</span></button>
+          <button id="homeButton" class="pixel-button utility-button">Home</button>
+          <details class="home-tools studio-tools"><summary aria-label="More recorder options">···</summary><div>
+          <button id="copyLinkButton" class="pixel-button utility-button">Copy link</button>
+          <button id="balanceButton" class="pixel-button utility-button">Balance</button>
+          <button id="developerButton" class="pixel-button utility-button">Developer tools</button>
+          </div></details>
           <button id="pauseButton" class="pixel-button icon-button" aria-label="Pause simulation">II</button>
           <button
             id="soundButton"
@@ -134,8 +156,8 @@
             <div id="classicTournamentRounds"></div>
           </details>
           <div class="social-recording-actions">
-            <button id="socialCancelButton" class="pixel-button">NEW SETUP</button>
-            <button id="socialStopButton" class="pixel-button primary">STOP + PREVIEW</button>
+            <button id="socialCancelButton" class="pixel-button">New setup</button>
+            <button id="socialStopButton" class="pixel-button primary">Stop &amp; preview</button>
           </div>
         </aside>
       </section>
@@ -145,8 +167,8 @@
       <form method="dialog" class="setup-panel">
         <div class="setup-heading">
           <div>
-            <p>CHOOSE A MODE, TEAMS, ORBS, AND A SEED</p>
-            <h2>BATTLE SETUP</h2>
+            <p></p>
+            <h2>Battle setup</h2>
           </div>
           <button id="closeSetupButton" class="pixel-button icon-button" value="cancel" aria-label="Close">
             X
@@ -154,12 +176,12 @@
         </div>
 
         <fieldset>
-          <legend>GAMEPLAY MODE</legend>
+          <legend>Mode</legend>
           <select id="gameplayModeSelect">
-            <option value="classic" selected>CLASSIC ORB FOUNDRY</option>
-            <option value="classic-tournament">ORB FIGHT TOURNAMENT · 1V1 BRACKET</option>
-            <option value="world-cup">WORLD CUP · COLLISION MODE</option>
-            <option value="orb-race">ORB RACE · NUMBER WALLS</option>
+            <option value="classic" selected>Classic</option>
+            <option value="classic-tournament">Orb Fight Tournament</option>
+            <option value="world-cup">World Cup</option>
+            <option value="orb-race">Orb Race</option>
           </select>
           <div id="raceLengthPicker" class="race-length-picker" hidden aria-label="Orb Race length">
             <button id="shortFormRaceButton" class="pixel-button race-length-button" type="button" aria-pressed="true">
@@ -532,7 +554,7 @@
     <dialog id="developerDialog" class="setup-dialog compact-dialog">
       <form method="dialog" class="setup-panel">
         <div class="setup-heading">
-          <div><p>RUNTIME FEATURE GATES</p><h2>DEVELOPER MODE</h2></div>
+          <div><h2>Developer tools</h2></div>
           <button class="pixel-button icon-button" value="cancel">X</button>
         </div>
         <div id="featureToggles" class="feature-toggles"></div>
@@ -552,18 +574,17 @@
     <dialog id="socialPreviewDialog" class="setup-dialog social-preview-dialog">
       <form method="dialog" class="setup-panel">
         <div class="setup-heading">
-          <div><p>EXPORT COMPLETE</p><h2>SOCIAL BATTLE PREVIEW</h2></div>
+          <div><h2>Preview</h2></div>
           <button class="pixel-button icon-button" value="cancel">X</button>
         </div>
-        <video id="socialVideoPreview" controls playsinline></video>
-        <div id="socialVideoMetadata" class="social-video-metadata"></div>
-        <label class="caption-field">
-          <span>SUGGESTED CAPTION</span>
-          <textarea id="socialCaption" rows="2" readonly></textarea>
-        </label>
+        <div class="preview-video-wrap"><video id="socialVideoPreview" controls playsinline preload="auto"></video></div>
+        <details class="preview-details"><summary>Details &amp; caption</summary>
+          <div id="socialVideoMetadata" class="social-video-metadata"></div>
+          <label class="caption-field"><span>Caption</span><textarea id="socialCaption" rows="2" readonly></textarea></label>
+        </details>
         <div class="setup-actions wrap-actions">
-          <button id="socialRetryButton" class="pixel-button" type="button">RETRY</button>
-          <button id="socialCopyLinkButton" class="pixel-button" type="button">COPY BATTLE LINK</button>
+          <button id="socialRetryButton" class="pixel-button" type="button">Retry</button>
+          <button id="socialCopyLinkButton" class="pixel-button" type="button">Copy link</button>
           <button id="socialDownloadButton" class="pixel-button primary" type="button">DOWNLOAD MP4</button>
         </div>
       </form>
@@ -572,7 +593,7 @@
     <dialog id="balanceDialog" class="setup-dialog">
       <form method="dialog" class="setup-panel balance-panel">
         <div class="setup-heading">
-          <div><p>LIVE SIMULATION TUNING</p><h2>BALANCE LABORATORY</h2></div>
+          <div><h2>Balance</h2></div>
           <button class="pixel-button icon-button" value="cancel">X</button>
         </div>
         <label class="seed-field"><span>TUNING SCOPE</span><select id="balanceScope"></select></label>
@@ -589,6 +610,9 @@
       </form>
     </dialog>
 
-  <script type="module" src="./src/main.js?v=20261110-shared-lunge2"></script>
-  </body>
+  <script type="module" src="./src/main.js?v=20261112-battle-lab-engine4"></script>
+  <script type="module" src="./src/site-motion.js?v=20261112-polish4"></script>
+  <script type="module" src="./src/site-preview.js?v=20261112-polish4"></script>
+      <script type="module" src="./src/site-effects.js?v=20261112-atmosphere1"></script>
+</body>
 </html>

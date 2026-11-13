@@ -1,8 +1,8 @@
-import { CLASS_DEFS } from "./simulation.js?v=20261110-shared-lunge2";
+import { CLASS_DEFS } from "./simulation.js?v=20261112-battle-lab-engine4";
 import { WDC_SUMMONS } from "./classic-wdc-duel.js?v=20261109-classic-publish1";
-import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261110-shared-lunge2";
+import { CLASSIC_ALIENS } from "./classic-orbs.js?v=20261112-battle-lab-engine4";
 import { CLASSIC_POWER_MOVES } from "./classic-powers.js?v=20261109-classic-publish1";
-import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261110-shared-lunge2";
+import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "./classic-showcase.js?v=20261112-battle-lab-engine4";
 
 export const SOCIAL_FORMATS = Object.freeze({
   portrait: Object.freeze({ id: "portrait", label: "FULL PORTRAIT", width: 1080, height: 1920 }),

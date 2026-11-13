@@ -1,7 +1,7 @@
-import { THEME_IDS } from "./presentation.js?v=20261110-shared-lunge2";
+import { THEME_IDS } from "./presentation.js?v=20261112-battle-lab-engine4";
 import { WORLD_CUP_MODE, normalizeWorldCupCountries } from "./world-cup.js?v=20260703-world-cup-countries3";
 import { KING_OF_HILL_MODE, normalizeKingOfHillContenders } from "./king-of-hill.js";
-import { CLASSIC_TOURNAMENT_MODE, normalizeClassicTournamentOptions } from "./classic-tournament.js?v=20261110-shared-lunge2";
+import { CLASSIC_TOURNAMENT_MODE, normalizeClassicTournamentOptions } from "./classic-tournament.js?v=20261112-battle-lab-engine4";
 import {
   ORB_RACE_DEFAULT_LAYERS,
   ORB_RACE_DEFAULT_ORB_SCALE,
@@ -27,7 +27,7 @@ import {
     normalizeClassicTeamOptions,
     normalizeClassicTeams,
     normalizeClassicSpeedMode as normalizeRegistryClassicSpeedMode,
-} from "./classic-orbs.js?v=20261110-shared-lunge2";
+} from "./classic-orbs.js?v=20261112-battle-lab-engine4";
 
 export const ARENA_MODIFIER_IDS = Object.freeze(["standard", "tiny", "suddenDeath", "overdrive", "glassCannon"]);
 export const ARENA_SHAPE_IDS = Object.freeze(["square", "circle"]);

@@ -1,4 +1,10 @@
 import assert from "node:assert/strict";
+import {
+    LAB_ENGINE_VERSION, LAB_PRESETS, LAB_STORAGE_KEY, createLabChallenge,
+    validateLabChallenge, labChallengeToUrl, labChallengeFromUrl,
+    labSimulationSettings, labRecorderUrl, parseLabImport,
+    readLabLibrary, saveLabChallenge,
+} from "../src/battle-lab-model.js";
 import { existsSync } from "node:fs";
 import {
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -1976,4 +1982,83 @@ console.log("feature tests passed");
     assert.equal(settings.classicTeamOptions[1]["luke-skywalker"].health, 155);
     assert.equal(settings.classicTeamOptions[1]["darth-vader"].health, 170);
     assert.deepEqual(settingsFromUrl(settingsToUrl(settings, "https://example.test/").href), settings);
+}
+
+// Battle Lab links are self-contained, versioned inputs using the Classic contract.
+{
+    for (const [index, id] of CLASSIC_ORB_IDS.entries()) {
+        const challenge = createLabChallenge({
+            left: id, right: "pinball", seed: 100 + index,
+            arenaShape: index % 2 ? "circle" : "square",
+            title: "A challenge ✨ <b>with text</b>", health: [123, 321],
+        });
+        const url = labChallengeToUrl(challenge, "https://example.test/subpath/lab.html?discard=old#old");
+        assert.equal(url.pathname, "/subpath/lab.html");
+        assert.equal(url.searchParams.has("discard"), false);
+        assert.deepEqual(labChallengeFromUrl(url.href), challenge, id);
+        const settings = labSimulationSettings(challenge);
+        assert.deepEqual(settings.classicTeams, [[id], ["pinball"]]);
+        assert.equal(settings.classicTeamOptions[0][id].health, 123);
+        assert.equal(settings.classicTeamOptions[1].pinball.health, 321);
+        const recorderUrl = labRecorderUrl(challenge, url.href);
+        assert.equal(recorderUrl.pathname, "/subpath/index.html");
+        const recorder = settingsFromUrl(recorderUrl.href);
+        assert.equal(recorder.seed, challenge.seed);
+        assert.equal(recorder.arenaShape, challenge.arenaShape);
+        assert.deepEqual(recorder.classicTeams, settings.classicTeams);
+        assert.equal(recorder.features.introCards, true);
+        assert.equal(recorder.classicTeamOptions[0][id].health, 123);
+        assert.equal(recorder.classicTeamOptions[1].pinball.health, 321);
+    }
+    assert.equal(labChallengeFromUrl("https://example.test/lab.html"), null);
+    const valid = createLabChallenge(LAB_PRESETS[0]);
+    assert.throws(() => validateLabChallenge({ ...valid, engine: "older-engine" }), /different simulation version/);
+    assert.throws(() => validateLabChallenge({ ...valid, version: 99 }), /format/);
+    assert.throws(() => createLabChallenge({ seed: 1.2 }), /whole seed/);
+    assert.throws(() => createLabChallenge({ left: "not-a-fighter" }), /Classic roster/);
+    assert.throws(() => createLabChallenge({ health: [0, 99999] }), /Starting health/);
+    assert.throws(() => labChallengeFromUrl("https://example.test/?challenge=broken!"), /invalid/);
+    assert.throws(() => parseLabImport("{bad"), /valid JSON/);
+    assert.throws(() => parseLabImport(JSON.stringify({ type: "orb-foundry-replay", version: 99, challenge: valid })), /file format/);
+    assert.deepEqual(parseLabImport(JSON.stringify(valid)), { challenge: valid, proof: null });
+    assert.equal(createLabChallenge({ title: "   " }).title, "Pinball vs Rubber");
+    assert.equal(createLabChallenge({ title: "a\u0000b" }).title, "ab");
+    assert.equal(validateLabChallenge(valid).engine, LAB_ENGINE_VERSION);
+}
+
+// Local saves tolerate corrupt/private storage and remain independent from links.
+{
+    const values = new Map();
+    const storage = { getItem: (key) => values.get(key) || null, setItem: (key, value) => values.set(key, value) };
+    assert.deepEqual(readLabLibrary(storage), []);
+    const challenge = createLabChallenge();
+    saveLabChallenge(storage, challenge, "2026-11-12T00:00:00Z");
+    saveLabChallenge(storage, challenge, "2026-11-12T01:00:00Z");
+    assert.equal(readLabLibrary(storage).length, 1, "re-saving does not duplicate a challenge");
+    for (let seed = 1; seed <= 20; seed += 1) saveLabChallenge(storage, createLabChallenge({ seed }));
+    assert.equal(readLabLibrary(storage).length, 12, "the local library stays bounded");
+    values.set(LAB_STORAGE_KEY, "not json");
+    assert.deepEqual(readLabLibrary(storage), []);
+    assert.deepEqual(readLabLibrary({ getItem() { throw new Error("private storage"); } }), []);
+}
+
+// David's analytical course model is shared with the static site without React.
+{
+  const { clearsByBounces, matchReading, firstCurveFlip } = await import('../src/course-study/curve.js');
+  const { contestFor } = await import('../src/course-study/contest.js');
+  const { COURSES } = await import('../src/course-study/courses.js');
+  assert.equal(clearsByBounces('x-squared', [14]), 3, 'squares sum to 14 over three contacts');
+  assert.equal(clearsByBounces('x-squared', [15]), 4);
+  assert.equal(clearsByBounces('fibonacci', [750]), 14);
+  assert.deepEqual(matchReading('x-squared', 'fibonacci', [750]), { a: 13, b: 14, outcome: 'a' });
+  assert.equal(matchReading('x-squared', 'fibonacci', [32000]).outcome, 'b', 'the lead changes with layer health');
+  assert.equal(firstCurveFlip('x-squared', 'fibonacci'), 1241);
+  assert.equal(clearsByBounces('infinity', [750, 1000, 1500]), 3);
+  assert.equal(clearsByBounces('trifecta', [750, 1000, 1500]), 9);
+  assert.equal(clearsByBounces('hydrogen-bomb', [750]), null, 'a fuse never becomes a bounce count');
+  assert.equal(matchReading('x-squared', 'hydrogen-bomb', [750]).outcome, 'open');
+  assert.equal(contestFor('sword', 'classic').kind, 'classic');
+  assert.equal(contestFor('hydrogen-bomb', 'special').seconds, 60);
+  assert.equal(COURSES.find(({ id }) => id === 'saturday').layers.length, 50);
+  assert.equal(COURSES.find(({ id }) => id === 'friday').layers.length, 5, 'these are the original analysis presets, not publishing configuration');
 }

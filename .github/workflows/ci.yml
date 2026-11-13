@@ -47,6 +47,12 @@ jobs:
       - name: Run browser smoke check
         run: npm run qa:browser-smoke
 
+      - name: Check Battle Lab challenges and replays
+        run: npm run qa:battle-lab
+
+      - name: Check site navigation and original audio
+        run: npm run qa:site
+
       - name: Stop static server
         if: always()
         run: |

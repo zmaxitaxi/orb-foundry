@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { LAB_STEP, createLabChallenge, labSimulationSettings } from "../src/battle-lab-model.js";
+import { createLabReplay, advanceLabReplay, seekLabReplay, labReplaySummary, cloneLabSimulation } from "../src/battle-lab-replay.js";
 import {
   ARENA,
   CLASS_DEFS,
@@ -6669,6 +6671,63 @@ for (const copiedOrbId of ["orbital", "whirlwind"]) {
   assert.ok(healthBeforeDrill > miner.raceLayerHealth[0]);
   assert.ok(sim.events.some((event) => event.type === "race-miner-layer-break"));
   assert.ok(sim.events.some((event) => event.type === "race-miner-layer-continue"));
+}
+
+// The lab seeks to exact physics steps, not interpolated video frames.
+{
+    const challenge = createLabChallenge({ left: "pinball", right: "rubber", seed: 418 });
+    const replay = createLabReplay(challenge);
+    while (!advanceLabReplay(replay)) {}
+    const summary = labReplaySummary(replay);
+    assert.equal(summary.status, "finished");
+    assert.ok(replay.events.length > replay.sim.events.length, "the full log survives the rolling simulation event buffer");
+    assert.ok(replay.events.every((event, index) => index === 0 || event.id === replay.events[index - 1].id + 1));
+    assert.ok(summary.checkpointCount <= 24);
+    for (const step of [0, 1, 479, 480, 777, 1800, replay.step, 120, 0]) {
+        const reference = createSimulation(labSimulationSettings(challenge));
+        for (let index = 0; index < Math.min(replay.step, step); index += 1) stepSimulation(reference, LAB_STEP);
+        const result = seekLabReplay(replay, step);
+        assert.deepEqual(captureReplayFrame(result.sim), captureReplayFrame(reference), `exact seek to step ${step}`);
+        assert.equal(result.sim.rng.state, reference.rng.state);
+    }
+    const repeat = createLabReplay(challenge);
+    while (!advanceLabReplay(repeat)) {}
+    assert.deepEqual(labReplaySummary(repeat).proof, summary.proof);
+    assert.deepEqual(repeat.events, replay.events);
+    assert.equal(seekLabReplay(replay, -9).step, 0);
+    assert.equal(seekLabReplay(replay, Infinity).step, 0);
+    assert.equal(seekLabReplay(replay, replay.step + 999).step, replay.step);
+    assert.throws(() => seekLabReplay(createLabReplay(challenge), 10), /Prepare/);
+}
+
+// Checkpoint cloning preserves actual fighter aliases in held-ability Sets.
+{
+    const sim = createSimulation(labSimulationSettings(createLabChallenge({ left: "luke-skywalker", right: "darth-vader", seed: 4 })));
+    let held = false;
+    for (let index = 0; index < 2400 && !sim.finished; index += 1) {
+        stepSimulation(sim, LAB_STEP);
+        if (sim.classicAbilityHolds?.size) { held = true; break; }
+    }
+    assert.ok(held, "the fixture reaches a real Force choke");
+    const clone = cloneLabSimulation(sim);
+    for (const fighter of clone.classicAbilityHolds) assert.ok(clone.fighters.includes(fighter), "holds reference the cloned fighter objects");
+    assert.equal(typeof clone.rng.range, "function");
+    stepSimulation(sim, LAB_STEP);
+    stepSimulation(clone, LAB_STEP);
+    assert.deepEqual(captureReplayFrame(clone), captureReplayFrame(sim));
+}
+
+// Observation limits do not invent winners or mutate the battle's rules.
+{
+    const replay = createLabReplay(createLabChallenge({ left: "unarmed", right: "unarmed", seed: 123, health: [2000, 2000] }));
+    while (!advanceLabReplay(replay)) {}
+    const summary = labReplaySummary(replay);
+    assert.equal(summary.duration, 90);
+    assert.equal(summary.status, "time-limit");
+    assert.equal(summary.winnerId, null);
+    assert.equal(replay.sim.finished, false);
+    assert.ok(replay.sim.fighters.every((fighter) => fighter.health > 0));
+    assert.ok(summary.checkpointCount <= 24);
 }
 
 console.log("simulation tests passed");

@@ -1,8 +1,48 @@
 # Orb Foundry
 
-Orb Foundry is a deterministic Social Battle recorder. Choose a roster and
-seed, run a two-orb fight, and export the dedicated canvas as a social-ready
-MP4.
+Orb Foundry is a deterministic battle engine, replay workbench, and video
+studio. Share a matchup, inspect every step, or record the dedicated canvas.
+
+Start a static server with `python3 -m http.server 4173`, then open
+[the homepage](http://localhost:4173/), [Battle Lab](http://localhost:4173/lab.html),
+[Course Study](http://localhost:4173/study.html), or
+[About](http://localhost:4173/about.html). No build or framework is required.
+
+## Battle Lab
+
+![Battle Lab replay inspector](assets/portfolio/battle-lab.png)
+
+Choose any of the 65 Classic fighters, a seed, square/circle arena, and optional
+starting health. Share versioned challenge links, save locally, or export JSON.
+The worker prepares a full event log and four-second checkpoints. Pause, scrub,
+step at 120 Hz, inspect hitboxes/velocity, and compare a fresh run's diagnostic
+fingerprints. Share links begin paused; the recorder handoff keeps the same inputs.
+
+Home, profiles, lab, setup, recorder, preview, About, and Course Study share a
+minimal custom glass interface with persistent light/dark appearance and
+reduced-motion support. Website appearance leaves the battle renderer intact.
+
+David's [original public site commit](https://github.com/zmaxitaxi/orb-foundry/commit/0f47d3ae16f936c270e794612f49a4ad810bffc8)
+is integrated through Course Study: his 121-character catalog, bounce-count
+dial, and four course presets. Its November 8 analytical model assumes equal
+contact rates; clocks and projectile rules are named rather than ranked, and
+Classic fights remain separate. The original Next.js project in `site/` stays intact.
+
+See [architecture and limitations](docs/BATTLE_LAB.md),
+[website flow](docs/WEBSITE_FLOW.md), and [future orb concepts](docs/ORB_IDEAS.md).
+
+## Original sound design
+
+All 62 active effect samples are original oscillator/resonator/seeded-noise
+WAVs in `assets/audio/effects/original-v1/`. Procedural combat cues also use new
+material voices. The announcer uses one Alex voice palette across modes, names, counts, and prompts; Luke’s existing reference clip is preserved byte-for-byte. Regenerate the palette with `npm run audio:generate-announcer`.
+Regenerate the bank and listening reel with `npm run audio:generate-original`.
+The About page includes the reel; the exact synthesis source is
+[`src/original-sfx.js`](src/original-sfx.js). Archived recordings are preserved.
+
+`npm run study:sync` explicitly refreshes the checked-in browser copies of
+David's pure TypeScript calculation modules. Neither command is needed to
+serve the already-generated static app.
 
 ## Player Flow
 
@@ -145,8 +185,12 @@ The Social Battle runtime does not load them.
 - `src/social.js`: export presets, captions, compact stats, and highlight classification
 - `src/main.js`: menu, profiles, setup, recording flow, preview, feature gates, and balance controls
 - `src/config.js`: Social Battle-only settings normalization and compact URL serialization
-- `src/audio.js`: imported combat samples, metallic procedural fallback audio,
-  buffered HeyGen announcer cues, mixer ducking, and recording-stream routing
+- `src/audio.js`: original effect manifest, event routing, buffered announcer cues,
+  mixer ducking, and recording-stream routing
+- `src/original-sfx.js`: reproducible original PCM synthesis and live material voices
+- `src/battle-lab-model.js` / `src/battle-lab-replay.js`: challenge contracts, checkpoints, seeking, and diagnostic fingerprints
+- `src/battle-lab-worker.js`: off-thread replay preparation and verification
+- `src/course-study/`: generated copies of David's pure analytical models
 - `src/presentation-timeline.js`: deterministic versus/countdown/FIGHT cue clock
 - `src/classic-tournament.js`: seeded knockout brackets and fight decisions
 - `src/classic-showcase.js`: metadata for the eight new fighters and 18 moves

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Inside Orb Foundry: a deterministic battle engine, exact replay inspection, and original procedural audio.">
+    <script src="./src/apple-theme.js?v=20261112-battle-lab4"></script>
+    <link rel="icon" href="./assets/lab-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./apple-ui.css?v=20261112-battle-lab4">
+    <link rel="stylesheet" href="./site.css?v=20261112-polish4">
+    <title>About — Orb Foundry</title>
+    <link rel="stylesheet" href="./foundry-ui.css?v=20261112-foundry1">
+    <link rel="stylesheet" href="./site-effects.css?v=20261112-atmosphere1">
+</head>
+<body class="apple-shell about-page">
+    <a class="skip-link" href="#project">Skip to project</a>
+    <header class="site-header">
+        <a class="site-brand" href="./index.html"><span class="foundry-symbol" aria-hidden="true"></span>Orb Foundry</a>
+        <nav aria-label="Main navigation"><a href="./lab.html">Battle Lab</a><a href="./study.html">Course Study</a></nav>
+        <button type="button" data-theme-toggle class="theme-switch" aria-label="Switch to dark mode" aria-pressed="false"></button>
+    </header>
+    <main id="project" class="project-main">
+        <header class="project-hero" data-reveal>
+            <p class="project-kicker">Inside Orb Foundry</p>
+            <h1>Play it.<br>Then prove it.</h1>
+            <p>A browser battle engine with reproducible challenges, inspectable replays, and a video studio.</p>
+            <a class="apple-button primary" href="./lab.html">Open Battle Lab <span aria-hidden="true">↗</span></a>
+        </header>
+        <section class="engine-diagram" aria-label="System architecture" data-reveal>
+            <div><span>01</span><strong>Choose</strong><small>Fighters · seed · arena</small></div><i aria-hidden="true">→</i>
+            <div><span>02</span><strong>Simulate</strong><small>Seeded rules · 120 Hz</small></div><i aria-hidden="true">→</i>
+            <div><span>03</span><strong>Inspect</strong><small>Exact steps · full event log</small></div>
+            <span class="diagram-trace" aria-hidden="true"></span>
+        </section>
+        <section class="project-section" data-reveal>
+            <div><p class="project-kicker">One engine, three views</p><h2>The result stays<br>the same.</h2></div>
+            <div class="project-prose"><p>The recorder, live demo, and Battle Lab share the same simulation. UI themes, overlays, playback speed, and audio change the presentation.</p><p>Challenges carry versioned inputs in a link. A worker prepares the replay without blocking the interface. Four-second checkpoints retain the simulation and RNG state, making backward seeks exact.</p><a href="https://github.com/zmaxitaxi/orb-foundry/blob/main/docs/BATTLE_LAB.md" target="_blank" rel="noopener noreferrer">Architecture notes <span aria-hidden="true">↗</span></a></div>
+        </section>
+        <section class="project-section" data-reveal>
+            <div><p class="project-kicker">David’s course model</p><h2>Study the rule.<br>Test the result.</h2></div>
+            <div class="project-prose"><p>Course Study brings David’s roster, layer presets, and bounce-count calculations into the same site. Move the layer health to see when one formula overtakes another.</p><p>The model counts contacts. Fuses, projectiles, and Classic fights keep their own rules and stay off that ranking.</p><a href="./study.html">Open Course Study <span aria-hidden="true">↗</span></a></div>
+        </section>
+        <section class="project-section" data-reveal>
+            <div><p class="project-kicker">Original sound design</p><h2>Hear the<br>difference.</h2></div>
+            <div class="project-prose"><p>62 effects built from oscillators, resonant partials, and filtered noise. Metal rings, paper snaps, fire roars, and movement has its own voice.</p><div class="sound-reel"><span class="sound-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><audio controls preload="none" aria-label="Original sound design listening reel" src="./assets/audio/effects/original-v1/listening-reel.wav?v=20261112-original2"></audio></div><a href="https://github.com/zmaxitaxi/orb-foundry/blob/main/src/original-sfx.js" target="_blank" rel="noopener noreferrer">Sound synthesis source <span aria-hidden="true">↗</span></a></div>
+        </section>
+        <section class="project-section" data-reveal>
+            <div><p class="project-kicker">Built to investigate</p><h2>A replay is<br>a test case.</h2></div>
+            <div class="project-prose"><p>An approach lunge once delayed ability timers. Regression tests now check countdowns and deployments during movement. The same battle can be shared, stepped through, and checked against a fresh run.</p><p class="project-limit">Replay fingerprints are diagnostics for this engine and runtime. They are not cryptographic proofs or a guarantee of identical floating-point results across browser engines.</p><a href="https://github.com/zmaxitaxi/orb-foundry/tree/main/tests" target="_blank" rel="noopener noreferrer">Explore the tests <span aria-hidden="true">↗</span></a></div>
+        </section>
+    </main>
+    <footer class="site-footer"><a href="./index.html">Orb Foundry</a><a href="./lab.html">Battle Lab</a><a href="https://github.com/zmaxitaxi/orb-foundry" target="_blank" rel="noopener noreferrer">GitHub ↗</a></footer>
+    <script type="module" src="./src/site-motion.js?v=20261112-polish4"></script>
+    <script type="module" src="./src/site-effects.js?v=20261112-atmosphere1"></script>
+</body>
+</html>

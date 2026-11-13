@@ -4,7 +4,7 @@ import {
   raceLaserIntervalLevelFor,
   raceCommanderDronePosition,
   stepSimulation,
-} from "./simulation.js?v=20261110-shared-lunge2";
+} from "./simulation.js?v=20261112-battle-lab-engine4";
 import {
   CombatAudio,
   MATCH_FINALE_RECORDING_TAIL_MS,
@@ -13,8 +13,8 @@ import {
   raceTargetAnnouncerCueFor,
   raceTeamAnnouncerIntroSequence,
   worldCupAnnouncerIntroSequence,
-} from "./audio.js?v=20261110-shared-lunge2";
-import { SocialBattleRenderer } from "./social-renderer.js?v=20261110-shared-lunge2";
+} from "./audio.js?v=20261112-battle-lab-engine4";
+import { SocialBattleRenderer } from "./social-renderer.js?v=20261112-battle-lab-engine4";
 import {
   RECORDER_STATES,
   SocialBattleRecorder,
@@ -31,7 +31,7 @@ import {
   matchPresentationImpact,
   normalizeSocialOptions,
   recordingFilename,
-} from "./social.js?v=20261110-shared-lunge2";
+} from "./social.js?v=20261112-battle-lab-engine4";
 import {
   BALANCE_KEYS,
   CLASSIC_DEFAULT_ORB_SCALE,
@@ -51,7 +51,7 @@ import {
   settingsFromUrl,
   settingsToUrl,
   validateRaceTournamentSettings,
-} from "./config.js?v=20261110-shared-lunge2";
+} from "./config.js?v=20261112-battle-lab-engine4";
 import {
   CLASSIC_TOURNAMENT_MATCH_LIMIT,
   CLASSIC_TOURNAMENT_MODE,
@@ -60,7 +60,7 @@ import {
   createClassicTournament,
   finishClassicTournamentMatch,
   normalizeClassicTournamentOptions,
-} from "./classic-tournament.js?v=20261110-shared-lunge2";
+} from "./classic-tournament.js?v=20261112-battle-lab-engine4";
 import {
   buildOrbRaceTournamentLayerPreset,
   advanceOrbRaceTournamentPresentation,
@@ -70,7 +70,7 @@ import {
   serializeOrbRaceTournament,
   snapshotOrbRaceTournament,
 } from "./orb-race-tournament.js?v=20260812-orb-race-tournament-pan1000-hold1750-committed1";
-import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261110-shared-lunge2";
+import { ARENA_THEMES, ORB_PROFILES, ORB_SPRITE_PROFILES, THEME_IDS, themeById } from "./presentation.js?v=20261112-battle-lab-engine4";
 import {
   advancePresentationTimeline,
   createPresentationTimeline,
@@ -118,7 +118,7 @@ import {
   normalizeClassicOrbHealth,
   normalizeClassicTeamOptions,
   normalizeClassicTeams,
-} from "./classic-orbs.js?v=20261110-shared-lunge2";
+} from "./classic-orbs.js?v=20261112-battle-lab-engine4";
 
 const audio = new CombatAudio();
 const validClasses = Object.keys(CLASSIC_ORBS);
@@ -1972,15 +1972,6 @@ function buildMenu() {
 
   elements.orbMenu.querySelectorAll("[data-profile]").forEach((button) => {
     button.addEventListener("click", () => showProfile(button.dataset.profile, 1));
-    button.addEventListener("pointermove", (event) => {
-      const rect = button.getBoundingClientRect();
-      button.style.setProperty("--pointer-x", `${((event.clientX - rect.left) / rect.width - 0.5) * 8}px`);
-      button.style.setProperty("--pointer-y", `${((event.clientY - rect.top) / rect.height - 0.5) * 8}px`);
-    });
-    button.addEventListener("pointerleave", () => {
-      button.style.removeProperty("--pointer-x");
-      button.style.removeProperty("--pointer-y");
-    });
   });
 }
 
@@ -2013,7 +2004,7 @@ function buildClassControls() {
           <small>${def.power}</small>
         </span>
       </label>
-      <details class="classic-orb-options"${selected ? " open" : ""}>
+      <details class="classic-orb-options">
         <summary>ORB OPTIONS</summary>
         <label class="classic-orb-count">QUANTITY
           <input type="number" min="1" max="${CLASSIC_MAX_ORB_COPIES}" step="1" value="${normalizeClassicOrbCount(option.count)}" data-classic-count data-classic-team="${teamIndex}" data-classic-orb="${type}" />
@@ -2050,7 +2041,7 @@ function buildClassControls() {
       classicTeamSelectionOrder[teamIndex] = input.checked
         ? [...order.filter((type) => type !== input.value), input.value]
         : order.filter((type) => type !== input.value);
-      if (details) details.open = input.checked;
+      if (details) details.open = false;
       syncClassicReferenceDuel();
       restoreSetupDialogScroll(panelScrollTop);
     });
@@ -2069,9 +2060,10 @@ function populateProfile(type) {
   elements.profileOrb.className = `profile-orb orb-preview ${type}`;
   elements.profileOrb.setAttribute("style", classicPreviewStyle(type));
   elements.profileEpithet.textContent = profile.epithet;
-  elements.profileName.textContent = def.name;
+  elements.profileName.textContent = type === "wdc" ? "WDC" : def.name.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
   elements.profileName.style.color = def.color;
   elements.profileWeapon.textContent = def.ability;
+  elements.profileWeapon.hidden = def.ability.toLowerCase() === def.name.toLowerCase();
   elements.profileAbility.textContent = profile.ability;
   elements.profileBackstory.textContent = profile.backstory;
   elements.profileStrengths.innerHTML = profile.strengths.map((item) => `<li>${item}</li>`).join("");
@@ -2131,7 +2123,7 @@ function showMenu(direction = -1) {
   elements.menuScreen.hidden = false;
   window.scrollTo(0, 0);
   animateScreen(elements.menuScreen, direction);
-  elements.menuPlayButton.focus({ preventScroll: true });
+  document.querySelector("#menuBattleLabLink")?.focus({ preventScroll: true });
 }
 
 function showProfile(type, direction = 1) {
@@ -2578,8 +2570,8 @@ function showSocialPreview(result) {
   elements.socialDownloadButton.textContent = String(previewResult.mimeType || previewResult.blob?.type || "")
     .toLowerCase()
     .includes("webm")
-    ? "DOWNLOAD WEBM"
-    : "DOWNLOAD MP4";
+    ? "Download WebM"
+    : "Download MP4";
   const raceTeamNames = sim.gameplayMode === ORB_RACE_MODE
     ? (sim.raceTeams || []).map((team) => team.name)
     : [];
@@ -2654,13 +2646,18 @@ function recordingResultSnapshot() {
 
 function animateScreen(node, direction) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || typeof node.animate !== "function") return;
-  node.animate(
-    [
-      { opacity: 0, transform: `translateX(${direction * 32}px)` },
-      { opacity: 1, transform: "translateX(0)" },
-    ],
-    { duration: 240, easing: "cubic-bezier(.2,.75,.25,1)" },
-  );
+  // Keep toolbars out of transformed ancestors. Combining their backdrop blur
+  // with a whole-screen transform can leave stale hit-testing after a modal.
+  const surface = node.querySelector(".profile-hero, .menu-header, .social-preview-shell") || node;
+  const current = getComputedStyle(surface);
+  const interrupted = surface.getAnimations().length > 0;
+  const from = interrupted
+    ? { opacity: current.opacity, transform: current.transform }
+    : { opacity: 0, transform: `translateX(${direction * 12}px)` };
+  surface.getAnimations().forEach((animation) => animation.cancel());
+  surface.animate([from, { opacity: 1, transform: "translateX(0)" }], {
+    duration: 240, easing: "cubic-bezier(.16,1,.3,1)",
+  });
 }
 
 function stepProfile(delta) {
@@ -3167,7 +3164,7 @@ function selectedClassicTeamsForSetup(featuredType = null) {
   return teams;
 }
 
-function openSetup({ origin = "game", featuredType = null, tournamentPage = null } = {}) {
+function openSetup({ origin = "game", featuredType = null, tournamentPage = null, gameplayMode = null } = {}) {
   setupOrigin = origin;
   raceTeamSelectionOrder = settings.raceTeams.map((team) => [...team]);
   raceTournamentSeedOrder = settings.raceTournament?.seedOrder?.slice() || [];
@@ -3177,7 +3174,7 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
   elements.arenaSizeSelect.value = settings.arenaSize;
   elements.arenaShapeSelect.value = settings.arenaShape;
   elements.setupThemeSelect.value = settings.theme;
-  elements.gameplayModeSelect.value = settings.classicTournament ? CLASSIC_TOURNAMENT_MODE : settings.gameplayMode;
+  elements.gameplayModeSelect.value = ["classic", ORB_RACE_MODE].includes(gameplayMode) ? gameplayMode : settings.classicTournament ? CLASSIC_TOURNAMENT_MODE : settings.gameplayMode;
   elements.classicTournamentSize.value = String(settings.classicTournament?.size || 8);
   if (settings.classicTournament) setClassicTournamentEntrants(settings.classicTournament.entrants);
   else seedClassicTournamentEntrants();
@@ -3201,7 +3198,7 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
     const teamIndex = Number(input.dataset.classicTeam);
     input.checked = selectedTeams[teamIndex]?.includes(input.value) === true;
     const details = input.closest(".classic-team-orb")?.querySelector("details");
-    if (details) details.open = input.checked;
+    if (details) details.open = false;
   });
   elements.setupDialog.querySelectorAll("[data-classic-option]").forEach((input) => {
     const option = settings.classicTeamOptions[Number(input.dataset.classicTeam)]?.[input.dataset.classicOrb]
@@ -3245,7 +3242,7 @@ function openSetup({ origin = "game", featuredType = null, tournamentPage = null
     const teamIndex = Number(input.dataset.raceTeam);
     input.checked = settings.raceTeams[teamIndex]?.includes(input.value) || false;
     const details = input.closest(".race-team-orb")?.querySelector("details");
-    if (details) details.open = input.checked;
+    if (details) details.open = false;
   });
   const selectedTournamentEntrants = new Set(settings.raceTournament?.entrants || []);
   elements.raceTournamentSize.value = String(settings.raceTournament?.size || RACE_TOURNAMENT_BRACKET_SIZES[1]);
@@ -3591,7 +3588,10 @@ elements.homeButton.addEventListener("click", () => {
   if (socialRecorder.machine.state === RECORDER_STATES.RECORDING) socialRecorder.cancel();
   showMenu(-1);
 });
-elements.menuPlayButton.addEventListener("click", () => openSetup({ origin: "menu" }));
+elements.menuPlayButton.addEventListener("click", () => {
+  if (document.documentElement.dataset.homeMode === ORB_RACE_MODE) location.assign("./study.html");
+  else openSetup({ origin: "menu", gameplayMode: "classic" });
+});
 elements.menuBalanceButton.addEventListener("click", openBalanceLab);
 elements.menuDeveloperButton.addEventListener("click", () => {
   buildFeatureToggles();
@@ -3609,7 +3609,7 @@ elements.classicWdcPreset.addEventListener("click", () => {
     const team = Number(input.dataset.classicTeam);
     input.checked = CLASSIC_WDC_DUEL_TEAMS[team].includes(input.value);
     const details = input.closest(".classic-team-orb")?.querySelector("details");
-    if (details) details.open = input.checked;
+    if (details) details.open = false;
     if (input.checked && details) {
       details.querySelector("[data-classic-count]").value = "1";
       details.querySelector("[data-classic-health]").value = String(CLASSIC_ORBS[input.value].defaultHealth);
@@ -4784,9 +4784,9 @@ applyTheme(settings.theme);
 applyFeatureVisibility();
 startSimulation();
 
-if (initialUrlSettings) {
+if (initialUrlSettings || new URL(location.href).searchParams.get("record") === "1") {
   showGame();
-  openSetup();
+  openSetup({ gameplayMode: initialUrlSettings ? null : new URL(location.href).searchParams.get("game") });
 } else {
   history.replaceState(null, "", location.pathname);
   showMenu();

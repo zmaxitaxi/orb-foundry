@@ -4645,3 +4645,95 @@ Original prompt: Add a way to simulate 100+ tournaments so I can see which orbs 
 - Added a `batch` manual-dispatch option so a missed scheduled run can render and upload all three daily videos immediately while preserving run-tag duplicate protection.
 - Hardened hosted video export with CI-safe Chromium flags, retryable profile cleanup, consistent YouTube artifact roots, informative upload errors, and the required YouTube resumable-upload protocol.
 - Verified recovery run `35542850153` uploaded three videos successfully and scheduled them for September 21 at 12:00 PM/3:00 PM Pacific.
+
+## 2026-11-12 — Battle Lab and interface work in progress
+
+- Added the versioned Classic Battle Lab, worker-backed 120 Hz replay inspector,
+  full event collection through a read-only observer, exact checkpoint seeking,
+  overlays, verification, portable files, share links, local saves, and recorder
+  handoff. All 236 existing tests and the dedicated Playwright lab QA passed.
+- Applied the requested Apple Design skill to DOM chrome with light/dark glass
+  materials, minimal actions, native dialogs and spring tab motion. Kept battle
+  rules and canvas art unchanged. Website flow is saved in docs/WEBSITE_FLOW.md.
+- New request extends polish to all active pages and replaces all effects with
+  original synthesis. Generated 62 replacement WAVs from src/original-sfx.js;
+  audio.js now routes its entire sample bank to original-v1 and revoices every
+  procedural combat plan. Spoken announcements remain separate from effects.
+- Added the real muted home preview, About page, scroll entrances, menu reveals,
+  reduced-motion handling, simpler profile copy, profile overflow correction,
+  and dark setup contrast correction. Staying with CSS and ES modules per user.
+- Next: finish sound and page QA, listen to the generated reel, update docs and
+  tests for original sample paths, then commit/push main and check CI.
+
+## 2026-11-12 — David's course model integrated; final verification
+
+- Found David's already-merged commits 0f47d3a (public Next.js lab/catalog)
+  and 6351ebe (future plan). Added static Course Study sharing his four pure
+  calculation modules and 121-character catalog. The original site/ project
+  stays intact. Models/course presets are visibly labeled as a Nov 8 snapshot,
+  with clocks/projectiles/Classic excluded from bounce rankings.
+- Added About as an actual page, shared navigation, original sound reel,
+  architecture notes, responsive course charts and catalog/preset tabs. The
+  requested website flow is saved and all listed destinations now exist.
+- Simplified the homepage, profile copy, advanced setup controls and video
+  preview. Added restrained entrances, native menus, spring tabs, hover/press
+  feedback, original material voices, reduced motion and transparency support.
+- Saved eight unimplemented concepts in docs/ORB_IDEAS.md: Prism, Pendulum,
+  Kintsugi, Marionette, Tidal, Mantis, Lantern, Jester.
+- Final Node run passed 238/238; final Battle Lab Playwright checks passed with
+  no console/page/asset errors. Full site QA decoded all 62 original WAVs,
+  measured actual output and recording audio track, checked dark/mobile flows,
+  and created a real 1080x1920 preview. Refining its video-pixel assertion and
+  wait for the native setup exit transition before the programmatic record call.
+- Captured assets/portfolio/battle-lab.png for the README. The supplied game
+  client completed, and its state plus canvas screenshot were inspected.
+
+## 2026-11-12 — Custom Foundry/Racer identity and one announcer
+
+- User released the Apple visual constraint. Added foundry-ui.css with copper,
+  graphite glass and tighter controls, with Racer green as a separate mode
+  identity. Kept a restrained design and all accessibility preferences.
+- Homepage now switches between real seeded Classic and Orb Racer demos, with
+  a spring indicator, subtle pointer depth, mode-specific copy/actions, and a
+  direct Racer setup route. Classic profiles and Racer catalog links are clear.
+- Added one canonical announcer manifest across 314 cues and 276 phrases.
+  Generated the remaining phrases with the installed Alex voice and preserved
+  Luke's existing reference MP3 byte-for-byte with a fixed SHA-256 assertion.
+  Archived palettes stay intact; source AIFFs, text, voice settings and hashes
+  live in assets/audio/source/single-voice-20261112/.
+- Full site Playwright QA decoded all 314 announcements and all 62 effects with
+  no failures; live speech and effect playback reached the recorder audio
+  track. A decoded portrait video contained real battle pixels at 9:16.
+- A native setup exit occasionally left recorder clicks blocked in automation.
+  Runtime sheets now release the top layer immediately; entrances still animate.
+  Final cache lineage is battle-lab-engine3 / battle-lab3 / polish3.
+
+## 2026-11-12 — Requested flamboyant background pass
+
+- Added visible moving outline text, seeded decorative particles, orbit rings,
+  reactive glows and kinetic title letters. Colors follow Foundry/Racer. Kept
+  the actual fights unchanged and the effects behind the content/capture.
+- Motion is static for reduced-motion users and disabled in high contrast.
+  Background animations pause while the tab is hidden. Desktop uses 100 small
+  particles; mobile uses 44. Browser screenshots show the complete matchups.
+- Final 239-test Node run passed. Replay QA passed. Investigating an intermittent
+  native-dialog click-blocking issue observed in the full site browser check
+  before final commit and push.
+
+## 2026-11-12 — Ready for main
+
+- Fixed the remaining hit-testing issue by keeping frosted toolbars outside
+  transformed screen ancestors. Entry motion now targets the profile hero,
+  homepage title, and canvas surface; action bars remain stable. Full site QA
+  passed afterward, including real pointer clicks and decoded video pixels.
+- Final validation: 239/239 full Node tests; focused settings/social/audio pass;
+  browser smoke, Battle Lab share/replay QA, full site/voice/recording QA, and
+  JavaScript syntax checks pass. Zero browser console/page errors or failed
+  assets. The final game-client screenshot/state were inspected.
+- Full site QA checked every active page at desktop/mobile sizes, reduced
+  motion, 62 effect decodes, 314 announcer decodes, the recording audio track,
+  and a real 1080x1920 preview. Updated README screenshot and architecture/flow
+  documentation. Final release cache lineage is battle-lab-engine4 / lab4 /
+  polish4, plus the original sound, single voice and atmosphere versions.
+- Motion preview is local QA evidence, not production media. New orb ideas are
+  documented concepts only. No public hosting or automatic publishing was run.

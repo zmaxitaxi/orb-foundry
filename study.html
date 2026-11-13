@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Explore Orb Race formulas, compare bounce counts, and browse David's course and character catalog.">
+    <script src="./src/apple-theme.js?v=20261112-battle-lab4"></script>
+    <link rel="icon" href="./assets/lab-mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./apple-ui.css?v=20261112-battle-lab4">
+    <link rel="stylesheet" href="./site.css?v=20261112-polish4">
+    <link rel="stylesheet" href="./course-study.css?v=20261112-study1">
+    <title>Course Study — Orb Foundry</title>
+    <link rel="stylesheet" href="./foundry-ui.css?v=20261112-foundry1">
+    <link rel="stylesheet" href="./site-effects.css?v=20261112-atmosphere1">
+</head>
+<body class="apple-shell study-page">
+    <a class="skip-link" href="#study">Skip to study</a>
+    <header class="site-header"><a class="site-brand" href="./index.html"><span class="foundry-symbol" aria-hidden="true"></span>Orb Foundry</a><nav aria-label="Main navigation"><a href="./lab.html">Battle Lab</a><a href="./about.html">About</a></nav><button type="button" data-theme-toggle class="theme-switch" aria-label="Switch to dark mode" aria-pressed="false"></button></header>
+    <main id="study" class="study-main">
+        <header class="study-heading" data-reveal><div><h1>Course Study<span>.</span></h1><p>Explore the rule behind the race.</p></div><button id="studyShare" class="apple-button secondary" type="button" disabled>Copy link</button></header>
+        <div id="studyNotice" role="status" class="study-notice" hidden></div>
+        <div class="study-tabs" role="tablist" aria-label="Course tools"><button type="button" id="dialTab" role="tab" aria-controls="dialPanel" aria-selected="true">Dial</button><button type="button" id="rosterTab" role="tab" aria-controls="rosterPanel" aria-selected="false" tabindex="-1">Roster</button><button type="button" id="coursesTab" role="tab" aria-controls="coursesPanel" aria-selected="false" tabindex="-1">Courses</button></div>
+        <section id="dialPanel" role="tabpanel" aria-labelledby="dialTab">
+            <div class="study-workbench" data-reveal>
+                <div class="study-controls"><label>First orb<select id="studyLeft" disabled></select></label><label>Second orb<select id="studyRight" disabled></select></label><div class="study-health"><label for="studyHealth">Layer health<output id="studyHealthValue">750</output></label><input id="studyHealth" type="range" min="0" max="1" value="0" disabled><div class="study-scale"><span>8</span><span>8M</span></div></div><label>Course<select id="studyCourse"><option value="dial">One layer</option></select></label><p class="study-model-note">Equal contact rate.<br>Not a live winner prediction.</p></div>
+                <div class="study-chart-area"><div id="studyReading" class="study-reading" aria-live="polite">Loading the course model…</div><svg id="studyChart" viewBox="0 0 680 370" role="img" aria-label="Bounce counts against layer health"></svg><div id="studyLegend" class="study-legend"></div><div id="studyOffAxis" class="study-off-axis"></div></div>
+            </div>
+            <details class="study-methods"><summary>How to read this</summary><p>The model adds body-contact damage until a layer clears. It assumes equal contact rates and leaves travel time, projectiles, random moves, and live combat out of the calculation. Fuses stay in seconds. Classic fights stay off the bounce chart.</p><p>For a selected course, counts use that course’s layer list. The chart continues to show a single layer across health values. Course presets and formulas are David’s November 8 model snapshot, not the current publishing schedule.</p><a href="https://github.com/zmaxitaxi/orb-foundry/commit/0f47d3ae16f936c270e794612f49a4ad810bffc8" target="_blank" rel="noopener noreferrer">David’s original work ↗</a></details>
+        </section>
+        <section id="rosterPanel" role="tabpanel" aria-labelledby="rosterTab" hidden><div class="study-roster-tools"><label><span class="sr-only">Search catalog</span><input id="studySearch" type="search" placeholder="Search catalog…"></label><label><span class="sr-only">Catalog mode</span><select id="studyMode"><option value="all">All modes</option><option value="orb-race">Orb Race</option><option value="classic">Classic</option></select></label><output id="studyRosterCount"></output></div><div id="studyRoster" class="study-roster"></div><p class="study-model-note">David’s catalog snapshot. The Battle Lab has the current playable Classic roster.</p></section>
+        <section id="coursesPanel" role="tabpanel" aria-labelledby="coursesTab" hidden><div id="studyCourses" class="study-courses"></div><p class="study-model-note">Analysis presets from November 8. These do not change scheduled videos.</p></section>
+    </main>
+    <footer class="site-footer"><a href="./index.html">Orb Foundry</a><a href="./about.html">About</a><a href="https://github.com/zmaxitaxi/orb-foundry" target="_blank" rel="noopener noreferrer">GitHub ↗</a></footer>
+    <script type="module" src="./src/site-motion.js?v=20261112-polish4"></script>
+    <script type="module" src="./src/course-study.js?v=20261112-study1"></script>
+    <script type="module" src="./src/site-effects.js?v=20261112-atmosphere1"></script>
+</body>
+</html>

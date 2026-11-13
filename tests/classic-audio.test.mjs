@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, statSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import test from "node:test";
 import {
     ANNOUNCER_NAMES,
+    ANNOUNCER_ASSETS,
+    ANNOUNCER_VOICE_CATALOG,
+    ARCHIVED_ANNOUNCER_ASSETS,
     CLASSIC_AUDIO_POLICY,
     INTRO_ANNOUNCER_ASSETS,
     RACE_GENERATED_ANNOUNCER_ASSETS,
@@ -11,8 +15,57 @@ import {
     classicTeamAnnouncerIntroSequence,
     samplePlanForEvent,
     soundPlanForEvent,
+    CombatAudio,
 } from "../src/audio.js";
 import { CLASSIC_SHOWCASE_FIGHTERS, CLASSIC_SHOWCASE_MOVES } from "../src/classic-showcase.js";
+import { ANNOUNCER_VOICE } from "../src/announcer-voice.js";
+import { ORIGINAL_SFX, ORIGINAL_SFX_SAMPLE_RATE, renderOriginalSfx, encodeSfxWav, originalEventSound } from "../src/original-sfx.js";
+
+test("Every live sample is original, reproducible, audible, bounded PCM", () => {
+    assert.deepEqual(Object.keys(SAMPLE_ASSETS), Object.keys(ORIGINAL_SFX));
+    const fingerprints = new Set();
+    for (const [id, design] of Object.entries(ORIGINAL_SFX)) {
+        assert.equal(SAMPLE_ASSETS[id], `original-v1/${id}.wav`);
+        const samples = renderOriginalSfx(id);
+        assert.equal(samples.length, Math.round(design.duration * ORIGINAL_SFX_SAMPLE_RATE));
+        let energy = 0;
+        for (const value of samples) {
+            assert.ok(Number.isFinite(value) && Math.abs(value) < .96, `${id} cannot clip or contain nonfinite audio`);
+            energy += value * value;
+        }
+        assert.ok(energy / samples.length > .00001, `${id} must contain audible audio`);
+        if (design.family === "siren") {
+            assert.ok(Math.abs(samples[0] - samples.at(-1)) < .015, "the looping siren has a continuous seam");
+        } else {
+            assert.ok(Math.abs(samples[0]) < .001 && Math.abs(samples.at(-1)) < .001, `${id} has click-free edges`);
+        }
+        const encoded = Buffer.from(encodeSfxWav(samples));
+        assert.deepEqual(encoded, readFileSync(new URL(`../assets/audio/effects/${SAMPLE_ASSETS[id]}`, import.meta.url)), `${id} is regenerated from its source, without recordings`);
+        fingerprints.add(createHash("sha256").update(encoded).digest("hex"));
+    }
+    assert.equal(fingerprints.size, Object.keys(ORIGINAL_SFX).length, "all 62 effect designs have distinct waveforms");
+});
+
+test("The live audio graph revoices procedural moves with their own materials", () => {
+    for (const [fighterType, material] of [["origami", "paper"], ["magneto", "metal"], ["sand-pharaoh", "sand"], ["rubber", "rubber"], ["pinball", "bell"]]) {
+        const event = { type: "classic-showcase-cue", gameplayMode: "classic", fighterType, move: CLASSIC_SHOWCASE_FIGHTERS[fighterType].moves[0], phase: "hit", id: 8, x: 100 };
+        const expected = originalEventSound(soundPlanForEvent(event), event);
+        assert.equal(expected.material, material);
+        const audio = new CombatAudio();
+        audio.context = { state: "running", currentTime: 0 };
+        const layers = [];
+        const noises = [];
+        audio.playLayer = (layer) => layers.push(layer);
+        audio.playNoise = (noise) => noises.push(noise);
+        assert.equal(audio.play(event), true);
+        assert.deepEqual(layers, expected.layers);
+        assert.deepEqual(noises, expected.noises);
+        assert.equal(expected.pan, soundPlanForEvent(event).pan, "new voices keep event position");
+    }
+    const event = (cue) => ({ type: "classic-pulse-cue", gameplayMode: "classic", fighterType: "magneto", cue });
+    const motion = ["dash-windup", "dash-lunge", "dash-dodge"].map((cue) => JSON.stringify(originalEventSound(soundPlanForEvent(event(cue)), event(cue)).layers));
+    assert.equal(new Set(motion).size, 3, "tell, approach and dodge stay audibly distinct");
+});
 
 const CLASSIC_IDS = Object.freeze([
     "sword",
@@ -311,7 +364,7 @@ test("Classic combat mix routes launch effects and the Race end cue", () => {
     );
     const trapperThrowPlan = samplePlanForEvent({ type: "classic-trapper-throw", gameplayMode: "classic", fighterType: "trapper", id: 104.55 });
     assert.equal(trapperThrowPlan.sample, "classic-trapper-throw", "each Trapper lasso throw should use the supplied yeehaw clip");
-    assert.equal(trapperThrowPlan.offset, 1.5, "Trapper throws should begin at the Yeehaw onset instead of the clip intro");
+    assert.equal(trapperThrowPlan.offset, 0, "The original rope throw begins immediately without the archived voice clip offset");
     assert.equal(
         samplePlanForEvent({ type: "classic-trapper-caught", gameplayMode: "classic", fighterType: "trapper", targetType: "unarmed", id: 104.56 }).sample,
         "classic-trapper-caught",
@@ -398,4 +451,27 @@ test("Classic combat mix routes launch effects and the Race end cue", () => {
     );
     assert.equal(samplePlanForEvent({ type: "classic-projectile-fired", gameplayMode: "classic", fighterType: "necromancer", projectileKind: "necromancer-arrow", id: 107 }), null, "Necromancer minion arrow releases should be silent");
     assert.equal(samplePlanForEvent({ type: "classic-minion-hit", gameplayMode: "classic", fighterType: "necromancer", id: 108 }).sample, "orb-collision");
+});
+
+
+test("Every live announcement uses the unified voice and preserves Luke's reference", () => {
+    assert.deepEqual(Object.keys(ANNOUNCER_ASSETS), Object.keys(ARCHIVED_ANNOUNCER_ASSETS), "no mode, count, prompt or legacy cue is lost");
+    assert.equal(ANNOUNCER_ASSETS["intro-luke-skywalker"], ANNOUNCER_VOICE.reference);
+    const reference = readFileSync(new URL(`../assets/audio/announcer/${ANNOUNCER_VOICE.reference}`, import.meta.url));
+    assert.equal(createHash("sha256").update(reference).digest("hex"), ANNOUNCER_VOICE.referenceSha256);
+    assert.equal(ANNOUNCER_ASSETS["intro-sword"], "single-voice/sword.mp3");
+    assert.equal(ANNOUNCER_ASSETS.versus, ANNOUNCER_ASSETS["race-versus"]);
+    assert.equal(ANNOUNCER_ASSETS["pick-your-winner"], ANNOUNCER_ASSETS["race-pick-your-winner"]);
+    assert.notEqual(ANNOUNCER_ASSETS["race-boss"], ANNOUNCER_ASSETS["race-buffed"]);
+    for (const filename of Object.values(ANNOUNCER_ASSETS)) {
+        assert.ok(filename.startsWith("single-voice/") || filename === ANNOUNCER_VOICE.reference);
+        assert.ok(statSync(new URL(`../assets/audio/announcer/${filename}`, import.meta.url)).size > 4096, filename);
+        assert.ok(ANNOUNCER_VOICE_CATALOG.phrases[filename]?.spokenText, filename);
+    }
+    const source = JSON.parse(readFileSync(new URL("../assets/audio/source/single-voice-20261112/manifest.json", import.meta.url)));
+    assert.equal(source.voice.id, "alex");
+    for (const [filename, phrase] of Object.entries(source.phrases)) {
+        const bytes = readFileSync(new URL(`../assets/audio/announcer/${filename}`, import.meta.url));
+        assert.equal(createHash("sha256").update(bytes).digest("hex"), phrase.sha256, `${filename} matches its recorded provenance`);
+    }
 });
